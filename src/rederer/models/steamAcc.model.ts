@@ -1,5 +1,5 @@
 export interface SteamAcc {
-  steamid: string;
+  username: string;
   status: boolean;
   avatar?: string;
 }

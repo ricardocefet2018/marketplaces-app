@@ -18,7 +18,7 @@
       style="width: fit-content"
     >
       <SelectedAccountCard
-        :steamid="steamacc.steamid"
+        :username="steamacc.username"
         :status="steamacc.status"
         class="mb-2"
         v-if="!!steamacc"
@@ -40,7 +40,7 @@
                 value=""
                 :severity="slotProps.option.status ? 'primary' : 'danger'"
               ></Badge>
-              {{ slotProps.option.steamid }}
+              {{ slotProps.option.username }}
             </div>
           </div>
         </template>
@@ -80,25 +80,17 @@ const steamaccs: Ref<SteamAcc[]> = ref([]);
 
 const steamacc: Ref<SteamAcc> = ref();
 
-function selectAnotherSteamID() {
-  const randomNum = Math.round(Math.random() * 5 + 15);
-  let randomsid = Array.from({ length: randomNum })
-    .map((_) => (Math.random() * 9).toFixed(0))
-    .join("");
-  return randomsid;
-}
-
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
   steamacc.value = e;
 }
 
-onMounted(() => {
-  for (let i = 0; i < 50; i++) {
-    const status = Math.random() > 0.5 ? true : false;
-    steamaccs.value.push({ steamid: selectAnotherSteamID(), status: status });
-  }
-  steamacc.value = steamaccs.value[0];
+onMounted(async () => {
+  const registeredAccounts = await window.api.getAccounts();
+  registeredAccounts.forEach((status, username) => {
+    steamaccs.value.push({ username, status });
+  });
+  if (steamaccs.value.length > 0) steamacc.value = steamaccs.value[0];
 });
 </script>
 

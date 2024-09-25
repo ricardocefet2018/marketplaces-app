@@ -5,21 +5,24 @@ import SteamUser from "steam-user";
 import { TradeWebsocketCreateTradeData } from "./types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
+  getAppStoragePath,
   handleError,
   infoLogger,
   minutesToMS,
-  setFileContent,
 } from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
+import { LoginData } from "../../shared/types";
+import { User } from "./db.model";
 
 export class TradeManager extends EventEmitter {
   private _client: SteamUser;
   private _manager: TradeOfferManager;
   private _cookies: string[] = [];
+  private user: User;
   private storagePath: string;
 
-  public constructor(options: TradeManagerOptions) {
+  private constructor(options: TradeManagerOptions) {
     super();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
@@ -35,51 +38,100 @@ export class TradeManager extends EventEmitter {
       options.storagePathBase,
       `acc_${options.username}`
     );
-
-    switch (typeof options.login) {
-      case "string":
-        this._client.logOn({
-          refreshToken: options.login,
-        });
-        break;
-      case "object":
-        this._client.logOn({
-          accountName: options.username,
-          password: options.login.password,
-          twoFactorCode: options.login.authCode,
-        });
-        break;
-
-      default:
-        throw new Error("Unknow type of login option");
-        break;
-    }
   }
 
-  public static async getInstance(
-    options: TradeManagerOptions
-  ): Promise<TradeManager> {
-    return new Promise((resolve, reject) => {
-      const tm = new TradeManager(options);
+  public static async login(loginData: LoginData): Promise<TradeManager> {
+    const tm = new TradeManager({
+      username: loginData.username,
+      login: loginData,
+      storagePathBase: getAppStoragePath(),
+      proxy: loginData.proxy,
+    });
+
+    tm.user = User.build({
+      username: loginData.username,
+      proxy: loginData.proxy,
+    });
+
+    const loginPromise = new Promise<void>((resolve, reject) => {
+      tm._client.logOn({
+        accountName: loginData.username,
+        password: loginData.password,
+        twoFactorCode: loginData.authCode,
+      });
 
       tm.setListeners();
 
-      tm._client.once("loggedOn", () => {
-        const sid64 = tm._client.steamID.getSteamID64(); // steamID is not null since it's loggedOn
-        tm.infoLogger(`Acc ${sid64} loged on`);
-        resolve(tm);
+      tm._client.once("steamGuard", async (domain, callback, lastCodeWrong) => {
+        if (lastCodeWrong) reject(new Error("Invalid Steam guard code."));
       });
 
-      tm._client.once("error", (err) => {
+      tm._client.once("loggedOn", async () => {
+        const sid64 = tm._client.steamID.getSteamID64(); // steamID is not null since it's loggedOn
+        tm.infoLogger(`Acc ${sid64} loged on`);
+        resolve();
+      });
+
+      tm._client.once("error", async (err) => {
         reject(err);
       });
     });
+
+    await loginPromise;
+    return tm;
+  }
+
+  public static async relogin(
+    username: string,
+    refreshToken: string,
+    proxy?: string
+  ): Promise<TradeManager> {
+    const tm = new TradeManager({
+      username: username,
+      login: refreshToken,
+      storagePathBase: getAppStoragePath(),
+      proxy: proxy,
+    });
+
+    try {
+      tm.user = await User.findOne({
+        where: {
+          username: username,
+        },
+      });
+      await new Promise<void>((resolve) => {
+        tm._client.logOn({
+          refreshToken: refreshToken,
+        });
+
+        tm._client.once("loggedOn", () => {
+          const sid64 = tm._client.steamID.getSteamID64(); // steamID is not null since it's loggedOn
+          tm.infoLogger(`Acc ${sid64} loged on`);
+          resolve();
+        });
+
+        tm._client.once("error", (err) => {
+          tm.handleError(err);
+          resolve();
+        });
+      });
+    } catch (err) {
+      tm.handleError(err); // We deal with the any error here since it's related to accounts that was already logged before
+    }
+    return tm;
   }
 
   private setListeners() {
     this._client.on("refreshToken", async (token) => {
-      const tokenFilePath = path.join(this.storagePath, "refreshToken.txt");
-      setFileContent(tokenFilePath, token);
+      console.log("new refreshToken");
+      try {
+        this.user.refreshToken = token;
+        await this.user.save();
+        this.infoLogger(`Acc ${this.user.username} was registered to DB`);
+        this.infoLogger(`updated refreshToken`);
+      } catch (err) {
+        this.handleError(err);
+      }
     });
 
     this._client.on("webSession", (sessionID, cookies) => {
@@ -256,6 +308,10 @@ export class TradeManager extends EventEmitter {
     return !!this._client.steamID;
   }
 
+  public get username() {
+    return this.user.username;
+  }
+
   public handleError(err: any) {
     try {
       handleError(err, this.storagePath);
@@ -285,6 +341,7 @@ export class TradeManager extends EventEmitter {
 interface TradeManagerEvents {
   accessTokenChange: (accessToken: string) => void;
   loggedOn: (tm: TradeManager) => void;
+  refreshToken: (token: string) => void;
 }
 
 export declare interface TradeManager {
@@ -304,9 +361,4 @@ export interface TradeManagerOptions {
   username: string;
   login: string | LoginData; // Can be refreshToken or LoginData
   proxy?: string;
-}
-
-export interface LoginData {
-  password: string;
-  authCode: string;
 }

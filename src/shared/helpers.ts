@@ -128,12 +128,12 @@ export async function handleError(err: any, storagePath: string) {
 }
 
 export async function infoLogger(info: string, storagePath: string) {
-  const stringToSave = `\n[${new Date().toISOString()}] ${info}`;
+  const stringToSave = `[${new Date().toISOString()}] ${info}`;
   console.log(stringToSave.trim());
   const infosLogPath = path.join(storagePath, "logs", "logInfos.txt");
   ensureDirectoryExistence(infosLogPath);
   let content = await getFileContent(infosLogPath);
-  content += stringToSave;
+  content += "\n" + stringToSave;
   await setFileContent(infosLogPath, content);
 }
 
@@ -142,4 +142,10 @@ export function getAppStoragePath() {
     appAuthor: "ricardorocha_os",
     appName: "multimarketplaces-app",
   });
+}
+
+export async function getDBPath() {
+  const dbPath = path.join(getAppStoragePath(), "db.sqlite");
+  ensureDirectoryExistence(dbPath);
+  return dbPath;
 }

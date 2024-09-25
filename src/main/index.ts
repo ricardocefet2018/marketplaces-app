@@ -21,7 +21,7 @@ export function registerHandlers() {
   });
 
   myHandler("login", async (e, loginOptions) => {
-    const tmc = TradeManagerController.getInstance();
+    const tmc = await TradeManagerController.getInstance();
     try {
       await tmc.login(loginOptions);
       new Notification({
@@ -36,5 +36,10 @@ export function registerHandlers() {
       }).show();
       return LoginResponses.fail;
     }
+  });
+
+  myHandler("getAccounts", async () => {
+    const tmc = await TradeManagerController.getInstance();
+    return tmc.getAccounts();
   });
 }

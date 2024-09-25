@@ -8,7 +8,8 @@ export const api = {
   test: (msg: string): Promise<string> => ipcRenderer.invoke("test", msg),
   login: (loginOptions: LoginData): Promise<LoginResponses> =>
     ipcRenderer.invoke("login", loginOptions),
-  getAccounts: (): Promise<number[]> => ipcRenderer.invoke("getAccounts"),
+  getAccounts: (): Promise<Map<string, boolean>> =>
+    ipcRenderer.invoke("getAccounts"),
 };
 
 contextBridge.exposeInMainWorld("api", api);
