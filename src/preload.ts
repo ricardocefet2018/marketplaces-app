@@ -4,12 +4,15 @@ import { contextBridge, ipcRenderer } from "electron";
 import { LoginData } from "./shared/types";
 import { LoginResponses } from "./shared/enums";
 
-export const api = {
+const api = {
   test: (msg: string): Promise<string> => ipcRenderer.invoke("test", msg),
   login: (loginOptions: LoginData): Promise<LoginResponses> =>
     ipcRenderer.invoke("login", loginOptions),
   getAccounts: (): Promise<Map<string, boolean>> =>
     ipcRenderer.invoke("getAccounts"),
 };
+
+type apiType = typeof api;
+export default apiType;
 
 contextBridge.exposeInMainWorld("api", api);

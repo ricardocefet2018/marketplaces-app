@@ -1,11 +1,9 @@
-import { api } from "./preload";
-
-improt api
+import apiType from "./preload";
 
 export {};
 
 declare global {
   interface Window {
-    api: typeof api;
+    api: apiType;
   }
 }

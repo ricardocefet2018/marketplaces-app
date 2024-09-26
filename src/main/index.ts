@@ -1,9 +1,7 @@
 import { ipcMain, IpcMainInvokeEvent, Notification } from "electron";
-import { api } from "../preload";
+import apiType from "../preload";
 import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
-
-type apiType = typeof api;
 
 type myType = <U extends keyof apiType>(
   channel: U,
