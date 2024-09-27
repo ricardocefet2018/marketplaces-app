@@ -7,6 +7,7 @@
   <Main
     v-if="currentPage == Pages.main"
     @add-account="currentPage = Pages.login"
+    :steamaccs="steamaccs"
   ></Main>
   <div
     style="height: 90vh"
@@ -36,14 +37,16 @@ import { Pages } from "./models/pages.enum";
 import Main from "./pages/Main.vue";
 import Toolbar from "primevue/toolbar";
 import ProgressSpinner from "primevue/progressspinner";
+import { SteamAcc } from "src/shared/types";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
+const steamaccs: Ref<SteamAcc[]> = ref();
 
 let currentPage: Ref<Pages | null> = ref(null);
 onMounted(async () => {
-  const steamAccounts = await window.api.getAccounts();
-  if (steamAccounts.size > 0) currentPage.value = Pages.main;
-  if (steamAccounts.size == 0) currentPage.value = Pages.login;
+  steamaccs.value = await window.api.getAccounts();
+  if (steamaccs.value.length > 0) currentPage.value = Pages.main;
+  if (steamaccs.value.length == 0) currentPage.value = Pages.login;
 });
 
 async function onFooterClick() {

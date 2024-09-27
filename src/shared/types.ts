@@ -4,3 +4,9 @@ export interface LoginData {
   authCode: string;
   proxy?: string;
 }
+
+export interface SteamAcc {
+  username: string;
+  status: boolean;
+  avatar?: string;
+}

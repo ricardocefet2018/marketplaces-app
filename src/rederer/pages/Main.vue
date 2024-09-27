@@ -25,8 +25,8 @@
       ></SelectedAccountCard>
       <Listbox
         :model-value="steamacc"
-        :options="steamaccs"
-        optionLabel="steamid"
+        :options="props.steamaccs"
+        optionLabel="username"
         class="w-full"
         list-style="max-height: 29rem"
         filter
@@ -55,11 +55,7 @@
       ></Button>
     </fieldset>
     <fieldset class="border-noround m-0 p-2 h-full border-none col">
-      <p class="m-0">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-        veniam
-      </p>
+      <WaxpeerCard @waxpeer-api-key-changed="" />
     </fieldset>
   </div>
 </template>
@@ -71,12 +67,15 @@ import Toolbar from "primevue/toolbar";
 import Listbox from "primevue/listbox";
 import { onMounted, Ref, ref } from "vue";
 import SelectedAccountCard from "./components/SelectedAccountCard.vue";
-import { SteamAcc } from "../models/steamAcc.model";
 import Badge from "primevue/badge";
+import WaxpeerCard from "./components/WaxpeerCard.vue";
+import { SteamAcc } from "../../shared/types";
 
 const emit = defineEmits(["addAccount"]);
 
-const steamaccs: Ref<SteamAcc[]> = ref([]);
+const props = defineProps<{
+  steamaccs: SteamAcc[];
+}>();
 
 const steamacc: Ref<SteamAcc> = ref();
 
@@ -86,11 +85,7 @@ function onUpdateListbox(e: SteamAcc | null) {
 }
 
 onMounted(async () => {
-  const registeredAccounts = await window.api.getAccounts();
-  registeredAccounts.forEach((status, username) => {
-    steamaccs.value.push({ username, status });
-  });
-  if (steamaccs.value.length > 0) steamacc.value = steamaccs.value[0];
+  steamacc.value = props.steamaccs[0];
 });
 </script>
 

@@ -1,4 +1,4 @@
-import { LoginData } from "../../shared/types";
+import { LoginData, SteamAcc } from "../../shared/types";
 import { TradeManager } from "../models/trademanager.model";
 import { User } from "../models/db.model";
 
@@ -34,10 +34,13 @@ export class TradeManagerController {
     return;
   }
 
-  public getAccounts(): Map<string, boolean> {
-    const returningMap = new Map<string, boolean>();
+  public getAccounts(): SteamAcc[] {
+    const returningMap: SteamAcc[] = [];
     this.tradeManagers.forEach((tm) => {
-      returningMap.set(tm.username, tm.hasSteamId());
+      returningMap.push({
+        username: tm.username,
+        status: tm.hasSteamId(),
+      });
     });
     return returningMap;
   }

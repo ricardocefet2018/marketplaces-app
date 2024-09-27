@@ -19,17 +19,6 @@
         </div>
       </div>
     </template>
-    <!-- <template #subtitle>
-          
-        </template> -->
-    <!-- <template #content>
-          <p class="m-0">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore
-            sed consequuntur error repudiandae numquam deserunt quisquam
-            repellat libero asperiores earum nam nobis, culpa ratione quam
-            perferendis esse, cupiditate neque quas!
-          </p>
-        </template> -->
     <template #footer>
       <div class="flex gap-1 mt-1">
         <Button
@@ -52,7 +41,7 @@ import Avatar from "primevue/avatar";
 import Badge from "primevue/badge";
 import Button from "primevue/button";
 import Card from "primevue/card";
-import { SteamAcc } from "../../models/steamAcc.model";
+import { SteamAcc } from "../../../shared/types";
 import { ref } from "vue";
 
 const props = defineProps<SteamAcc>();
