@@ -13,13 +13,13 @@ import {
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import { LoginData } from "../../shared/types";
-import { User } from "./db.model";
+import { User } from "./entities";
 
 export class TradeManager extends EventEmitter {
   private _client: SteamUser;
   private _manager: TradeOfferManager;
   private _cookies: string[] = [];
-  private user: User;
+  public user: User;
   private storagePath: string;
 
   private constructor(options: TradeManagerOptions) {
@@ -48,10 +48,7 @@ export class TradeManager extends EventEmitter {
       proxy: loginData.proxy,
     });
 
-    tm.user = User.build({
-      username: loginData.username,
-      proxy: loginData.proxy,
-    });
+    tm.user = new User(loginData.username, loginData.proxy);
 
     const loginPromise = new Promise<void>((resolve, reject) => {
       tm._client.logOn({
@@ -94,10 +91,8 @@ export class TradeManager extends EventEmitter {
     });
 
     try {
-      tm.user = await User.findOne({
-        where: {
-          username: username,
-        },
+      tm.user = await User.findOneBy({
+        username: username,
       });
       await new Promise<void>((resolve) => {
         tm._client.logOn({
@@ -308,10 +303,6 @@ export class TradeManager extends EventEmitter {
     return !!this._client.steamID;
   }
 
-  public get username() {
-    return this.user.username;
-  }
-
   public handleError(err: any) {
     try {
       handleError(err, this.storagePath);
@@ -335,6 +326,12 @@ export class TradeManager extends EventEmitter {
         res(inv);
       });
     });
+  }
+
+  public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
+    this.user.waxpeerSettings.apiKey = newWaxpeerApiKey;
+    await this.user.save();
+    return;
   }
 }
 

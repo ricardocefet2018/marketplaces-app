@@ -18,14 +18,13 @@
       style="width: fit-content"
     >
       <SelectedAccountCard
-        :username="steamacc.username"
-        :status="steamacc.status"
+        :steamacc
         class="mb-2"
         v-if="!!steamacc"
       ></SelectedAccountCard>
       <Listbox
         :model-value="steamacc"
-        :options="props.steamaccs"
+        :options="steamaccList"
         optionLabel="username"
         class="w-full"
         list-style="max-height: 29rem"
@@ -55,7 +54,12 @@
       ></Button>
     </fieldset>
     <fieldset class="border-noround m-0 p-2 h-full border-none col">
-      <WaxpeerCard @waxpeer-api-key-changed="" />
+      <WaxpeerCard
+        @waxpeer-api-key-changed="onUpdateWaxpeerApiKey"
+        :invalid="waxpeerInvalid"
+        :waxpeer-settings="steamacc.waxpeerSettings"
+        v-if="!!steamacc"
+      />
     </fieldset>
   </div>
 </template>
@@ -76,8 +80,9 @@ const emit = defineEmits(["addAccount"]);
 const props = defineProps<{
   steamaccs: SteamAcc[];
 }>();
-
+const steamaccList = ref<SteamAcc[]>();
 const steamacc: Ref<SteamAcc> = ref();
+const waxpeerInvalid: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -85,8 +90,31 @@ function onUpdateListbox(e: SteamAcc | null) {
 }
 
 onMounted(async () => {
-  steamacc.value = props.steamaccs[0];
+  if (props.steamaccs.length > 0) {
+    steamaccList.value = props.steamaccs;
+    steamacc.value = props.steamaccs[0];
+    return;
+  }
+  await updateSteamAccList();
+  steamacc.value = steamaccList.value[0];
 });
+
+async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
+  const status = await window.api.updateWaxpeerApiKey(
+    steamacc.value.username,
+    waxpeerApiKey
+  );
+  if (!status) {
+    waxpeerInvalid.value = true;
+    return;
+  }
+  steamacc.value.waxpeerSettings.apiKey = waxpeerApiKey;
+  await updateSteamAccList();
+}
+
+async function updateSteamAccList() {
+  steamaccList.value = await window.api.getAccounts();
+}
 </script>
 
 <style scoped>

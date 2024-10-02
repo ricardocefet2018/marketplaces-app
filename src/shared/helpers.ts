@@ -115,7 +115,7 @@ export function getPromiseFromEvent(item: EventEmitter, event: string) {
   });
 }
 
-export async function handleError(err: any, storagePath: string) {
+export async function handleError(err: any, storagePath = getAppStoragePath()) {
   let stringToSave = `\n[${new Date().toISOString()}] `;
   if (!(err instanceof Error)) stringToSave += JSON.stringify(err);
   else stringToSave += `${err.name}\n${err.message}\n${err.stack}`;
@@ -127,7 +127,11 @@ export async function handleError(err: any, storagePath: string) {
   await setFileContent(errorsLogPath, content);
 }
 
-export async function infoLogger(info: string, storagePath: string) {
+export async function infoLogger(
+  info: string,
+  storagePath = getAppStoragePath()
+) {
+  if (!storagePath) storagePath = getAppStoragePath();
   const stringToSave = `[${new Date().toISOString()}] ${info}`;
   console.log(stringToSave.trim());
   const infosLogPath = path.join(storagePath, "logs", "logInfos.txt");

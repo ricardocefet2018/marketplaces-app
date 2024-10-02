@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
+import { DB } from "./main/models/db.model";
 import path from "path";
 import { registerHandlers } from "./main/index";
-import { DB } from "./main/models/db.model";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 async function main() {

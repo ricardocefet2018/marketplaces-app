@@ -37,7 +37,7 @@ import { Pages } from "./models/pages.enum";
 import Main from "./pages/Main.vue";
 import Toolbar from "primevue/toolbar";
 import ProgressSpinner from "primevue/progressspinner";
-import { SteamAcc } from "src/shared/types";
+import { SteamAcc } from "../shared/types";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
 const steamaccs: Ref<SteamAcc[]> = ref();

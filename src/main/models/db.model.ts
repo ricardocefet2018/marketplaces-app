@@ -1,21 +1,29 @@
-import { DataTypes, Model, Sequelize } from "sequelize";
+import "reflect-metadata";
 import { getDBPath } from "../../shared/helpers";
+import { DataSource } from "typeorm";
+import { User, WaxpeerSettings } from "./entities";
 
-export class User extends Model {
-  declare id: number;
-  declare username: string;
-  declare refreshToken: string;
-  declare proxy?: string;
-}
+// export class WaxpeerSettings extends Model<
+//   InferAttributes<WaxpeerSettings>,
+//   InferCreationAttributes<WaxpeerSettings>
+// > {
+//   declare state: boolean;
+//   declare api_key: string;
+// }
 
 export class DB {
-  public sequelize: Sequelize;
+  public dataSource: DataSource;
   static instance: DB;
 
   constructor(dbPath: string) {
-    this.sequelize = new Sequelize({
-      dialect: "sqlite",
-      storage: dbPath,
+    this.dataSource = new DataSource({
+      type: "sqlite",
+      database: dbPath,
+      synchronize: true,
+      logging: false,
+      entities: [User, WaxpeerSettings],
+      migrations: [],
+      subscribers: [],
     });
   }
 
@@ -23,32 +31,7 @@ export class DB {
     if (this.instance) return;
     const dbPath = await getDBPath();
     this.instance = new DB(dbPath);
-    await this.instance.sequelize.authenticate();
-    User.init(
-      {
-        id: {
-          type: DataTypes.INTEGER,
-          autoIncrement: true,
-          primaryKey: true,
-        },
-        username: {
-          type: DataTypes.STRING,
-          unique: true,
-          allowNull: false,
-        },
-        refreshToken: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
-        proxy: {
-          type: DataTypes.STRING,
-        },
-      },
-      {
-        sequelize: this.instance.sequelize,
-      }
-    );
-    this.instance.sequelize.sync();
+    await this.instance.dataSource.initialize();
     return;
   }
 }

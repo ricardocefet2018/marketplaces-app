@@ -9,6 +9,11 @@ const api = {
   login: (loginOptions: LoginData): Promise<LoginResponses> =>
     ipcRenderer.invoke("login", loginOptions),
   getAccounts: (): Promise<SteamAcc[]> => ipcRenderer.invoke("getAccounts"),
+  updateWaxpeerApiKey: (
+    username: string,
+    waxpeerApiKey: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
 };
 
 type apiType = typeof api;

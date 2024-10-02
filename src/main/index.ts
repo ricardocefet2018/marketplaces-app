@@ -2,6 +2,7 @@ import { ipcMain, IpcMainInvokeEvent, Notification } from "electron";
 import apiType from "../preload";
 import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
+import { handleError } from "../shared/helpers";
 
 type myType = <U extends keyof apiType>(
   channel: U,
@@ -39,5 +40,16 @@ export function registerHandlers() {
   myHandler("getAccounts", async () => {
     const tmc = await TradeManagerController.getInstance();
     return tmc.getAccounts();
+  });
+
+  myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
+    const tmc = await TradeManagerController.getInstance();
+    try {
+      const status = await tmc.updateWaxpeerApiKey(username, waxpeerApiKey);
+      return status;
+    } catch (err) {
+      handleError(err);
+      return false;
+    }
   });
 }

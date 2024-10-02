@@ -6,7 +6,7 @@
         <TripleStateSwitch
           class="flex"
           v-model="online"
-          :disabled="!waxpeerApiKey"
+          :disabled="!props.waxpeerSettings.apiKey"
         />
       </div>
     </template>
@@ -32,23 +32,23 @@
 import Button from "primevue/button";
 import Card from "primevue/card";
 import InputText from "primevue/inputtext";
-import ToggleSwitch from "primevue/toggleswitch";
 import { onMounted, ref, Ref } from "vue";
 import TripleStateSwitch from "./TripleStateSwitch.vue";
+import { WaxpeerSettings } from "../../../shared/types";
 
 const emits = defineEmits<{ waxpeerApiKeyChanged: [waxpeerApiKey: string] }>();
 
 const props = defineProps<{
-  waxpeerApiKey?: string;
-  lastState?: boolean;
+  waxpeerSettings: WaxpeerSettings;
+  invalid: boolean;
 }>();
 
 const waxpeerApiKey: Ref<string> = ref();
 const online: Ref<boolean> = ref();
 
 onMounted(() => {
-  waxpeerApiKey.value = props.waxpeerApiKey ?? "";
-  online.value = props.lastState ?? false;
+  waxpeerApiKey.value = props.waxpeerSettings.apiKey ?? "";
+  online.value = props.waxpeerSettings.state ?? false;
 });
 
 function saveWaxpeerApiKey() {

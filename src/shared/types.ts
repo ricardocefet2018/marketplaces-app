@@ -8,5 +8,11 @@ export interface LoginData {
 export interface SteamAcc {
   username: string;
   status: boolean;
+  waxpeerSettings: WaxpeerSettings;
   avatar?: string;
+}
+
+export interface WaxpeerSettings {
+  apiKey: string;
+  state: boolean;
 }

@@ -7,7 +7,7 @@
         <Avatar label="A" class="mr-2 flex-none" size="large" />
         <div class="flex-1">
           <p style="font-size: 0.85rem" class="m-0">
-            {{ props.username }}
+            {{ props.steamacc.username }}
           </p>
           <p style="font-size: 0.75rem" class="m-0">
             Steam status:
@@ -44,9 +44,9 @@ import Card from "primevue/card";
 import { SteamAcc } from "../../../shared/types";
 import { ref } from "vue";
 
-const props = defineProps<SteamAcc>();
+const props = defineProps<{ steamacc: SteamAcc }>();
 
-const selectedAccountSteamStatus = ref(props.status);
+const selectedAccountSteamStatus = ref(props.steamacc.status);
 
 function toggleStatus() {
   selectedAccountSteamStatus.value = !selectedAccountSteamStatus.value;
