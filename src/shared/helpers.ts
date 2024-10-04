@@ -89,19 +89,19 @@ function reviver(key: string, value: any) {
   return value;
 }
 
-export function daysToMS(d: number) {
+export function daysToMS(d = 1) {
   return hoursToMS(d * 24);
 }
 
-export function hoursToMS(h: number) {
+export function hoursToMS(h = 1) {
   return minutesToMS(h * 60);
 }
 
-export function minutesToMS(m: number) {
+export function minutesToMS(m = 1) {
   return secondsToMS(m * 60);
 }
 
-export function secondsToMS(s: number) {
+export function secondsToMS(s = 1) {
   return s * 1e3;
 }
 
