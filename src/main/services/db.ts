@@ -1,15 +1,8 @@
 import "reflect-metadata";
 import { getDBPath } from "../../shared/helpers";
 import { DataSource } from "typeorm";
-import { User, WaxpeerSettings } from "./entities";
-
-// export class WaxpeerSettings extends Model<
-//   InferAttributes<WaxpeerSettings>,
-//   InferCreationAttributes<WaxpeerSettings>
-// > {
-//   declare state: boolean;
-//   declare api_key: string;
-// }
+import { WaxpeerSettings } from "../models/waxpeerSettings";
+import { User } from "../models/user";
 
 export class DB {
   public dataSource: DataSource;

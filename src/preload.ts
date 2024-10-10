@@ -14,9 +14,22 @@ const api = {
     waxpeerApiKey: string
   ): Promise<boolean> =>
     ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
+  changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
+    ipcRenderer.invoke("changeWaxpeerState", newState, username),
 };
 
-type apiType = typeof api;
-export default apiType;
+const events = {
+  waxpeerStateChanged: (callback: (state: boolean, username: string) => void) =>
+    ipcRenderer.on("waxpeerStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+  apiReady: (callback: () => void) => ipcRenderer.on("apiReady", callback),
+};
 
 contextBridge.exposeInMainWorld("api", api);
+contextBridge.exposeInMainWorld("events", events);
+
+type ApiType = typeof api;
+type EventsType = typeof events;
+export type { ApiType };
+export type { EventsType };

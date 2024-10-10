@@ -3,11 +3,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
+import { WaxpeerSettings } from "./waxpeerSettings";
 
 @Entity()
 export class User extends BaseEntity {
@@ -42,28 +42,4 @@ export class User extends BaseEntity {
     this.proxy = proxy;
     this.waxpeerSettings = new WaxpeerSettings();
   }
-}
-
-@Entity()
-export class WaxpeerSettings extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ nullable: true, type: "text" })
-  apiKey: string;
-
-  @Column({ nullable: true, default: false, type: "boolean" })
-  state: boolean;
-
-  @OneToOne(() => User, (user) => user.waxpeerSettings, {
-    nullable: false,
-  })
-  @JoinColumn()
-  user: User;
-
-  @CreateDateColumn()
-  createDate: Date;
-
-  @UpdateDateColumn()
-  updateDate: Date;
 }

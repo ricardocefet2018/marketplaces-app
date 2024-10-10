@@ -39,4 +39,7 @@ app.use(PrimeVue, {
     preset: Aura,
   },
 });
-app.mount("#app");
+window.events.apiReady(() => {
+  console.log("Api ready!");
+  app.mount("#app");
+});

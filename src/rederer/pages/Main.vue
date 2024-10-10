@@ -56,8 +56,9 @@
     <fieldset class="border-noround m-0 p-2 h-full border-none col">
       <WaxpeerCard
         @waxpeer-api-key-changed="onUpdateWaxpeerApiKey"
-        :invalid="waxpeerInvalid"
-        :waxpeer-settings="steamacc.waxpeerSettings"
+        @state-changed="changeWaxpeerState"
+        v-model="steamacc.waxpeerSettings"
+        :disabled="waxpeerDisabled"
         v-if="!!steamacc"
       />
     </fieldset>
@@ -80,9 +81,10 @@ const emit = defineEmits(["addAccount"]);
 const props = defineProps<{
   steamaccs: SteamAcc[];
 }>();
+const steamaccMap = ref<Map<string, SteamAcc>>();
 const steamaccList = ref<SteamAcc[]>();
 const steamacc: Ref<SteamAcc> = ref();
-const waxpeerInvalid: Ref<boolean> = ref(false);
+const waxpeerDisabled: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -90,13 +92,27 @@ function onUpdateListbox(e: SteamAcc | null) {
 }
 
 onMounted(async () => {
+  window.events.waxpeerStateChanged((state, username) => {
+    console.log(
+      `Account ${username} was setted to ${state ? "online" : "offline"}`
+    );
+    if (steamacc.value.username == username) {
+      steamacc.value.waxpeerSettings.state = state;
+    }
+    updateSteamAccList();
+  });
   if (props.steamaccs.length > 0) {
-    steamaccList.value = props.steamaccs;
-    steamacc.value = props.steamaccs[0];
-    return;
+    steamaccMap.value = new Map(
+      props.steamaccs.map((acc) => [acc.username, acc])
+    );
+    steamaccList.value = Array.from(steamaccMap.value.values());
+    steamacc.value = steamaccList.value[0];
+  } else {
+    await updateSteamAccList();
+    steamaccList.value = Array.from(steamaccMap.value.values());
+    steamacc.value = steamaccList.value[0];
+    // steamacc.value = steamaccMap.value.values().next().value;
   }
-  await updateSteamAccList();
-  steamacc.value = steamaccList.value[0];
 });
 
 async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
@@ -105,15 +121,28 @@ async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
     waxpeerApiKey
   );
   if (!status) {
-    waxpeerInvalid.value = true;
+    waxpeerDisabled.value = true;
     return;
   }
   steamacc.value.waxpeerSettings.apiKey = waxpeerApiKey;
   await updateSteamAccList();
 }
 
+async function changeWaxpeerState(newState: boolean) {
+  waxpeerDisabled.value = true;
+  const result = await window.api.changeWaxpeerState(
+    newState,
+    steamacc.value.username
+  );
+  console.log(
+    `Changing waxpeer state has been ${result ? "successed" : "failed"}`
+  );
+  waxpeerDisabled.value = false;
+}
+
 async function updateSteamAccList() {
-  steamaccList.value = await window.api.getAccounts();
+  const accList = await window.api.getAccounts();
+  steamaccMap.value = new Map(accList.map((acc) => [acc.username, acc]));
 }
 </script>
 

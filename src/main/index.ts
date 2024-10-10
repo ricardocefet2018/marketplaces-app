@@ -1,20 +1,12 @@
-import { ipcMain, IpcMainInvokeEvent, Notification } from "electron";
-import apiType from "../preload";
+import { ipcMain, Notification } from "electron";
 import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
 import { handleError } from "../shared/helpers";
-
-type myType = <U extends keyof apiType>(
-  channel: U,
-  linstenner: (
-    e: IpcMainInvokeEvent,
-    ...args: Parameters<apiType[U]>
-  ) => ReturnType<apiType[U]>
-) => void;
-
-const myHandler: myType = ipcMain.handle;
+import { FetchError } from "node-fetch";
 
 export function registerHandlers() {
+  const myHandler: apiHandler = ipcMain.handle;
+
   myHandler("test", async (e, msg) => {
     return msg.toUpperCase();
   });
@@ -51,5 +43,32 @@ export function registerHandlers() {
       handleError(err);
       return false;
     }
+  });
+
+  myHandler("changeWaxpeerState", async (e, newState, username) => {
+    const tmc = await TradeManagerController.getInstance();
+    try {
+      await tmc.changeWaxpeerState(newState, username);
+      new Notification({
+        title: "Waxpeer state changed!",
+        body: `${username} waxpeer state has successfully turn ${
+          newState ? "online" : "offline"
+        }`,
+      }).show();
+      return true;
+    } catch (err) {
+      let body = "Check out the logs.";
+      if (err instanceof FetchError)
+        body += " Most likely you or server is offline.";
+      else if (err instanceof Error && err.message.startsWith("{"))
+        body += " " + err.message;
+      else body += " Most likely your DB is corrupted.";
+      new Notification({
+        title: "Something gone wrong!",
+        body,
+      }).show();
+      handleError(err);
+    }
+    return false;
   });
 }

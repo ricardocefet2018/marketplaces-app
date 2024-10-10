@@ -5,8 +5,9 @@
         <div class="flex-1">Waxpeer</div>
         <TripleStateSwitch
           class="flex"
-          v-model="online"
-          :disabled="!props.waxpeerSettings.apiKey"
+          v-model="model.state"
+          @change="emitStateChange"
+          :disabled="!model.apiKey || props.disabled"
         />
       </div>
     </template>
@@ -20,8 +21,14 @@
             id="waxpeerApiKey"
             class="flex-1"
             v-model="waxpeerApiKey"
+            :disabled="model.state || props.disabled"
           ></InputText>
-          <Button label="Save" class="flex" @click="saveWaxpeerApiKey" />
+          <Button
+            label="Save"
+            class="flex"
+            @click="saveWaxpeerApiKey"
+            :disabled="model.state || props.disabled"
+          />
         </div>
       </div>
     </template>
@@ -36,23 +43,29 @@ import { onMounted, ref, Ref } from "vue";
 import TripleStateSwitch from "./TripleStateSwitch.vue";
 import { WaxpeerSettings } from "../../../shared/types";
 
-const emits = defineEmits<{ waxpeerApiKeyChanged: [waxpeerApiKey: string] }>();
-
-const props = defineProps<{
-  waxpeerSettings: WaxpeerSettings;
-  invalid: boolean;
+const emits = defineEmits<{
+  waxpeerApiKeyChanged: [waxpeerApiKey: string];
+  stateChanged: [state: boolean];
 }>();
 
+const props = defineProps<{
+  disabled: boolean;
+}>();
+
+const model = defineModel<WaxpeerSettings>();
+
 const waxpeerApiKey: Ref<string> = ref();
-const online: Ref<boolean> = ref();
 
 onMounted(() => {
-  waxpeerApiKey.value = props.waxpeerSettings.apiKey ?? "";
-  online.value = props.waxpeerSettings.state ?? false;
+  waxpeerApiKey.value = model.value.apiKey ?? "";
 });
 
 function saveWaxpeerApiKey() {
   emits("waxpeerApiKeyChanged", waxpeerApiKey.value);
+}
+
+function emitStateChange() {
+  emits("stateChanged", model.value.state);
 }
 </script>
 

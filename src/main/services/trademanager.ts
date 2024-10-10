@@ -2,7 +2,7 @@ import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
-import { TradeWebsocketCreateTradeData } from "./types";
+import { TradeWebsocketCreateTradeData } from "../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
   getAppStoragePath,
@@ -12,23 +12,36 @@ import {
 } from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
-import { LoginData } from "../../shared/types";
-import { User } from "./entities";
+import { LoginData, SteamAcc } from "../../shared/types";
+import { User } from "../models/user";
+import WaxpeerClient from "./waxpeerClient";
+import { WaxpeerWebsocket } from "./waxpeerWebsocket";
+import { FetchError } from "node-fetch";
 
 export class TradeManager extends EventEmitter {
-  private _client: SteamUser;
-  private _manager: TradeOfferManager;
-  private _cookies: string[] = [];
-  public user: User;
+  private _steamClient: SteamUser;
+  private _steamTradeOfferManager: TradeOfferManager;
+  private _steamCookies: string[] = [];
+  private _user: User;
   private storagePath: string;
+  private _wpClient?: WaxpeerClient;
+  private _wpWebsocket?: WaxpeerWebsocket;
+
+  public get steamAcc(): SteamAcc {
+    return {
+      username: this._user.username,
+      status: !!this._steamClient.steamID,
+      waxpeerSettings: this._user.waxpeerSettings,
+    };
+  }
 
   private constructor(options: TradeManagerOptions) {
     super();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
-    this._client = new SteamUser(steamUserOptions);
-    this._manager = new TradeOfferManager({
-      steam: this._client,
+    this._steamClient = new SteamUser(steamUserOptions);
+    this._steamTradeOfferManager = new TradeOfferManager({
+      steam: this._steamClient,
       useAccessToken: true,
       language: "en",
       savePollData: true,
@@ -48,10 +61,10 @@ export class TradeManager extends EventEmitter {
       proxy: loginData.proxy,
     });
 
-    tm.user = new User(loginData.username, loginData.proxy);
+    tm._user = new User(loginData.username, loginData.proxy);
 
     const loginPromise = new Promise<void>((resolve, reject) => {
-      tm._client.logOn({
+      tm._steamClient.logOn({
         accountName: loginData.username,
         password: loginData.password,
         twoFactorCode: loginData.authCode,
@@ -59,17 +72,20 @@ export class TradeManager extends EventEmitter {
 
       tm.setListeners();
 
-      tm._client.once("steamGuard", async (domain, callback, lastCodeWrong) => {
-        if (lastCodeWrong) reject(new Error("Invalid Steam guard code."));
-      });
+      tm._steamClient.once(
+        "steamGuard",
+        async (domain, callback, lastCodeWrong) => {
+          if (lastCodeWrong) reject(new Error("Invalid Steam guard code."));
+        }
+      );
 
-      tm._client.once("loggedOn", async () => {
-        const sid64 = tm._client.steamID.getSteamID64(); // steamID is not null since it's loggedOn
+      tm._steamClient.once("loggedOn", async () => {
+        const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
         tm.infoLogger(`Acc ${sid64} loged on`);
         resolve();
       });
 
-      tm._client.once("error", async (err) => {
+      tm._steamClient.once("error", async (err) => {
         reject(err);
       });
     });
@@ -91,21 +107,23 @@ export class TradeManager extends EventEmitter {
     });
 
     try {
-      tm.user = await User.findOneBy({
+      tm._user = await User.findOneBy({
         username: username,
       });
       await new Promise<void>((resolve) => {
-        tm._client.logOn({
+        tm._steamClient.logOn({
           refreshToken: refreshToken,
         });
 
-        tm._client.once("loggedOn", () => {
-          const sid64 = tm._client.steamID.getSteamID64(); // steamID is not null since it's loggedOn
+        tm.setListeners();
+
+        tm._steamClient.once("loggedOn", () => {
+          const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
           tm.infoLogger(`Acc ${sid64} loged on`);
           resolve();
         });
 
-        tm._client.once("error", (err) => {
+        tm._steamClient.once("error", (err) => {
           tm.handleError(err);
           resolve();
         });
@@ -117,34 +135,59 @@ export class TradeManager extends EventEmitter {
   }
 
   private setListeners() {
-    this._client.on("refreshToken", async (token) => {
+    this._steamClient.on("refreshToken", async (token) => {
       console.log("new refreshToken");
       try {
-        this.user.refreshToken = token;
-        await this.user.save();
-        this.infoLogger(`Acc ${this.user.username} was registered to DB`);
+        this._user.refreshToken = token;
+        await this._user.save();
+        this.infoLogger(`Acc ${this._user.username} was registered to DB`);
         this.infoLogger(`updated refreshToken`);
       } catch (err) {
         this.handleError(err);
       }
     });
 
-    this._client.on("webSession", (sessionID, cookies) => {
-      this._cookies = cookies;
-      this._manager.setCookies(cookies);
-      this.emit("accessTokenChange", this.getSteamLoginSecure());
+    this._steamClient.on("webSession", (sessionID, cookies) => {
+      this._steamCookies = cookies;
+      this._steamTradeOfferManager.setCookies(cookies);
+      const accessToken = this.getSteamLoginSecure();
+      this.updateAccessTokenWaxpeer(accessToken); // doesn't throw errors, no need to wait it
     });
 
-    this._manager.on("newOffer", (offer) => {
-      const sid64 = this._client.steamID.getSteamID64(); // need to be logged on to receive offers
+    this._steamTradeOfferManager.on("newOffer", (offer) => {
+      const sid64 = this._steamClient.steamID.getSteamID64(); // need to be logged on to receive offers
       console.log(`Account ${sid64} received a new Offer ${offer.id}`);
     });
+  }
+
+  private async updateAccessTokenWaxpeer(accessToken: string) {
+    if (!this._wpWebsocket || !this._wpClient) return; // not running
+    let done = false;
+    let retries = 0;
+    do {
+      try {
+        await this._wpClient.setSteamToken(accessToken);
+        done = true;
+      } catch (err) {
+        if (!(err instanceof FetchError)) continue; // There is no reason to log fetch errors
+        this.handleError(err);
+        retries++;
+        await sleepAsync(minutesToMS());
+      }
+    } while (!done || retries < 10); // retry till setSteamToken done or 10 retries/minutes;
+    if (!done) {
+      await this.stopWaxpeerClient();
+      return;
+    } // Something wrong happened, disconnect user to show it's wrong
+    this._wpWebsocket.disconnectWss();
+    const twsOptions = this._wpClient.getTWSInitObject();
+    this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
     const tradeURL = data.tradelink;
     const apps_contexts = getAppidContextidByCreateTradeData(data);
-    const offer = this._manager.createOffer(tradeURL);
+    const offer = this._steamTradeOfferManager.createOffer(tradeURL);
     try {
       const inventories = await Promise.all(
         apps_contexts.map((app_context) =>
@@ -251,7 +294,7 @@ export class TradeManager extends EventEmitter {
 
   private async getTradeOffer(offerId: string): Promise<TradeOffer> {
     return new Promise((resolve, reject) => {
-      this._manager.getOffer(offerId, (err, offer) => {
+      this._steamTradeOfferManager.getOffer(offerId, (err, offer) => {
         if (err) reject(err);
 
         resolve(offer);
@@ -261,11 +304,14 @@ export class TradeManager extends EventEmitter {
 
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
-      this._manager.getOffersContainingItems(items, (err, sent, received) => {
-        if (err) rej(err);
-        if (sent.length > 0 || received.length > 0) res(true);
-        res(false);
-      });
+      this._steamTradeOfferManager.getOffersContainingItems(
+        items,
+        (err, sent, received) => {
+          if (err) rej(err);
+          if (sent.length > 0 || received.length > 0) res(true);
+          res(false);
+        }
+      );
     });
   }
 
@@ -290,17 +336,13 @@ export class TradeManager extends EventEmitter {
   }
 
   public getSteamLoginSecure() {
-    for (const cookie of this._cookies) {
+    for (const cookie of this._steamCookies) {
       const [key, value] = cookie.split("=");
       if (key == "steamLoginSecure") {
         return value.split("%7C%7C")[1];
       }
     }
     return "";
-  }
-
-  public hasSteamId() {
-    return !!this._client.steamID;
   }
 
   public handleError(err: any) {
@@ -321,24 +363,96 @@ export class TradeManager extends EventEmitter {
 
   private getInventoryContents(appid: number, contextid: number) {
     return new Promise<CEconItem[]>((res, rej) => {
-      this._manager.getInventoryContents(appid, contextid, true, (err, inv) => {
-        if (err) rej(err);
-        res(inv);
-      });
+      this._steamTradeOfferManager.getInventoryContents(
+        appid,
+        contextid,
+        true,
+        (err, inv) => {
+          if (err) rej(err);
+          res(inv);
+        }
+      );
     });
   }
 
   public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
-    this.user.waxpeerSettings.apiKey = newWaxpeerApiKey;
-    await this.user.save();
+    this._user.waxpeerSettings.apiKey = newWaxpeerApiKey;
+    await this._user.save();
+    return;
+  }
+
+  /**
+   * @throw DB or Fetch error.
+   */
+  public async startWaxpeerClient(): Promise<void> {
+    if (this._wpClient || this._wpWebsocket) return;
+    this._wpClient = await WaxpeerClient.getInstance(
+      this._user.waxpeerSettings.apiKey,
+      this._user.proxy
+    );
+    const accessToken = this.getSteamLoginSecure();
+    console.log("accessToken", accessToken);
+    await this._wpClient.setSteamToken(accessToken);
+    const twsOptions = this._wpClient.getTWSInitObject();
+    this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
+    this._wpWebsocket.on("userChange", async (data) => {
+      console.log(data);
+      if (data.can_p2p == this._user.waxpeerSettings.state) return;
+      this._user.waxpeerSettings.state = data.can_p2p;
+      this.emit("waxpeerStateChanged", data.can_p2p, this._user.username);
+      await this._user.save();
+    });
+    this._wpWebsocket.on("acceptWithdraw", (data) => {
+      this.acceptTradeOffer(data.tradeid); // error catched inside, can't throw err
+    });
+    this._wpWebsocket.on("cancelTrade", (data) => {
+      this.cancelTradeOffer(data.trade_id, true); // retring till cancel or not cancellable anymore, can't throw err
+    });
+    this._wpWebsocket.on("sendTrade", async (data) => {
+      if (!this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) {
+        const tradeOfferId = await this.createTradeForWaxpeer(data);
+
+        if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
+
+        try {
+          const steamTradeRes = await this._wpClient.steamTrade(
+            tradeOfferId,
+            data.waxid
+          );
+          if (steamTradeRes.success)
+            this.infoLogger(
+              `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
+            );
+          this._user.waxpeerSettings.sentTrades.push(data.wax_id);
+          await this._user.save();
+        } catch (err) {
+          this.handleError(err);
+        }
+      }
+    });
+    return;
+  }
+
+  /**
+   * @return Promise that resolve if it's all OK
+   * @throw (DB error) Fatal error.
+   */
+  public async stopWaxpeerClient() {
+    if (!this._wpWebsocket || !this._wpClient) return; // Already stopped
+    this._wpWebsocket.disconnectWss();
+    this._wpWebsocket.removeAllListeners();
+    this._wpClient = undefined;
+    this._wpWebsocket = undefined;
+    this._user.waxpeerSettings.state = false;
+    await this._user.save(); // TODO
+    // A DB error should close the app?
     return;
   }
 }
 
 interface TradeManagerEvents {
-  accessTokenChange: (accessToken: string) => void;
+  waxpeerStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
-  refreshToken: (token: string) => void;
 }
 
 export declare interface TradeManager {
@@ -348,6 +462,11 @@ export declare interface TradeManager {
   ): boolean;
 
   on<U extends keyof TradeManagerEvents>(
+    event: U,
+    listener: TradeManagerEvents[U]
+  ): this;
+
+  once<U extends keyof TradeManagerEvents>(
     event: U,
     listener: TradeManagerEvents[U]
   ): this;
