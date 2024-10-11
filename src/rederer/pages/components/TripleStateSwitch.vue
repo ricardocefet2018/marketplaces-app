@@ -6,7 +6,7 @@
 import ToggleSwitch from "primevue/toggleswitch";
 import { ref } from "vue";
 
-const emits = defineEmits<{
+const emit = defineEmits<{
   change: [value: boolean];
 }>();
 
@@ -26,7 +26,7 @@ const tripleState = ref({
 const model = defineModel<boolean>();
 
 function onChange() {
-  emits("change", !model.value);
+  emit("change", !model.value);
 }
 </script>
 

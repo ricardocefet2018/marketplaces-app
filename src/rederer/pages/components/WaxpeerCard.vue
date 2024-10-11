@@ -43,7 +43,7 @@ import { onMounted, ref, Ref } from "vue";
 import TripleStateSwitch from "./TripleStateSwitch.vue";
 import { WaxpeerSettings } from "../../../shared/types";
 
-const emits = defineEmits<{
+const emit = defineEmits<{
   waxpeerApiKeyChanged: [waxpeerApiKey: string];
   stateChanged: [state: boolean];
 }>();
@@ -61,11 +61,11 @@ onMounted(() => {
 });
 
 function saveWaxpeerApiKey() {
-  emits("waxpeerApiKeyChanged", waxpeerApiKey.value);
+  emit("waxpeerApiKeyChanged", waxpeerApiKey.value);
 }
 
 function emitStateChange() {
-  emits("stateChanged", model.value.state);
+  emit("stateChanged", model.value.state);
 }
 </script>
 

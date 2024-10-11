@@ -28,7 +28,7 @@
           size="small"
           icon="pi pi-sign-out"
           iconPos="right"
-          @click="emits('logout')"
+          @click="emit('logout')"
         ></Button>
         <Button icon="pi pi-cog" size="small"></Button>
       </div>
@@ -44,7 +44,7 @@ import Card from "primevue/card";
 import { SteamAcc } from "../../../shared/types";
 import { ref } from "vue";
 
-const emits = defineEmits<{
+const emit = defineEmits<{
   logout: [];
 }>();
 
