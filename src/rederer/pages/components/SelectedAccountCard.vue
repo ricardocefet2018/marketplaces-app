@@ -28,7 +28,7 @@
           size="small"
           icon="pi pi-sign-out"
           iconPos="right"
-          @click="toggleStatus"
+          @click="emits('logout')"
         ></Button>
         <Button icon="pi pi-cog" size="small"></Button>
       </div>
@@ -44,13 +44,13 @@ import Card from "primevue/card";
 import { SteamAcc } from "../../../shared/types";
 import { ref } from "vue";
 
+const emits = defineEmits<{
+  logout: [];
+}>();
+
 const props = defineProps<{ steamacc: SteamAcc }>();
 
 const selectedAccountSteamStatus = ref(props.steamacc.status);
-
-function toggleStatus() {
-  selectedAccountSteamStatus.value = !selectedAccountSteamStatus.value;
-}
 </script>
 
 <style scoped></style>

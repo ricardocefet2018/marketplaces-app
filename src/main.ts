@@ -11,7 +11,7 @@ async function main() {
     app.quit();
   }
 
-  const createWindow = () => {
+  const createWindow = async () => {
     const mainWindow = new BrowserWindow({
       width: 720,
       height: 800,
@@ -25,9 +25,9 @@ async function main() {
     mainWindow.webContents.openDevTools();
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
-      mainWindow.loadFile(
+      await mainWindow.loadFile(
         path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
       );
     }
@@ -43,9 +43,9 @@ async function main() {
       handleError(err);
     }
     registerHandlers();
-    const mainWindowWebContents = createWindow();
+    const mainWindowWebContents = await createWindow();
     try {
-      await TradeManagerController.factory(mainWindowWebContents);
+      await TradeManagerController.factory(mainWindowWebContents); // TODO this function turn sync if there is no accounts emiting "apiReady" event before the window load any url
     } catch (err) {
       handleError(err);
     }

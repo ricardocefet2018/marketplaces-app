@@ -391,7 +391,6 @@ export class TradeManager extends EventEmitter {
       this._user.proxy
     );
     const accessToken = this.getSteamLoginSecure();
-    console.log("accessToken", accessToken);
     await this._wpClient.setSteamToken(accessToken);
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
@@ -446,6 +445,18 @@ export class TradeManager extends EventEmitter {
     this._user.waxpeerSettings.state = false;
     await this._user.save(); // TODO
     // A DB error should close the app?
+    return;
+  }
+
+  public async logout() {
+    this._steamClient.logOff();
+    this._steamCookies = [];
+    this._steamTradeOfferManager.shutdown();
+    await this._user.waxpeerSettings.remove();
+    await this._user.remove();
+    this._wpClient = undefined;
+    if (this._wpWebsocket) this._wpWebsocket.disconnectWss();
+    this._wpWebsocket = undefined;
     return;
   }
 }

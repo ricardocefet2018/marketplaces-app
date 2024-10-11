@@ -20,6 +20,7 @@
       <SelectedAccountCard
         :steamacc
         class="mb-2"
+        @logout="logout"
         v-if="!!steamacc"
       ></SelectedAccountCard>
       <Listbox
@@ -76,7 +77,9 @@ import Badge from "primevue/badge";
 import WaxpeerCard from "./components/WaxpeerCard.vue";
 import { SteamAcc } from "../../shared/types";
 
-const emit = defineEmits(["addAccount"]);
+const emit = defineEmits<{
+  addAccount: [];
+}>();
 
 const props = defineProps<{
   steamaccs: SteamAcc[];
@@ -143,6 +146,12 @@ async function changeWaxpeerState(newState: boolean) {
 async function updateSteamAccList() {
   const accList = await window.api.getAccounts();
   steamaccMap.value = new Map(accList.map((acc) => [acc.username, acc]));
+}
+
+async function logout() {
+  await window.api.logout(steamacc.value.username);
+  await updateSteamAccList();
+  if (steamaccMap.value.size == 0) emit("addAccount");
 }
 </script>
 

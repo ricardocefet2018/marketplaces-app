@@ -1,4 +1,4 @@
-import { Notification, WebContents } from "electron";
+import { WebContents } from "electron";
 import { LoginData, SteamAcc } from "../../shared/types";
 import { User } from "../models/user";
 import { TradeManager } from "../services/trademanager";
@@ -19,7 +19,7 @@ export class TradeManagerController {
     return this.instance;
   }
 
-  public static async getInstance() {
+  public static getInstance() {
     if (!this.instance) throw new Error("Factory method not called before!");
     return this.instance;
   }
@@ -51,6 +51,15 @@ export class TradeManagerController {
       this.webContents.send("waxpeerStateChanged", state, username);
     });
     this.tradeManagers.set(loginOptions.username, tm);
+    return;
+  }
+
+  public async logout(username: string) {
+    if (!this.tradeManagers.has(username)) throw new Error("User not found");
+    const tm = this.tradeManagers.get(username);
+    tm.removeAllListeners();
+    await tm.logout();
+    this.tradeManagers.delete(username);
     return;
   }
 

@@ -1,12 +1,14 @@
 <template>
   <Login
     class="m-8"
-    @logged-on="currentPage = Pages.main"
+    @logged-on="changeCurrentPage(Pages.main)"
+    @cancel="changeCurrentPage(Pages.main)"
+    :cancelable="cancelable"
     v-if="currentPage == Pages.login"
   />
   <Main
     v-if="currentPage == Pages.main"
-    @add-account="currentPage = Pages.login"
+    @add-account="changeCurrentPage(Pages.login)"
     :steamaccs="steamaccs"
   ></Main>
   <div
@@ -41,15 +43,27 @@ import { SteamAcc } from "../shared/types";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
 const steamaccs: Ref<SteamAcc[]> = ref();
+const cancelable: Ref<boolean> = ref();
+const currentPage: Ref<Pages | null> = ref(null);
 
-let currentPage: Ref<Pages | null> = ref(null);
 onMounted(async () => {
-  steamaccs.value = await window.api.getAccounts();
-  if (steamaccs.value.length > 0) currentPage.value = Pages.main;
-  if (steamaccs.value.length == 0) currentPage.value = Pages.login;
+  cancelable.value = false;
+  await changeCurrentPage();
 });
 
 async function onFooterClick() {
   footerMsg.value = await window.api.test(footerMsg.value);
+}
+
+async function changeCurrentPage(page?: Pages) {
+  console.log(`should change to ${page}`);
+  steamaccs.value = await window.api.getAccounts();
+  cancelable.value = steamaccs.value.length > 0;
+  if (page === undefined) {
+    currentPage.value = steamaccs.value.length > 0 ? Pages.main : Pages.login;
+  } else {
+    currentPage.value = page;
+  }
+  console.log("currentPage", currentPage.value);
 }
 </script>

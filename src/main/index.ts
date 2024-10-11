@@ -12,7 +12,7 @@ export function registerHandlers() {
   });
 
   myHandler("login", async (e, loginOptions) => {
-    const tmc = await TradeManagerController.getInstance();
+    const tmc = TradeManagerController.getInstance();
     try {
       await tmc.login(loginOptions);
       new Notification({
@@ -30,12 +30,11 @@ export function registerHandlers() {
   });
 
   myHandler("getAccounts", async () => {
-    const tmc = await TradeManagerController.getInstance();
-    return tmc.getAccounts();
+    return TradeManagerController.getInstance().getAccounts();
   });
 
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
-    const tmc = await TradeManagerController.getInstance();
+    const tmc = TradeManagerController.getInstance();
     try {
       const status = await tmc.updateWaxpeerApiKey(username, waxpeerApiKey);
       return status;
@@ -46,7 +45,7 @@ export function registerHandlers() {
   });
 
   myHandler("changeWaxpeerState", async (e, newState, username) => {
-    const tmc = await TradeManagerController.getInstance();
+    const tmc = TradeManagerController.getInstance();
     try {
       await tmc.changeWaxpeerState(newState, username);
       new Notification({
@@ -70,5 +69,22 @@ export function registerHandlers() {
       handleError(err);
     }
     return false;
+  });
+
+  myHandler("logout", async (e, username) => {
+    const tmc = TradeManagerController.getInstance();
+    try {
+      await tmc.logout(username);
+      new Notification({
+        title: "Logged out successfully!",
+        body: `Account ${username} was removed!`,
+      }).show();
+    } catch (err) {
+      new Notification({
+        title: "Error on logout!",
+        body: err.message ?? "Unknow error. Check your logs!",
+      }).show();
+      handleError(err);
+    }
   });
 }

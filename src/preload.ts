@@ -16,6 +16,8 @@ const api = {
     ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
   changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
+  logout: (username: string): Promise<void> =>
+    ipcRenderer.invoke("logout", username),
 };
 
 const events = {

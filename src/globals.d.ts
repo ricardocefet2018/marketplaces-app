@@ -5,7 +5,7 @@ export {};
 
 declare global {
   interface Window {
-    api: ApiType;
+    api: ApiType; // every function here is async even if it's sync. It happens cause of ipcRenderer.invoke
     events: EventsType;
   }
 

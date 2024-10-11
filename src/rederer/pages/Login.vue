@@ -8,7 +8,14 @@ import { LoginResponses } from "../../shared/enums";
 import { LoginData } from "../../shared/types";
 import Schema from "async-validator";
 
-const emit = defineEmits(["loggedOn"]);
+const emit = defineEmits<{
+  loggedOn: [];
+  cancel: [];
+}>();
+
+const props = defineProps<{
+  cancelable: boolean;
+}>();
 
 const submitingForm = ref(false);
 
@@ -141,7 +148,8 @@ async function submitForm() {
           severity="secondary"
           outlined
           class="w-full"
-          :disabled="submitingForm"
+          :disabled="submitingForm || !props.cancelable"
+          @click="emit('cancel')"
         />
         <Button
           label="Save"
