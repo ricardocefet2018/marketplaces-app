@@ -386,11 +386,16 @@ export class TradeManager extends EventEmitter {
    */
   public async startWaxpeerClient(): Promise<void> {
     if (this._wpClient || this._wpWebsocket) return;
+    if (!this._steamClient.steamID) return; // Steam accound failed in login, don't try to start waxpeer
     this._wpClient = await WaxpeerClient.getInstance(
       this._user.waxpeerSettings.apiKey,
       this._user.proxy
     );
-    const accessToken = this.getSteamLoginSecure();
+    let accessToken = this.getSteamLoginSecure();
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
     await this._wpClient.setSteamToken(accessToken);
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
