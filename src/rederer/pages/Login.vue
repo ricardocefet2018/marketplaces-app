@@ -5,7 +5,7 @@ import Password from "primevue/password";
 import Button from "primevue/button";
 import { Ref, ref } from "vue";
 import { LoginResponses } from "../../shared/enums";
-import { LoginData } from "../../shared/types";
+import { FormErrors, LoginData } from "../../shared/types";
 import Schema from "async-validator";
 
 const emit = defineEmits<{
@@ -26,15 +26,7 @@ const form = ref({
   proxy: "",
 });
 
-type Errors = {
-  [K in keyof typeof form.value]?: {
-    field: K;
-    fieldValue: (typeof form.value)[K];
-    message: string;
-  }[];
-};
-
-const errors: Ref<Errors> = ref({});
+const errors: Ref<FormErrors<typeof form.value>> = ref({});
 
 const validator = new Schema({
   steamUsername: {
@@ -77,7 +69,6 @@ async function submitForm() {
     proxy: form.value.proxy,
   };
 
-  await new Promise((res) => setTimeout(res, 2000)); // just simulating delay
   const code = await window.api.login(loginData); // can't error
 
   submitingForm.value = false;
