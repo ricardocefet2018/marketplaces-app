@@ -30,6 +30,7 @@ import "primeicons/primeicons.css";
 import "./rederer/assets/main.css";
 import { createApp } from "vue";
 import PrimeVue from "primevue/config";
+import Tooltip from "primevue/tooltip";
 import Aura from "@primevue/themes/aura";
 import App from "./rederer/App.vue";
 
@@ -39,7 +40,7 @@ app.use(PrimeVue, {
     preset: Aura,
   },
 });
+app.directive("tooltip", Tooltip);
 window.events.apiReady(() => {
-  console.log("Api ready!");
   app.mount("#app");
 });

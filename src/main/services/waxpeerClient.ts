@@ -104,12 +104,11 @@ export default class WaxpeerClient {
     while (this.steamToken && this.keepingSendingSteamToken) {
       console.log("Sending steam token to waxpeer...");
       const result = await this.postSteamToken();
+      console.log(result);
       if (!result.success) {
-        console.log(result);
         this.keepingSendingSteamToken = false;
         break;
       }
-      console.log(result);
       await sleepAsync(1000 * 60 * 30);
     }
     return;

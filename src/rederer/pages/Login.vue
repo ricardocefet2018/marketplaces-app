@@ -7,6 +7,7 @@ import { Ref, ref } from "vue";
 import { LoginResponses } from "../../shared/enums";
 import { FormErrors, LoginData } from "../../shared/types";
 import Schema from "async-validator";
+import { Validator } from "../models/validator";
 
 const emit = defineEmits<{
   loggedOn: [];
@@ -28,7 +29,7 @@ const form = ref({
 
 const errors: Ref<FormErrors<typeof form.value>> = ref({});
 
-const validator = new Schema({
+const validator = Validator.factory<typeof form.value>({
   steamUsername: {
     type: "string",
     required: true,
@@ -44,22 +45,26 @@ const validator = new Schema({
     required: true,
     message: "Steam guard code is required!",
   },
+  proxy: {
+    type: "string",
+    required: false,
+  },
 });
 
 async function validateForm() {
   try {
     await validator.validate(form.value);
     errors.value = {};
+    return true;
   } catch (err) {
-    console.log(err.fields);
     errors.value = err.fields;
+    return false;
   }
-  return;
 }
 
 async function submitForm() {
-  await validateForm();
-  if (Object.keys(errors.value).length > 0) return;
+  const success = await validateForm();
+  if (!success) return;
   submitingForm.value = true;
 
   const loginData: LoginData = {

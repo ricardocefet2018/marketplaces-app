@@ -1,5 +1,5 @@
 import { WebContents } from "electron";
-import { LoginData, SteamAcc } from "../../shared/types";
+import { LoginData, SteamAcc, IUserSettings } from "../../shared/types";
 import { User } from "../models/user";
 import { TradeManager } from "../services/trademanager";
 
@@ -96,6 +96,20 @@ export class TradeManagerController {
     } catch (err) {
       tm.emit("waxpeerStateChanged", !newState, username);
       throw err;
+    }
+  }
+
+  public async updateUserSettings(
+    newSettings: IUserSettings,
+    username: string
+  ) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      await tm.updateSettings(newSettings);
+    } catch (err) {
+      tm.handleError(err);
+      return false;
     }
   }
 }

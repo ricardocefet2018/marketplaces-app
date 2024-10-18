@@ -1,7 +1,7 @@
-import { ipcMain, Notification } from "electron";
+import { ipcMain, Notification, shell } from "electron";
 import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
-import { handleError } from "../shared/helpers";
+import { getAppStoragePath, handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 
 export function registerHandlers() {
@@ -86,5 +86,31 @@ export function registerHandlers() {
       }).show();
       handleError(err);
     }
+  });
+
+  myHandler("updateUserSettings", async (e, newSettings, username) => {
+    const tmc = TradeManagerController.getInstance();
+    try {
+      await tmc.updateUserSettings(newSettings, username);
+      new Notification({
+        title: "User settings saved!",
+      }).show();
+      return true;
+    } catch (err) {
+      new Notification({
+        title: "Can't save settings.",
+        body:
+          err.message ??
+          "Most likely your DB is corrupted. Check out your logs.",
+      }).show();
+      handleError(err);
+      return false;
+    }
+  });
+
+  myHandler("openLogsFolder", async (e, username) => {
+    let path = getAppStoragePath();
+    if (username) path += `\\acc_${username}\\logs`;
+    shell.openPath(path);
   });
 }

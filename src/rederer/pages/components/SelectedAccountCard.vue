@@ -30,7 +30,11 @@
           iconPos="right"
           @click="emit('logout')"
         ></Button>
-        <Button icon="pi pi-cog" size="small"></Button>
+        <Button
+          icon="pi pi-cog"
+          size="small"
+          @click="emit('userSettings', steamacc)"
+        ></Button>
       </div>
     </template>
   </Card>
@@ -46,6 +50,7 @@ import { ref } from "vue";
 
 const emit = defineEmits<{
   logout: [];
+  userSettings: [steamacc: SteamAcc];
 }>();
 
 const props = defineProps<{ steamacc: SteamAcc }>();

@@ -9,8 +9,16 @@
   <Main
     v-if="currentPage == Pages.main"
     @add-account="changeCurrentPage(Pages.login)"
+    @user-settings="accessUserSettings"
     :steamaccs="steamaccs"
+    :steamacc="steamacc"
   ></Main>
+  <UserSettings
+    class="m-8"
+    v-if="currentPage == Pages.userSettings"
+    :steamacc="steamacc"
+    @back="changeCurrentPage(Pages.main)"
+  ></UserSettings>
   <div
     style="height: 90vh"
     class="flex align-content-center"
@@ -35,13 +43,15 @@
 <script setup lang="ts">
 import { onMounted, Ref, ref } from "vue";
 import Login from "./pages/Login.vue";
-import { Pages } from "./models/pages.enum";
 import Main from "./pages/Main.vue";
+import UserSettings from "./pages/UserSettings.vue";
+import { Pages } from "./models/pages.enum";
 import Toolbar from "primevue/toolbar";
 import ProgressSpinner from "primevue/progressspinner";
 import { SteamAcc } from "../shared/types";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
+const steamacc: Ref<SteamAcc> = ref();
 const steamaccs: Ref<SteamAcc[]> = ref();
 const cancelable: Ref<boolean> = ref();
 const currentPage: Ref<Pages | null> = ref(null);
@@ -56,7 +66,6 @@ async function onFooterClick() {
 }
 
 async function changeCurrentPage(page?: Pages) {
-  console.log(`should change to ${page}`);
   steamaccs.value = await window.api.getAccounts();
   cancelable.value = steamaccs.value.length > 0;
   if (page === undefined) {
@@ -64,6 +73,10 @@ async function changeCurrentPage(page?: Pages) {
   } else {
     currentPage.value = page;
   }
-  console.log("currentPage", currentPage.value);
+}
+
+function accessUserSettings(s: SteamAcc) {
+  steamacc.value = s;
+  changeCurrentPage(Pages.userSettings);
 }
 </script>

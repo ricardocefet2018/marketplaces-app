@@ -126,7 +126,6 @@ export class WaxpeerWebsocket extends EventEmitter {
     this.w.ws.on("message", (e: any) => {
       try {
         const jMsg = JSON.parse(e);
-        console.log(JSON.stringify(jMsg, undefined, 2));
         switch (jMsg.name) {
           case "pong":
             break;

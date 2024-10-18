@@ -3,6 +3,7 @@ import { getDBPath } from "../../shared/helpers";
 import { DataSource } from "typeorm";
 import { WaxpeerSettings } from "../models/waxpeerSettings";
 import { User } from "../models/user";
+import { UserSettings } from "../models/userSettings";
 
 export class DB {
   public dataSource: DataSource;
@@ -14,7 +15,7 @@ export class DB {
       database: dbPath,
       synchronize: true,
       logging: false,
-      entities: [User, WaxpeerSettings],
+      entities: [User, WaxpeerSettings, UserSettings],
       migrations: [],
       subscribers: [],
     });

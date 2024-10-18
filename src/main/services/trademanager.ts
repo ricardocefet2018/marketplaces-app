@@ -12,7 +12,7 @@ import {
 } from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
-import { LoginData, SteamAcc } from "../../shared/types";
+import { IUserSettings, LoginData, SteamAcc } from "../../shared/types";
 import { User } from "../models/user";
 import WaxpeerClient from "./waxpeerClient";
 import { WaxpeerWebsocket } from "./waxpeerWebsocket";
@@ -32,6 +32,7 @@ export class TradeManager extends EventEmitter {
       username: this._user.username,
       status: !!this._steamClient.steamID,
       waxpeerSettings: this._user.waxpeerSettings,
+      userSettings: this._user.userSettings,
     };
   }
 
@@ -107,9 +108,8 @@ export class TradeManager extends EventEmitter {
     });
 
     try {
-      tm._user = await User.findOneBy({
-        username: username,
-      });
+      tm._user = await User.findOneByUsername(username);
+
       await new Promise<void>((resolve) => {
         tm._steamClient.logOn({
           refreshToken: refreshToken,
@@ -136,7 +136,6 @@ export class TradeManager extends EventEmitter {
 
   private setListeners() {
     this._steamClient.on("refreshToken", async (token) => {
-      console.log("new refreshToken");
       try {
         this._user.refreshToken = token;
         await this._user.save();
@@ -157,6 +156,10 @@ export class TradeManager extends EventEmitter {
     this._steamTradeOfferManager.on("newOffer", (offer) => {
       const sid64 = this._steamClient.steamID.getSteamID64(); // need to be logged on to receive offers
       console.log(`Account ${sid64} received a new Offer ${offer.id}`);
+      const isGift =
+        offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
+      if (isGift && this._user.userSettings.acceptGifts)
+        this.acceptTradeOffer(offer.id);
     });
   }
 
@@ -400,7 +403,6 @@ export class TradeManager extends EventEmitter {
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
     this._wpWebsocket.on("userChange", async (data) => {
-      console.log(data);
       if (data.can_p2p == this._user.waxpeerSettings.state) return;
       this._user.waxpeerSettings.state = data.can_p2p;
       this.emit("waxpeerStateChanged", data.can_p2p, this._user.username);
@@ -463,6 +465,15 @@ export class TradeManager extends EventEmitter {
     if (this._wpWebsocket) this._wpWebsocket.disconnectWss();
     this._wpWebsocket = undefined;
     return;
+  }
+
+  public async updateSettings(newSettings: IUserSettings) {
+    for (const key in newSettings) {
+      if (key in this._user.userSettings)
+        this._user.userSettings[<keyof IUserSettings>key] =
+          newSettings[<keyof IUserSettings>key];
+    }
+    await this._user.save();
   }
 }
 

@@ -21,6 +21,7 @@
         :steamacc
         class="mb-2"
         @logout="logout"
+        @user-settings="emit('userSettings', steamacc)"
         v-if="!!steamacc"
       ></SelectedAccountCard>
       <Listbox
@@ -79,10 +80,12 @@ import { SteamAcc } from "../../shared/types";
 
 const emit = defineEmits<{
   addAccount: [];
+  userSettings: [steamacc: SteamAcc];
 }>();
 
 const props = defineProps<{
   steamaccs: SteamAcc[];
+  steamacc?: SteamAcc;
 }>();
 const steamaccMap = ref<Map<string, SteamAcc>>();
 const steamaccList = ref<SteamAcc[]>();
@@ -96,9 +99,6 @@ function onUpdateListbox(e: SteamAcc | null) {
 
 onMounted(async () => {
   window.events.waxpeerStateChanged((state, username) => {
-    console.log(
-      `Account ${username} was setted to ${state ? "online" : "offline"}`
-    );
     if (steamacc.value.username == username) {
       steamacc.value.waxpeerSettings.state = state;
     }
@@ -109,13 +109,13 @@ onMounted(async () => {
       props.steamaccs.map((acc) => [acc.username, acc])
     );
     steamaccList.value = Array.from(steamaccMap.value.values());
-    steamacc.value = steamaccList.value[0];
   } else {
     await updateSteamAccList();
     steamaccList.value = Array.from(steamaccMap.value.values());
-    steamacc.value = steamaccList.value[0];
     // steamacc.value = steamaccMap.value.values().next().value;
   }
+  if (props.steamacc) steamacc.value = props.steamacc;
+  else steamacc.value = steamaccList.value[0];
 });
 
 async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
@@ -136,9 +136,6 @@ async function changeWaxpeerState(newState: boolean) {
   const result = await window.api.changeWaxpeerState(
     newState,
     steamacc.value.username
-  );
-  console.log(
-    `Changing waxpeer state has been ${result ? "successed" : "failed"}`
   );
   waxpeerDisabled.value = false;
 }

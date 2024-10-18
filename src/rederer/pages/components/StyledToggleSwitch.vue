@@ -1,5 +1,5 @@
 <template>
-  <ToggleSwitch v-model="model" :dt="tripleState" @change="onChange" />
+  <ToggleSwitch v-model="model" :dt="style" @change="onChange" />
 </template>
 
 <script setup lang="ts">
@@ -10,7 +10,7 @@ const emit = defineEmits<{
   change: [value: boolean];
 }>();
 
-const tripleState = ref({
+const style = ref({
   background: "{red.500}",
   hover: {
     background: "{red.400}",

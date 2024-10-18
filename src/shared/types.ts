@@ -9,6 +9,7 @@ export interface SteamAcc {
   username: string;
   status: boolean;
   waxpeerSettings: WaxpeerSettings;
+  userSettings: IUserSettings;
   avatar?: string;
 }
 
@@ -17,7 +18,7 @@ export interface WaxpeerSettings {
   state: boolean;
 }
 
-export interface UserSettings {
+export interface IUserSettings {
   acceptGifts: boolean;
 }
 

@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from "electron";
-import { LoginData, SteamAcc } from "./shared/types";
+import { LoginData, SteamAcc, IUserSettings } from "./shared/types";
 import { LoginResponses } from "./shared/enums";
 
 const api = {
@@ -18,6 +18,13 @@ const api = {
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
   logout: (username: string): Promise<void> =>
     ipcRenderer.invoke("logout", username),
+  updateUserSettings: (
+    newSettings: IUserSettings,
+    username: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("updateUserSettings", newSettings, username),
+  openLogsFolder: (username?: string): Promise<void> =>
+    ipcRenderer.invoke("openLogsFolder", username),
 };
 
 const events = {
