@@ -17,12 +17,14 @@
           <label for="waxpeerApiKey">Waxpeer API key</label>
         </div>
         <div class="flex gap-2">
-          <InputText
+          <Password
             id="waxpeerApiKey"
             class="flex-1"
             v-model="waxpeerApiKey"
             :disabled="model.state || props.disabled"
-          ></InputText>
+            :feedback="false"
+            toggle-mask
+          />
           <Button
             label="Save"
             class="flex"
@@ -42,6 +44,7 @@ import InputText from "primevue/inputtext";
 import { onMounted, ref, Ref } from "vue";
 import StyledToggleSwitch from "./StyledToggleSwitch.vue";
 import { WaxpeerSettings } from "../../../shared/types";
+import Password from "primevue/password";
 
 const emit = defineEmits<{
   waxpeerApiKeyChanged: [waxpeerApiKey: string];

@@ -113,4 +113,8 @@ export function registerHandlers() {
     if (username) path += `\\acc_${username}\\logs`;
     shell.openPath(path);
   });
+
+  myHandler("openExternalLink", async (e, link) => {
+    shell.openExternal(link);
+  });
 }

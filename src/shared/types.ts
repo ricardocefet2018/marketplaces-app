@@ -20,6 +20,7 @@ export interface WaxpeerSettings {
 
 export interface IUserSettings {
   acceptGifts: boolean;
+  pendingTradesFilePath: string;
 }
 
 export type FormErrors<FormType> = {

@@ -25,6 +25,8 @@ const api = {
     ipcRenderer.invoke("updateUserSettings", newSettings, username),
   openLogsFolder: (username?: string): Promise<void> =>
     ipcRenderer.invoke("openLogsFolder", username),
+  openExternalLink: (link: string): Promise<void> =>
+    ipcRenderer.invoke("openExternalLink", link),
 };
 
 const events = {

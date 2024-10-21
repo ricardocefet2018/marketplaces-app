@@ -3,7 +3,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  FindOptionsWhere,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,

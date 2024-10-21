@@ -468,11 +468,10 @@ export class TradeManager extends EventEmitter {
   }
 
   public async updateSettings(newSettings: IUserSettings) {
-    for (const key in newSettings) {
-      if (key in this._user.userSettings)
-        this._user.userSettings[<keyof IUserSettings>key] =
-          newSettings[<keyof IUserSettings>key];
-    }
+    this._user.userSettings = Object.assign(
+      this._user.userSettings,
+      newSettings
+    );
     await this._user.save();
   }
 }

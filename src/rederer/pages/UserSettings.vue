@@ -3,7 +3,7 @@
     <template #title>
       <div class="flex justify-content-between">
         <span class="flex justify-content-start align-items-center">
-          User settings
+          {{ props.steamacc.username }}'s settings
         </span>
         <Button
           icon="pi pi-file-edit"
@@ -16,10 +16,29 @@
     </template>
     <template #content>
       <form id="form" @change="validateForm" :disabled="submitingForm">
-        <!-- <div class="field">
-          <label for="op1">Opção 1</label>
-          <InputText class="w-full" id="op1" />
-        </div> -->
+        <div class="field">
+          <label for="pendingTradesFile">
+            Save pending trades to file
+            <Badge
+              value="?"
+              severity="secondary"
+              size="small"
+              @click="
+                openExternalLink(
+                  'https://github.com/ricardocefet2018/SteamDesktopAuthenticator'
+                )
+              "
+              v-tooltip="
+                'Created trades will be pending of confirmation. There are tools that auto confirm created trades saved on a file. Click at \'?\' to see more.'
+              "
+            ></Badge>
+          </label>
+          <InputText
+            class="w-full"
+            id="pendingTradesFile"
+            v-model="form.pendingTradesFilePath"
+          />
+        </div>
         <div class="field flex justify-content-between">
           <label for="acceptGifts" style="width: 40%">
             Auto accept gifts
@@ -87,6 +106,10 @@ const validator = Validator.factory<IUserSettings>({
     required: true,
     message: "Accept gifts is required!",
   },
+  pendingTradesFilePath: {
+    type: "string",
+    required: false,
+  },
 });
 
 const submitingForm = ref<boolean>();
@@ -119,6 +142,10 @@ async function submitForm() {
 
 async function openLogsFolder() {
   await window.api.openLogsFolder(props.steamacc.username);
+}
+
+async function openExternalLink(link: string) {
+  await window.api.openExternalLink(link);
 }
 </script>
 

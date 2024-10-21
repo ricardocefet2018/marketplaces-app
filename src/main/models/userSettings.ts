@@ -23,6 +23,13 @@ export class UserSettings extends BaseEntity implements IUserSettings {
   })
   acceptGifts: boolean;
 
+  @Column({
+    nullable: false,
+    type: "text",
+    default: "",
+  })
+  pendingTradesFilePath: string;
+
   @OneToOne(() => User, (user) => user.userSettings, {
     nullable: false,
   })
