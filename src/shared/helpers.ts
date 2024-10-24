@@ -30,19 +30,6 @@ export async function getJsonContent<T>(filePath: string): Promise<T | null> {
 }
 
 /**
- * returns an empty string case filePath don't exist
- */
-export async function getFileContent(filePath: string): Promise<string> {
-  try {
-    const fileContentString = await fsp.readFile(filePath, "utf-8");
-    return fileContentString;
-  } catch (err: any) {
-    if (err.code == "ENOENT") return "";
-    throw err;
-  }
-}
-
-/**
  * @param content supports Map & Set inside content
  */
 export async function setJSONContent(
@@ -56,6 +43,62 @@ export async function setJSONContent(
   await fsp.writeFile(tempFile, contentString, "utf-8");
   await fsp.rename(tempFile, filePath);
   return;
+}
+
+/**
+ *  Checks if the filePath contains an Array and the type of the first and last element
+ *  @param {T} element
+ *  @throws Error on failing type checkings or read/write errors
+ */
+export async function pushElementToJsonFile<T>(
+  filePath: string,
+  element: T
+): Promise<void> {
+  let content: Array<T> = await getJsonContent(filePath);
+  if (content === null) {
+    content = [element];
+    await setJSONContent(filePath, content);
+    return;
+  }
+  if (!(content instanceof Array))
+    throw new TypeError(`JSON content of ${filePath} is not an array.`);
+
+  if (content.length === 0) {
+    content.push(element);
+    await setJSONContent(filePath, content);
+    return;
+  }
+
+  if (typeof content[0] != typeof element)
+    throw new Error(`JSON content is not same type of element.`);
+
+  if (typeof content[0] === "object") {
+    const contentType = Object.keys(content[0]);
+    const elementType = Object.keys(element);
+    const matches: boolean[] = [];
+    contentType.forEach((ck) => matches.push(elementType.includes(ck)));
+    elementType.forEach((ek) => matches.push(contentType.includes(ek)));
+    const isSameType = matches.reduce((a, b) => a && b);
+    if (!isSameType)
+      throw new Error(`JSON content is not same type of element.`);
+  }
+
+  content.push(element);
+  await setJSONContent(filePath, content);
+  return;
+}
+
+/**
+ * returns an empty string case filePath don't exist
+ */
+export async function getFileContent(filePath: string): Promise<string> {
+  try {
+    const fileContentString = await fsp.readFile(filePath, "utf-8");
+    return fileContentString;
+  } catch (err: any) {
+    if (err.code == "ENOENT") return "";
+    throw err;
+  }
 }
 
 export async function setFileContent(
