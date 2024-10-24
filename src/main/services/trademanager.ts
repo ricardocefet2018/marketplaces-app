@@ -9,6 +9,7 @@ import {
   handleError,
   infoLogger,
   minutesToMS,
+  pushElementToJsonFile,
 } from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
@@ -232,6 +233,7 @@ export class TradeManager extends EventEmitter {
           res(status);
         });
       });
+      this.registerPendingTradeToFile(offer.id);
       this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
       return offer.id;
     } catch (err) {
@@ -417,7 +419,6 @@ export class TradeManager extends EventEmitter {
     this._wpWebsocket.on("sendTrade", async (data) => {
       if (!this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) {
         const tradeOfferId = await this.createTradeForWaxpeer(data);
-
         if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
 
         try {
@@ -473,6 +474,19 @@ export class TradeManager extends EventEmitter {
       newSettings
     );
     await this._user.save();
+  }
+
+  private async registerPendingTradeToFile(offerID: string) {
+    if (
+      this._user.userSettings.pendingTradesFilePath == "" ||
+      !this._user.userSettings.pendingTradesFilePath
+    )
+      return;
+    await pushElementToJsonFile(
+      this._user.userSettings.pendingTradesFilePath,
+      offerID
+    );
+    return;
   }
 }
 
