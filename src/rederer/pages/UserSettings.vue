@@ -9,13 +9,18 @@
           icon="pi pi-file-edit"
           class=""
           @click="openLogsFolder"
-          v-tooltip.left="'User logs'"
+          v-tooltip.left="props.steamacc.username + '\'s logs'"
         />
       </div>
       <Divider />
     </template>
     <template #content>
-      <form id="form" @change="validateForm" :disabled="submitingForm">
+      <form
+        id="form"
+        @change="validateForm"
+        :disabled="submitingForm"
+        v-on:submit="submitForm"
+      >
         <div class="field">
           <label for="pendingTradesFile">
             Save pending trades to file
@@ -29,7 +34,8 @@
                 )
               "
               v-tooltip="
-                'Created trades will be pending of confirmation. There are tools that auto confirm created trades saved on a file. Click at \'?\' to see more.'
+                `Created trades will be pending of confirmation. 
+                There are tools that auto confirm created trades saved on a file. Click at \'?\' to see more.`
               "
             ></Badge>
           </label>
@@ -37,7 +43,16 @@
             class="w-full"
             id="pendingTradesFile"
             v-model="form.pendingTradesFilePath"
+            placeholder="C:\Users\JohnDoe\Documents\pendingTradesFile.json"
           />
+          <small
+            style="color: var(--p-red-500)"
+            v-if="errors.pendingTradesFilePath"
+          >
+            {{ errors.pendingTradesFilePath[0].message }}
+          </small>
+          <br />
+          <small> This option will create a file if it does not exists. </small>
         </div>
         <div class="field flex justify-content-between">
           <label for="acceptGifts" style="width: 40%">
@@ -109,13 +124,15 @@ const validator = Validator.factory<IUserSettings>({
   pendingTradesFilePath: {
     type: "string",
     required: false,
+    pattern: /^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]+\.json$/,
+    message: "Need to be an .json absolute path",
   },
 });
 
 const submitingForm = ref<boolean>();
 
 onBeforeMount(() => {
-  form.value = props.steamacc.userSettings;
+  form.value = Object.assign({}, props.steamacc.userSettings);
 });
 
 async function validateForm() {
@@ -124,12 +141,14 @@ async function validateForm() {
     errors.value = {};
     return true;
   } catch (err) {
+    console.log(err);
     errors.value = err.fields;
     return false;
   }
 }
 
-async function submitForm() {
+async function submitForm(e: SubmitEvent) {
+  e.preventDefault();
   const validated = await validateForm();
   if (!validated) return;
   const formvalue = Object.assign({}, form.value); // TODO form.value isn't seralizable for some reason
@@ -137,7 +156,9 @@ async function submitForm() {
     formvalue,
     props.steamacc.username
   );
-  if (success) emit("back");
+  if (!success) return;
+  props.steamacc.userSettings = formvalue;
+  emit("back");
 }
 
 async function openLogsFolder() {

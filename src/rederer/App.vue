@@ -34,8 +34,8 @@
     </template>
 
     <template #end>
-      <i class="pi pi-github m-2"></i>
-      <i class="pi pi-twitter m-2"></i>
+      <i class="pi pi-github m-2 cursor-pointer" @click="openGithubPage"></i>
+      <i class="pi pi-twitter m-2 cursor-pointer" @click="openTwitterPage"></i>
     </template>
   </Toolbar>
 </template>
@@ -78,5 +78,15 @@ async function changeCurrentPage(page?: Pages) {
 function accessUserSettings(s: SteamAcc) {
   steamacc.value = s;
   changeCurrentPage(Pages.userSettings);
+}
+
+function openGithubPage() {
+  window.api.openExternalLink(
+    "https://github.com/ricardocefet2018/marketplaces-app"
+  );
+}
+
+function openTwitterPage() {
+  window.api.openExternalLink("https://x.com/ricardorocha_os");
 }
 </script>
