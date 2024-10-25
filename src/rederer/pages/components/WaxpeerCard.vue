@@ -3,7 +3,7 @@
     <template #title>
       <div class="flex">
         <div class="flex-1">Waxpeer</div>
-        <StyledToggleSwitch
+        <ToggleSwitch
           class="flex"
           v-model="model.state"
           @change="emitStateChange"
@@ -42,9 +42,9 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import InputText from "primevue/inputtext";
 import { onMounted, ref, Ref } from "vue";
-import StyledToggleSwitch from "./StyledToggleSwitch.vue";
 import { WaxpeerSettings } from "../../../shared/types";
 import Password from "primevue/password";
+import ToggleSwitch from "primevue/toggleswitch";
 
 const emit = defineEmits<{
   waxpeerApiKeyChanged: [waxpeerApiKey: string];

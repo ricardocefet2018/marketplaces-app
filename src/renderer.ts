@@ -33,11 +33,39 @@ import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
 import Aura from "@primevue/themes/aura";
 import App from "./rederer/App.vue";
+import { definePreset } from "@primevue/themes";
 
 const app = createApp(App);
+const MyPreset = definePreset(Aura, {
+  components: {
+    inputtext: {
+      placeholder: {
+        color: "{surface.600}",
+      },
+    },
+    toggleswitch: {
+      colorScheme: {
+        dark: {
+          root: {
+            background: "{red.500}",
+            hover: {
+              background: "{red.400}",
+            },
+          },
+          handle: {
+            background: "{zinc.800}",
+            hover: {
+              background: "{zinc.800}",
+            },
+          },
+        },
+      },
+    },
+  },
+});
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: MyPreset,
   },
 });
 app.directive("tooltip", Tooltip);

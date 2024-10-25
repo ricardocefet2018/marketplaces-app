@@ -50,7 +50,7 @@
             ></Badge>
           </label>
           <div>
-            <StyledToggleSwitch v-model="form.acceptGifts" />
+            <ToggleSwitch v-model="form.acceptGifts" />
           </div>
         </div>
       </form>
@@ -78,7 +78,6 @@
 
 <script setup lang="ts">
 import { onBeforeMount, onMounted, Ref, ref } from "vue";
-import StyledToggleSwitch from "./components/StyledToggleSwitch.vue";
 import { FormErrors, IUserSettings, SteamAcc } from "../../shared/types";
 import { Validator } from "../models/validator";
 import Card from "primevue/card";
@@ -86,6 +85,7 @@ import Button from "primevue/button";
 import Divider from "primevue/divider";
 import Badge from "primevue/badge";
 import InputText from "primevue/inputtext";
+import ToggleSwitch from "primevue/toggleswitch";
 
 const emit = defineEmits<{
   back: [];
