@@ -3,6 +3,8 @@ import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
 import { getAppStoragePath, handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
+import { Settings } from "./models/settings";
+import { ISettings } from "../shared/types";
 
 export function registerHandlers() {
   const myHandler: apiHandler = ipcMain.handle;
@@ -110,11 +112,44 @@ export function registerHandlers() {
 
   myHandler("openLogsFolder", async (e, username) => {
     let path = getAppStoragePath();
-    if (username) path += `\\acc_${username}\\logs`;
+    if (username) path += `\\acc_${username}`;
+    path += "\\logs";
     shell.openPath(path);
   });
 
   myHandler("openExternalLink", async (e, link) => {
     shell.openExternal(link);
+  });
+
+  myHandler("getAppSettings", async () => {
+    try {
+      return await Settings.findOne({ where: { id: 1 } });
+    } catch (err) {
+      handleError(err);
+      new Notification({
+        title: "Error getting app settings.",
+        body: "Most likely your DB is corrupted.",
+      });
+      return null;
+    }
+  });
+
+  myHandler("setAppSettings", async (e, newSettings: ISettings) => {
+    try {
+      let settings = await Settings.findOne({ where: { id: 1 } });
+      settings = Object.assign(settings, newSettings);
+      await settings.save();
+      new Notification({
+        title: "Settings saved successfully.",
+      }).show();
+      return true;
+    } catch (err) {
+      handleError(err);
+      new Notification({
+        title: "Error getting app settings.",
+        body: "Most likely your DB is corrupted.",
+      }).show();
+      return false;
+    }
   });
 }

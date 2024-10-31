@@ -6,7 +6,7 @@
     </template>
 
     <template #end>
-      <Button icon="pi pi-cog"></Button>
+      <Button icon="pi pi-cog" @click="emit('appSettings')"></Button>
     </template>
   </Toolbar>
   <div
@@ -81,6 +81,7 @@ import { SteamAcc } from "../../shared/types";
 const emit = defineEmits<{
   addAccount: [];
   userSettings: [steamacc: SteamAcc];
+  appSettings: [];
 }>();
 
 const props = defineProps<{

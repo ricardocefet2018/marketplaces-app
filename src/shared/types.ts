@@ -23,6 +23,11 @@ export interface IUserSettings {
   pendingTradesFilePath: string;
 }
 
+export interface ISettings {
+  startWithWindow: boolean;
+  notification: boolean;
+}
+
 export type FormErrors<FormType> = {
   [K in keyof FormType]?: {
     field: K;

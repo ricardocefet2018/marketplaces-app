@@ -10,6 +10,7 @@
     v-if="currentPage == Pages.main"
     @add-account="changeCurrentPage(Pages.login)"
     @user-settings="accessUserSettings"
+    @app-settings="changeCurrentPage(Pages.settings)"
     :steamaccs="steamaccs"
     :steamacc="steamacc"
   ></Main>
@@ -19,6 +20,11 @@
     :steamacc="steamacc"
     @back="changeCurrentPage(Pages.main)"
   ></UserSettings>
+  <AppSettings
+    class="m-8"
+    v-if="currentPage == Pages.settings"
+    @back="changeCurrentPage(Pages.main)"
+  ></AppSettings>
   <div
     style="height: 90vh"
     class="flex align-content-center"
@@ -49,6 +55,7 @@ import { Pages } from "./models/pages.enum";
 import Toolbar from "primevue/toolbar";
 import ProgressSpinner from "primevue/progressspinner";
 import { SteamAcc } from "../shared/types";
+import AppSettings from "./pages/AppSettings.vue";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
 const steamacc: Ref<SteamAcc> = ref();

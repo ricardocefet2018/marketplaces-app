@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from "electron";
-import { LoginData, SteamAcc, IUserSettings } from "./shared/types";
+import { LoginData, SteamAcc, IUserSettings, ISettings } from "./shared/types";
 import { LoginResponses } from "./shared/enums";
 
 const api = {
@@ -27,6 +27,10 @@ const api = {
     ipcRenderer.invoke("openLogsFolder", username),
   openExternalLink: (link: string): Promise<void> =>
     ipcRenderer.invoke("openExternalLink", link),
+  getAppSettings: (): Promise<ISettings | null> =>
+    ipcRenderer.invoke("getAppSettings"),
+  setAppSettings: (settings: ISettings): Promise<boolean> =>
+    ipcRenderer.invoke("setAppSettings", settings),
 };
 
 const events = {
