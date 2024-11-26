@@ -192,6 +192,11 @@ export function getAppStoragePath() {
 }
 
 export async function getDBPath() {
+  if (process.env["NODE_ENV"] === "development") {
+    const dbPath = path.join(".", "db", "db.sqlite");
+    ensureDirectoryExistence(dbPath);
+    return dbPath;
+  }
   const dbPath = path.join(getAppStoragePath(), "db.sqlite");
   ensureDirectoryExistence(dbPath);
   return dbPath;
