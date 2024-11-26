@@ -12,6 +12,12 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "types": [
+      "node", 
+      "@wdio/globals/types",
+      "@wdio/mocha-framework",
+      "wdio-electron-service"
+    ]
   }
 }
