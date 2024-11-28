@@ -84,7 +84,7 @@ async function submitForm() {
   <Card class="h-auto">
     <template #title> Steam Login </template>
     <template #content>
-      <form id="form" @change="validateForm" :disabled="submitingForm">
+      <form id="form" @input="validateForm" :disabled="submitingForm">
         <div class="field">
           <label for="steamUsername">Steam username</label>
           <InputText
@@ -92,6 +92,7 @@ async function submitForm() {
             class="w-full"
             v-model="form.steamUsername"
             :invalid="errors.steamUsername && errors.steamUsername.length > 0"
+            :disabled="submitingForm"
           ></InputText>
           <small
             class="error"
@@ -108,6 +109,7 @@ async function submitForm() {
             v-model="form.steamPassword"
             toggleMask
             :invalid="errors.steamPassword && errors.steamPassword.length > 0"
+            :disabled="submitingForm"
           ></Password>
           <small
             class="error"
@@ -123,6 +125,7 @@ async function submitForm() {
             class="w-full"
             v-model="form.steamGuardCode"
             :invalid="errors.steamGuardCode && errors.steamGuardCode.length > 0"
+            :disabled="submitingForm"
           ></InputText>
           <small
             class="error"
@@ -133,7 +136,12 @@ async function submitForm() {
         </div>
         <div class="field">
           <label for="proxy">Proxy</label>
-          <InputText id="proxy" class="w-full" v-model="form.proxy"></InputText>
+          <InputText
+            id="proxy"
+            class="w-full"
+            v-model="form.proxy"
+            :disabled="submitingForm"
+          ></InputText>
         </div>
       </form>
     </template>
