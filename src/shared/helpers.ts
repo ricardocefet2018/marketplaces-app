@@ -3,6 +3,8 @@ import { EventEmitter } from "events";
 import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
+import * as readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
 function ensureDirectoryExistence(filePath: string) {
   const dirname = path.dirname(filePath);
@@ -200,4 +202,15 @@ export async function getDBPath() {
   const dbPath = path.join(getAppStoragePath(), "db.sqlite");
   ensureDirectoryExistence(dbPath);
   return dbPath;
+}
+
+export async function ask(question: string): Promise<string> {
+  const rl = readline.createInterface({ input, output });
+
+  console.log(question);
+  const answer = await rl.question("");
+
+  rl.close();
+
+  return answer;
 }
