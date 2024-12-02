@@ -35,6 +35,14 @@ export function registerHandlers() {
     return TradeManagerController.getInstance().getAccounts();
   });
 
+  myHandler("hasAccounts", async () => {
+    return TradeManagerController.getInstance().hasAccounts();
+  });
+
+  myHandler("getAccountByUsername", async (e, username) => {
+    return TradeManagerController.getInstance().getAccountByUsername(username);
+  });
+
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
     const tmc = TradeManagerController.getInstance();
     try {

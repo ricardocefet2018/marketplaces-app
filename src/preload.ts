@@ -9,6 +9,9 @@ const api = {
   login: (loginOptions: LoginData): Promise<LoginResponses> =>
     ipcRenderer.invoke("login", loginOptions),
   getAccounts: (): Promise<SteamAcc[]> => ipcRenderer.invoke("getAccounts"),
+  getAccountByUsername: (username: string): Promise<SteamAcc> =>
+    ipcRenderer.invoke("getAccountByUsername", username),
+  hasAccounts: (): Promise<boolean> => ipcRenderer.invoke("hasAccounts"),
   updateWaxpeerApiKey: (
     username: string,
     waxpeerApiKey: string

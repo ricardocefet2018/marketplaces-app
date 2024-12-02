@@ -34,6 +34,7 @@ import Tooltip from "primevue/tooltip";
 import Aura from "@primevue/themes/aura";
 import App from "./rederer/App.vue";
 import { definePreset } from "@primevue/themes";
+import router from "./rederer/router";
 
 const app = createApp(App);
 const MyPreset = definePreset(Aura, {
@@ -63,6 +64,7 @@ const MyPreset = definePreset(Aura, {
     },
   },
 });
+app.use(router);
 app.use(PrimeVue, {
   theme: {
     preset: MyPreset,

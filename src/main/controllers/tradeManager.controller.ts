@@ -71,6 +71,14 @@ export class TradeManagerController {
     return returningArray;
   }
 
+  public hasAccounts(): boolean {
+    return this.tradeManagers.size > 0;
+  }
+
+  public getAccountByUsername(username: string): SteamAcc {
+    return this.tradeManagers.get(username).steamAcc;
+  }
+
   public async updateWaxpeerApiKey(
     username: string,
     waxpeerApiKey: string
