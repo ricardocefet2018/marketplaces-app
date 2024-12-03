@@ -3,6 +3,16 @@ import { browser } from "wdio-electron-service";
 import { Key } from "webdriverio";
 import { ask } from "../../src/shared/helpers";
 
+async function clearElement(element: WebdriverIO.Element) {
+  // TODO aparentemente existe um bug no webdriver onde ele não limpa certos campos (https://github.com/webdriverio/webdriverio/issues/1140#issuecomment-301532531)
+  // por isso, esse artifício técnico foi utilizado.
+  const elementLen = await element.getValue();
+  for (let i = 0; i < elementLen.length; i++) {
+    await element.setValue(Key.Backspace);
+  }
+  return;
+}
+
 describe("Todos os fluxos", () => {
   describe("Login", () => {
     before(async () => {
@@ -96,6 +106,7 @@ describe("Todos os fluxos", () => {
       const steamUsername = process.env["steamUsername"];
       const steamPassword = process.env["steamPassword"];
       await inputSteamUsername.setValue(steamUsername);
+      await clearElement(inputSteamPassword);
       await inputSteamPassword.setValue(steamPassword);
       await inputSteamGuardCode.setValue("AAAAA");
       await saveButton.click();
@@ -106,27 +117,32 @@ describe("Todos os fluxos", () => {
     });
 
     it("should make login successfully", async () => {
-      await inputSteamPassword.setValue("12345678");
-
       const steamUsername = process.env["steamUsername"];
       const steamPassword = process.env["steamPassword"];
       await inputSteamUsername.setValue(steamUsername);
 
-      // TODO aparentemente existe um bug no webdriver onde ele não limpa certos campos (https://github.com/webdriverio/webdriverio/issues/1140#issuecomment-301532531)
-      // por isso, esse artifício técnico foi utilizado.
-      const passwordLen = await inputSteamPassword.getValue();
-      for (let i = 0; i < passwordLen.length; i++) {
-        await inputSteamPassword.setValue(Key.Backspace);
-      }
+      await clearElement(inputSteamPassword);
       await inputSteamPassword.setValue(steamPassword);
 
       const code = await ask(`${steamUsername}'s steam 2FA code: `);
       await inputSteamGuardCode.setValue(code);
       await saveButton.click();
-      const formElem = [await $$("input"), await $$("button")];
+      const formElem = [...(await $$("input")), ...(await $$("button"))];
       for (const elem of formElem) expect(elem).toBeDisabled();
       await inputSteamUsername.waitForExist({ timeout: 15000, reverse: true });
       for (const elem of formElem) expect(elem).not.toExist();
     });
   });
+
+  // describe("Main", () => {
+  //   let selectedAccountName: WebdriverIO.Element;
+
+  //   beforeEach(async () => {
+  //     selectedAccountName = await $(".p-card .p-card-title p");
+  //   });
+
+  //   it('should display main page properly', async () => {
+  //     await expect($('p-card'))
+  //   });
+  // });
 });

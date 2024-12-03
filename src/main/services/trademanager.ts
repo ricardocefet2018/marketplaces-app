@@ -155,8 +155,6 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
-      const sid64 = this._steamClient.steamID.getSteamID64(); // need to be logged on to receive offers
-      console.log(`Account ${sid64} received a new Offer ${offer.id}`);
       const isGift =
         offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
       if (isGift && this._user.userSettings.acceptGifts)
@@ -397,6 +395,7 @@ export class TradeManager extends EventEmitter {
       this._user.proxy
     );
     let accessToken = this.getSteamLoginSecure();
+    // TODO this is necessary since when app start it need to await steam send the cookies before star waxpeer, maybe change it to a event
     while (!accessToken || accessToken == "") {
       await sleepAsync(100);
       accessToken = this.getSteamLoginSecure();

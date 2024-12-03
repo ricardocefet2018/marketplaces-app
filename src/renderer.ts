@@ -71,6 +71,4 @@ app.use(PrimeVue, {
   },
 });
 app.directive("tooltip", Tooltip);
-window.events.apiReady(() => {
-  app.mount("#app");
-});
+app.mount("#app");

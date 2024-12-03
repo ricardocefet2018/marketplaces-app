@@ -1,5 +1,5 @@
 <template>
-  <div class="m-8">
+  <div class="m-8" aria-page="userSettings">
     <Loading v-if="!!loading" />
     <Card class="h-auto" v-if="!loading">
       <template #title>

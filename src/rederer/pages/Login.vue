@@ -82,7 +82,7 @@ async function submitForm() {
 }
 </script>
 <template>
-  <div class="m-8">
+  <div class="m-8" aria-page="login">
     <Card class="h-auto">
       <template #title> Steam Login </template>
       <template #content>

@@ -1,12 +1,16 @@
-import { ipcMain, Notification, shell } from "electron";
+import { ipcMain, Notification, WebContents } from "electron";
 import { LoginResponses } from "../shared/enums";
 import { TradeManagerController } from "./controllers/tradeManager.controller";
-import { getAppStoragePath, handleError } from "../shared/helpers";
+import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
-import { Settings } from "./models/settings";
 import { ISettings } from "../shared/types";
+import { AppController } from "./controllers/app.controller";
 
-export function registerHandlers() {
+export async function registerHandlers(mainWindowWebContents: WebContents) {
+  const tradeManagerController = await TradeManagerController.factory(
+    mainWindowWebContents
+  );
+  const appController = await AppController.factory();
   const myHandler: apiHandler = ipcMain.handle;
 
   myHandler("test", async (e, msg) => {
@@ -14,13 +18,12 @@ export function registerHandlers() {
   });
 
   myHandler("login", async (e, loginOptions) => {
-    const tmc = TradeManagerController.getInstance();
     try {
-      await tmc.login(loginOptions);
-      new Notification({
+      await tradeManagerController.login(loginOptions);
+      appController.notify({
         title: "Logged on successfully",
         body: `Account ${loginOptions.username} logged on successfully!`,
-      }).show();
+      });
       return LoginResponses.success;
     } catch (err) {
       new Notification({
@@ -32,21 +35,23 @@ export function registerHandlers() {
   });
 
   myHandler("getAccounts", async () => {
-    return TradeManagerController.getInstance().getAccounts();
+    return tradeManagerController.getAccounts();
   });
 
   myHandler("hasAccounts", async () => {
-    return TradeManagerController.getInstance().hasAccounts();
+    return tradeManagerController.hasAccounts();
   });
 
   myHandler("getAccountByUsername", async (e, username) => {
-    return TradeManagerController.getInstance().getAccountByUsername(username);
+    return tradeManagerController.getAccountByUsername(username);
   });
 
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
-    const tmc = TradeManagerController.getInstance();
     try {
-      const status = await tmc.updateWaxpeerApiKey(username, waxpeerApiKey);
+      const status = await tradeManagerController.updateWaxpeerApiKey(
+        username,
+        waxpeerApiKey
+      );
       return status;
     } catch (err) {
       handleError(err);
@@ -55,9 +60,8 @@ export function registerHandlers() {
   });
 
   myHandler("changeWaxpeerState", async (e, newState, username) => {
-    const tmc = TradeManagerController.getInstance();
     try {
-      await tmc.changeWaxpeerState(newState, username);
+      await tradeManagerController.changeWaxpeerState(newState, username);
       new Notification({
         title: "Waxpeer state changed!",
         body: `${username} waxpeer state has successfully turn ${
@@ -82,9 +86,8 @@ export function registerHandlers() {
   });
 
   myHandler("logout", async (e, username) => {
-    const tmc = TradeManagerController.getInstance();
     try {
-      await tmc.logout(username);
+      await tradeManagerController.logout(username);
       new Notification({
         title: "Logged out successfully!",
         body: `Account ${username} was removed!`,
@@ -99,9 +102,8 @@ export function registerHandlers() {
   });
 
   myHandler("updateUserSettings", async (e, newSettings, username) => {
-    const tmc = TradeManagerController.getInstance();
     try {
-      await tmc.updateUserSettings(newSettings, username);
+      await tradeManagerController.updateUserSettings(newSettings, username);
       new Notification({
         title: "User settings saved!",
       }).show();
@@ -119,19 +121,16 @@ export function registerHandlers() {
   });
 
   myHandler("openLogsFolder", async (e, username) => {
-    let path = getAppStoragePath();
-    if (username) path += `\\acc_${username}`;
-    path += "\\logs";
-    shell.openPath(path);
+    appController.openLogsPath(username);
   });
 
   myHandler("openExternalLink", async (e, link) => {
-    shell.openExternal(link);
+    appController.openExternalLink(link);
   });
 
   myHandler("getAppSettings", async () => {
     try {
-      return await Settings.findOne({ where: { id: 1 } });
+      return await appController.getSettings();
     } catch (err) {
       handleError(err);
       new Notification({
@@ -144,9 +143,7 @@ export function registerHandlers() {
 
   myHandler("setAppSettings", async (e, newSettings: ISettings) => {
     try {
-      let settings = await Settings.findOne({ where: { id: 1 } });
-      settings = Object.assign(settings, newSettings);
-      await settings.save();
+      await appController.saveSettings(newSettings);
       new Notification({
         title: "Settings saved successfully.",
       }).show();
@@ -160,4 +157,6 @@ export function registerHandlers() {
       return false;
     }
   });
+
+  mainWindowWebContents.send("apiReady");
 }

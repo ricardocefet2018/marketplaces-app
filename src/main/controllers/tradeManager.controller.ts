@@ -8,14 +8,14 @@ export class TradeManagerController {
   private tradeManagers: Map<string, TradeManager> = new Map();
   private webContents: WebContents & { send: EventSender };
 
-  // constructor() {}
+  constructor(mainWindowWebContents: WebContents) {
+    this.webContents = mainWindowWebContents;
+  }
 
   public static async factory(mainWindowWebContents: WebContents) {
-    if (this.instance) this.instance;
-    this.instance = new TradeManagerController();
-    this.instance.webContents = mainWindowWebContents;
+    if (this.instance) return this.instance;
+    this.instance = new TradeManagerController(mainWindowWebContents);
     await this.instance.tryToReloginSavedAccounts();
-    this.instance.webContents.send("apiReady");
     return this.instance;
   }
 

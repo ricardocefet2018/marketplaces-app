@@ -1,71 +1,73 @@
 <template>
-  <Loading v-if="!!loading" />
-  <div class="m-8" v-if="!loading">
-    <Card class="h-auto">
-      <template #title>
-        <div class="flex justify-content-between">
-          <span class="flex justify-content-start align-items-center">
-            App settings
-          </span>
-          <Button
-            icon="pi pi-file-edit"
-            class=""
-            @click="openLogsFolder"
-            v-tooltip.left="'App logs'"
-          />
-        </div>
-        <Divider />
-      </template>
-      <template #content>
-        <form
-          id="form"
-          @change="validateForm"
-          :disabled="submitingForm"
-          v-on:submit="submitForm"
-        >
-          <div class="field flex justify-content-between">
-            <label for="notification" style="width: 40%">
-              Notifications
-              <Badge
-                value="?"
-                severity="secondary"
-                size="small"
-                v-tooltip="'Turn on/off ALL notifications.'"
-              ></Badge>
-            </label>
-            <div>
-              <ToggleSwitch v-model="form.notification" />
-            </div>
+  <div aria-page="appSettings">
+    <Loading v-if="!!loading" />
+    <div class="m-8" v-if="!loading">
+      <Card class="h-auto">
+        <template #title>
+          <div class="flex justify-content-between">
+            <span class="flex justify-content-start align-items-center">
+              App settings
+            </span>
+            <Button
+              icon="pi pi-file-edit"
+              class=""
+              @click="openLogsFolder"
+              v-tooltip.left="'App logs'"
+            />
           </div>
-          <div class="field flex justify-content-between">
-            <label for="startWithWindow" style="width: 40%">
-              Start with windows
-            </label>
-            <div>
-              <ToggleSwitch v-model="form.startWithWindow" />
+          <Divider />
+        </template>
+        <template #content>
+          <form
+            id="form"
+            @change="validateForm"
+            :disabled="submitingForm"
+            v-on:submit="submitForm"
+          >
+            <div class="field flex justify-content-between">
+              <label for="notification" style="width: 40%">
+                Notifications
+                <Badge
+                  value="?"
+                  severity="secondary"
+                  size="small"
+                  v-tooltip="'Turn on/off ALL notifications.'"
+                ></Badge>
+              </label>
+              <div>
+                <ToggleSwitch v-model="form.notification" />
+              </div>
             </div>
+            <div class="field flex justify-content-between">
+              <label for="startWithWindow" style="width: 40%">
+                Start with windows
+              </label>
+              <div>
+                <ToggleSwitch v-model="form.startWithWindow" />
+              </div>
+            </div>
+          </form>
+        </template>
+        <template #footer>
+          <div class="flex gap-4 mt-1">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              outlined
+              class="w-full"
+              :disabled="submitingForm"
+              @click="router.push({ name: 'main' })"
+            />
+            <Button
+              label="Save"
+              class="w-full"
+              @click="submitForm"
+              :disabled="submitingForm"
+            />
           </div>
-        </form>
-      </template>
-      <template #footer>
-        <div class="flex gap-4 mt-1">
-          <Button
-            label="Cancel"
-            severity="secondary"
-            outlined
-            class="w-full"
-            :disabled="submitingForm"
-            @click="router.push({ name: 'main' })"
-          />
-          <Button
-            label="Save"
-            class="w-full"
-            @click="submitForm"
-            :disabled="submitingForm"
-          />
-        </div>
-      </template>
-    </Card>
+        </template>
+      </Card>
+    </div>
   </div>
 </template>
 
@@ -125,7 +127,7 @@ async function submitForm(e: SubmitEvent) {
   e.preventDefault();
   const validated = await validateForm();
   if (!validated) return;
-  const formvalue = Object.assign({}, form.value);
+  const formvalue = Object.assign({}, form.value); // TODO form.value isn't seralizable for some reason
   const success = await window.api.setAppSettings(formvalue);
   if (!success) return;
   router.push({ name: "main" });

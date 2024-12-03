@@ -4,6 +4,7 @@ import path from "path";
 import { registerHandlers } from "./main/index";
 import { TradeManagerController } from "./main/controllers/tradeManager.controller";
 import { handleError } from "./shared/helpers";
+import { AppController } from "./main/controllers/app.controller";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 async function main() {
@@ -42,10 +43,9 @@ async function main() {
     } catch (err) {
       handleError(err);
     }
-    registerHandlers();
     const mainWindowWebContents = await createWindow();
     try {
-      await TradeManagerController.factory(mainWindowWebContents); // TODO this function turn sync if there is no accounts emiting "apiReady" event before the window load any url
+      await registerHandlers(mainWindowWebContents);
     } catch (err) {
       handleError(err);
     }

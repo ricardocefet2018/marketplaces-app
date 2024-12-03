@@ -24,10 +24,12 @@ const loading: Ref<boolean> = ref(true);
 const router = useRouter();
 
 onMounted(async () => {
-  const hasAccounts = await window.api.hasAccounts();
-  loading.value = false;
-  if (hasAccounts) router.push({ name: "main" });
-  else router.push({ name: "login" });
+  window.events.apiReady(async () => {
+    const hasAccounts = await window.api.hasAccounts();
+    loading.value = false;
+    if (hasAccounts) router.push({ name: "main" });
+    else router.push({ name: "login" });
+  });
 });
 
 async function onFooterClick() {

@@ -15,7 +15,7 @@ export class DB {
       type: "sqlite",
       database: dbPath,
       synchronize: process.env["NODE_ENV"] === "development",
-      logging: process.env["NODE_ENV"] === "development",
+      logging: false, //process.env["NODE_ENV"] === "development",
       entities: [User, WaxpeerSettings, UserSettings, Settings],
       migrations: [],
       subscribers: [],
