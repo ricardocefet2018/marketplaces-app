@@ -231,7 +231,6 @@ export class TradeManager extends EventEmitter {
           res(status);
         });
       });
-      this.registerPendingTradeToFile(offer.id);
       this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
       return offer.id;
     } catch (err) {
@@ -416,24 +415,27 @@ export class TradeManager extends EventEmitter {
       this.cancelTradeOffer(data.trade_id, true); // retring till cancel or not cancellable anymore, can't throw err
     });
     this._wpWebsocket.on("sendTrade", async (data) => {
-      if (!this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) {
-        const tradeOfferId = await this.createTradeForWaxpeer(data);
-        if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
+      if (this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) return;
 
-        try {
-          const steamTradeRes = await this._wpClient.steamTrade(
-            tradeOfferId,
-            data.waxid
+      const tradeOfferId = await this.createTradeForWaxpeer(data);
+      if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
+
+      try {
+        const steamTradeRes = await this._wpClient.steamTrade(
+          tradeOfferId,
+          data.waxid
+        );
+        if (steamTradeRes.success) {
+          this.infoLogger(
+            `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
           );
-          if (steamTradeRes.success)
-            this.infoLogger(
-              `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
-            );
           this._user.waxpeerSettings.sentTrades.push(data.wax_id);
           await this._user.save();
-        } catch (err) {
-          this.handleError(err);
+          if (this._user.userSettings.pendingTradesFilePath != "")
+            this.registerPendingTradeToFile(tradeOfferId);
         }
+      } catch (err) {
+        this.handleError(err);
       }
     });
     return;
@@ -475,15 +477,15 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
   }
 
-  private async registerPendingTradeToFile(offerID: string) {
+  private async registerPendingTradeToFile(offerID: string | number) {
     if (
       this._user.userSettings.pendingTradesFilePath == "" ||
       !this._user.userSettings.pendingTradesFilePath
     )
       return;
-    await pushElementToJsonFile(
+    await pushElementToJsonFile<number>(
       this._user.userSettings.pendingTradesFilePath,
-      offerID
+      Number(offerID)
     );
     return;
   }
