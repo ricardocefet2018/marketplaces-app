@@ -1,7 +1,6 @@
 import { app, Notification, shell } from "electron";
 import { Settings } from "../models/settings";
 import { ISettings } from "../../shared/types";
-import { getAppStoragePath } from "../../shared/helpers";
 
 // Every OS function is supposed to be there
 export class AppController {
@@ -50,7 +49,7 @@ export class AppController {
   }
 
   public openLogsPath(username?: string) {
-    let path = getAppStoragePath();
+    let path = app.getPath("userData");
     if (username) path += `\\acc_${username}`;
     path += "\\logs";
     shell.openPath(path);

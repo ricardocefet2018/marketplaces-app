@@ -5,7 +5,6 @@ import SteamUser from "steam-user";
 import { TradeWebsocketCreateTradeData } from "../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
-  getAppStoragePath,
   handleError,
   infoLogger,
   minutesToMS,
@@ -18,6 +17,7 @@ import { User } from "../models/user";
 import WaxpeerClient from "./waxpeerClient";
 import { WaxpeerWebsocket } from "./waxpeerWebsocket";
 import { FetchError } from "node-fetch";
+import { app } from "electron";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
@@ -59,7 +59,7 @@ export class TradeManager extends EventEmitter {
     const tm = new TradeManager({
       username: loginData.username,
       login: loginData,
-      storagePathBase: getAppStoragePath(),
+      storagePathBase: app.getPath("userData"),
       proxy: loginData.proxy,
     });
 
@@ -104,7 +104,7 @@ export class TradeManager extends EventEmitter {
     const tm = new TradeManager({
       username: username,
       login: refreshToken,
-      storagePathBase: getAppStoragePath(),
+      storagePathBase: app.getPath("userData"),
       proxy: proxy,
     });
 

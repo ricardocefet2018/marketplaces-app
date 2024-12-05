@@ -1,10 +1,10 @@
-import { appDataDirectory } from "@doctormckay/stdlib/os";
 import { EventEmitter } from "events";
 import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { app } from "electron";
 
 function ensureDirectoryExistence(filePath: string) {
   const dirname = path.dirname(filePath);
@@ -160,7 +160,8 @@ export function getPromiseFromEvent(item: EventEmitter, event: string) {
   });
 }
 
-export async function handleError(err: any, storagePath = getAppStoragePath()) {
+export async function handleError(err: any, storagePath?: string) {
+  if (!storagePath) storagePath = app.getPath("userData");
   let stringToSave = `\n[${new Date().toISOString()}] `;
   if (!(err instanceof Error)) stringToSave += JSON.stringify(err);
   else stringToSave += `${err.name}\n${err.message}\n${err.stack}`;
@@ -172,11 +173,8 @@ export async function handleError(err: any, storagePath = getAppStoragePath()) {
   await setFileContent(errorsLogPath, content);
 }
 
-export async function infoLogger(
-  info: string,
-  storagePath = getAppStoragePath()
-) {
-  if (!storagePath) storagePath = getAppStoragePath();
+export async function infoLogger(info: string, storagePath?: string) {
+  if (!storagePath) storagePath = app.getPath("userData");
   const stringToSave = `[${new Date().toISOString()}] ${info}`;
   console.log(stringToSave.trim());
   const infosLogPath = path.join(storagePath, "logs", "logInfos.txt");
@@ -186,20 +184,13 @@ export async function infoLogger(
   await setFileContent(infosLogPath, content);
 }
 
-export function getAppStoragePath() {
-  return appDataDirectory({
-    appAuthor: "ricardorocha_os",
-    appName: "multimarketplaces-app",
-  });
-}
-
 export async function getDBPath() {
   if (process.env["NODE_ENV"] === "development") {
     const dbPath = path.join(".", "db", "db.sqlite");
     ensureDirectoryExistence(dbPath);
     return dbPath;
   }
-  const dbPath = path.join(getAppStoragePath(), "db.sqlite");
+  const dbPath = path.join(app.getPath("userData"), "db.sqlite");
   ensureDirectoryExistence(dbPath);
   return dbPath;
 }
