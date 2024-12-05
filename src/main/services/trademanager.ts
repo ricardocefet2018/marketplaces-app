@@ -24,7 +24,7 @@ export class TradeManager extends EventEmitter {
   private _steamTradeOfferManager: TradeOfferManager;
   private _steamCookies: string[] = [];
   private _user: User;
-  private storagePath: string;
+  private logsPath: string;
   private _wpClient?: WaxpeerClient;
   private _wpWebsocket?: WaxpeerWebsocket;
 
@@ -49,7 +49,7 @@ export class TradeManager extends EventEmitter {
       savePollData: true,
     });
 
-    this.storagePath = path.join(
+    this.logsPath = path.join(
       options.storagePathBase,
       `acc_${options.username}`
     );
@@ -59,7 +59,7 @@ export class TradeManager extends EventEmitter {
     const tm = new TradeManager({
       username: loginData.username,
       login: loginData,
-      storagePathBase: app.getPath("userData"),
+      storagePathBase: app.getPath("logs"),
       proxy: loginData.proxy,
     });
 
@@ -104,7 +104,7 @@ export class TradeManager extends EventEmitter {
     const tm = new TradeManager({
       username: username,
       login: refreshToken,
-      storagePathBase: app.getPath("userData"),
+      storagePathBase: app.getPath("logs"),
       proxy: proxy,
     });
 
@@ -349,7 +349,7 @@ export class TradeManager extends EventEmitter {
 
   public handleError(err: any) {
     try {
-      handleError(err, this.storagePath);
+      handleError(err, this.logsPath);
     } catch (err) {
       // do nothing
     }
@@ -357,7 +357,7 @@ export class TradeManager extends EventEmitter {
 
   public infoLogger(info: string) {
     try {
-      infoLogger(info, this.storagePath);
+      infoLogger(info, this.logsPath);
     } catch (err) {
       // do nothing
     }
