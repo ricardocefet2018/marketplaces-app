@@ -109,7 +109,7 @@ export default class WaxpeerClient {
         this.keepingSendingSteamToken = false;
         break;
       }
-      await sleepAsync(1000 * 60 * 30);
+      await sleepAsync(minutesToMS(30));
     }
     return;
   }
@@ -130,7 +130,6 @@ export default class WaxpeerClient {
         body: body,
       });
       const json = await res.json();
-      if (res.status != 200) throw new Error(JSON.stringify(json));
       return json as SteamTokenResponse;
     } catch (err) {
       await sleepAsync(minutesToMS(1));
