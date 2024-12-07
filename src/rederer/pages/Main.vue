@@ -65,13 +65,22 @@
         ></Button>
       </fieldset>
       <fieldset class="border-noround m-0 p-2 h-full border-none col">
-        <WaxpeerCard
-          @waxpeer-api-key-changed="onUpdateWaxpeerApiKey"
+        <MarketplaceCard
+          marketplace="Waxpeer"
+          @api-key-changed="onUpdateWaxpeerApiKey"
           @state-changed="changeWaxpeerState"
           v-model="steamacc.waxpeerSettings"
           :disabled="waxpeerDisabled"
           v-if="!!steamacc"
-        />
+        ></MarketplaceCard>
+        <!-- <MarketplaceCard
+          marketplace="Shadowpay"
+          @api-key-changed="onUpdateShadowpayApiKey"
+          @state-changed="changeShadowpayState"
+          v-model="steamacc.shadowpaySettings"
+          :disabled="waxpeerDisabled"
+          v-if="!!steamacc"
+        ></MarketplaceCard> -->
       </fieldset>
     </div>
   </div>
@@ -85,7 +94,7 @@ import Listbox from "primevue/listbox";
 import { onMounted, Ref, ref } from "vue";
 import SelectedAccountCard from "./components/SelectedAccountCard.vue";
 import Badge from "primevue/badge";
-import WaxpeerCard from "./components/WaxpeerCard.vue";
+import MarketplaceCard from "./components/MarketplaceCard.vue";
 import { SteamAcc } from "../../shared/types";
 import { useRoute, useRouter } from "vue-router";
 
@@ -139,6 +148,10 @@ async function changeWaxpeerState(newState: boolean) {
   );
   waxpeerDisabled.value = false;
 }
+
+async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {}
+
+async function changeShadowpayState(newState: boolean) {}
 
 async function updateSteamAccList() {
   steamaccList.value = await window.api.getAccounts();
