@@ -11,6 +11,7 @@
       <i class="pi pi-twitter m-2 cursor-pointer" @click="openTwitterPage"></i>
     </template>
   </Toolbar>
+  <Toast position="bottom-center" />
 </template>
 
 <script setup lang="ts">
@@ -18,6 +19,7 @@ import { onMounted, Ref, ref } from "vue";
 import Toolbar from "primevue/toolbar";
 import { useRouter } from "vue-router";
 import Loading from "./pages/components/Loading.vue";
+import Toast from "primevue/toast";
 
 const footerMsg = ref("Made with love by Ricardo Rocha");
 const loading: Ref<boolean> = ref(true);

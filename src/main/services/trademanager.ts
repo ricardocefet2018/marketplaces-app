@@ -33,6 +33,7 @@ export class TradeManager extends EventEmitter {
       username: this._user.username,
       status: !!this._steamClient.steamID,
       waxpeerSettings: this._user.waxpeerSettings,
+      shadowpaySettings: this._user.shadowpaySettings,
       userSettings: this._user.userSettings,
     };
   }
@@ -379,6 +380,12 @@ export class TradeManager extends EventEmitter {
 
   public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
     this._user.waxpeerSettings.apiKey = newWaxpeerApiKey;
+    await this._user.save();
+    return;
+  }
+
+  public async updateShadowpayApiKey(newShadowpayApiKey: string) {
+    this._user.shadowpaySettings.apiKey = newShadowpayApiKey;
     await this._user.save();
     return;
   }

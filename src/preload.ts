@@ -17,6 +17,11 @@ const api = {
     waxpeerApiKey: string
   ): Promise<boolean> =>
     ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
+  updateShadowpayApiKey: (
+    username: string,
+    shadowpayApiKey: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
   changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
   logout: (username: string): Promise<void> =>

@@ -11,14 +11,14 @@ import {
 import { User } from "./user";
 
 @Entity()
-export class WaxpeerSettings extends BaseEntity {
+export class ShadowpaySettings extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ nullable: false, type: "text", default: "" })
   apiKey: string;
 
-  @Column({ nullable: true, default: false, type: "boolean" })
+  @Column({ nullable: false, type: "boolean", default: false })
   state: boolean;
 
   @Column({
@@ -27,7 +27,7 @@ export class WaxpeerSettings extends BaseEntity {
   })
   sentTrades: string[];
 
-  @OneToOne(() => User, (user) => user.waxpeerSettings, {
+  @OneToOne(() => User, (user) => user.shadowpaySettings, {
     nullable: false,
   })
   @JoinColumn()

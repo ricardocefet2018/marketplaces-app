@@ -31,9 +31,10 @@ import "./rederer/assets/main.css";
 import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
+import ToastService from "primevue/toastservice";
 import Aura from "@primevue/themes/aura";
-import App from "./rederer/App.vue";
 import { definePreset } from "@primevue/themes";
+import App from "./rederer/App.vue";
 import router from "./rederer/router";
 
 const app = createApp(App);
@@ -65,6 +66,7 @@ const MyPreset = definePreset(Aura, {
   },
 });
 app.use(router);
+app.use(ToastService);
 app.use(PrimeVue, {
   theme: {
     preset: MyPreset,

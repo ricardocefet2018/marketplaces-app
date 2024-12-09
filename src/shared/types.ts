@@ -9,11 +9,22 @@ export interface SteamAcc {
   username: string;
   status: boolean;
   waxpeerSettings: WaxpeerSettings;
+  shadowpaySettings: ShadowpaySettings;
   userSettings: IUserSettings;
   avatar?: string;
 }
 
-export interface WaxpeerSettings {
+export interface MarketplaceSettings {
+  apiKey: string;
+  state: boolean;
+}
+
+export interface WaxpeerSettings extends MarketplaceSettings {
+  apiKey: string;
+  state: boolean;
+}
+
+export interface ShadowpaySettings extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
 }
@@ -35,3 +46,5 @@ export type FormErrors<FormType> = {
     message: string;
   }[];
 };
+
+export type Marketplace = "Waxpeer" | "Shadowpay" | "CSFLoat" | "MarketCSGO";

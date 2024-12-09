@@ -94,6 +94,21 @@ export class TradeManagerController {
     }
   }
 
+  public async updateShadowpayApiKey(
+    username: string,
+    shadowpayApiKey: string
+  ) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      await tm.updateShadowpayApiKey(shadowpayApiKey);
+      return true;
+    } catch (err) {
+      tm.handleError(err);
+      return false;
+    }
+  }
+
   public async changeWaxpeerState(newState: boolean, username: string) {
     const tm = this.tradeManagers.get(username);
     if (!tm) throw new Error("User not found");

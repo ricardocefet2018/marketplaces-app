@@ -64,8 +64,12 @@
           @click="router.push({ name: 'login' })"
         ></Button>
       </fieldset>
-      <fieldset class="border-noround m-0 p-2 h-full border-none col">
+      <fieldset
+        class="overflow-auto border-noround m-0 p-2 border-none col"
+        style="height: calc(100vh - 75.19px - 67.56px); max-width: 100%"
+      >
         <MarketplaceCard
+          class="mb-2"
           marketplace="Waxpeer"
           @api-key-changed="onUpdateWaxpeerApiKey"
           @state-changed="changeWaxpeerState"
@@ -73,14 +77,15 @@
           :disabled="waxpeerDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
-        <!-- <MarketplaceCard
+        <MarketplaceCard
+          class="mb-2"
           marketplace="Shadowpay"
           @api-key-changed="onUpdateShadowpayApiKey"
           @state-changed="changeShadowpayState"
           v-model="steamacc.shadowpaySettings"
           :disabled="waxpeerDisabled"
           v-if="!!steamacc"
-        ></MarketplaceCard> -->
+        ></MarketplaceCard>
       </fieldset>
     </div>
   </div>
@@ -97,14 +102,17 @@ import Badge from "primevue/badge";
 import MarketplaceCard from "./components/MarketplaceCard.vue";
 import { SteamAcc } from "../../shared/types";
 import { useRoute, useRouter } from "vue-router";
+import { useMyToast } from "../services/toast";
 
 const router = useRouter();
 const route = useRoute();
+const toast = useMyToast();
 
 const steamaccMap = ref<Map<string, SteamAcc>>();
 const steamaccList = ref<SteamAcc[]>();
 const steamacc: Ref<SteamAcc> = ref();
 const waxpeerDisabled: Ref<boolean> = ref(false);
+const shadowpayDisabled: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -140,6 +148,19 @@ async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
   await updateSteamAccList();
 }
 
+async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {
+  const status = await window.api.updateShadowpayApiKey(
+    steamacc.value.username,
+    shadowpayApiKey
+  );
+  if (!status) {
+    shadowpayDisabled.value = true;
+    return;
+  }
+  steamacc.value.shadowpaySettings.apiKey = shadowpayApiKey;
+  await updateSteamAccList();
+}
+
 async function changeWaxpeerState(newState: boolean) {
   waxpeerDisabled.value = true;
   const result = await window.api.changeWaxpeerState(
@@ -148,8 +169,6 @@ async function changeWaxpeerState(newState: boolean) {
   );
   waxpeerDisabled.value = false;
 }
-
-async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {}
 
 async function changeShadowpayState(newState: boolean) {}
 

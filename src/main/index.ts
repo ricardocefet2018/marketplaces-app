@@ -59,6 +59,19 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     }
   });
 
+  myHandler("updateShadowpayApiKey", async (e, username, shadowpayApikey) => {
+    try {
+      const status = await tradeManagerController.updateShadowpayApiKey(
+        username,
+        shadowpayApikey
+      );
+      return status;
+    } catch (err) {
+      handleError(err);
+      return false;
+    }
+  });
+
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeWaxpeerState(newState, username);

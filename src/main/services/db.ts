@@ -5,6 +5,7 @@ import { WaxpeerSettings } from "../models/waxpeerSettings";
 import { User } from "../models/user";
 import { UserSettings } from "../models/userSettings";
 import { Settings } from "../models/settings";
+import { ShadowpaySettings } from "../models/shadowpaySettings";
 
 export class DB {
   public dataSource: DataSource;
@@ -16,7 +17,13 @@ export class DB {
       database: dbPath,
       synchronize: process.env["NODE_ENV"] === "development",
       logging: false, //process.env["NODE_ENV"] === "development",
-      entities: [User, WaxpeerSettings, UserSettings, Settings],
+      entities: [
+        User,
+        WaxpeerSettings,
+        ShadowpaySettings,
+        UserSettings,
+        Settings,
+      ],
       migrations: [],
       subscribers: [],
     });

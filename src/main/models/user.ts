@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { WaxpeerSettings } from "./waxpeerSettings";
 import { UserSettings } from "./userSettings";
+import { ShadowpaySettings } from "./shadowpaySettings";
 
 @Entity()
 export class User extends BaseEntity {
@@ -37,6 +38,17 @@ export class User extends BaseEntity {
   })
   waxpeerSettings: WaxpeerSettings;
 
+  @OneToOne(
+    () => ShadowpaySettings,
+    (shadowpaySettings) => shadowpaySettings.user,
+    {
+      cascade: true,
+      eager: true,
+      nullable: false,
+    }
+  )
+  shadowpaySettings: ShadowpaySettings;
+
   @OneToOne(() => UserSettings, (userSettings) => userSettings.user, {
     cascade: true,
     eager: true,
@@ -49,6 +61,7 @@ export class User extends BaseEntity {
     this.username = username;
     this.proxy = proxy;
     this.waxpeerSettings = new WaxpeerSettings();
+    this.shadowpaySettings = new ShadowpaySettings();
     this.userSettings = new UserSettings();
   }
 
@@ -62,6 +75,10 @@ export class User extends BaseEntity {
     }
     if (!user.waxpeerSettings) {
       user.waxpeerSettings = new WaxpeerSettings();
+      await user.save();
+    }
+    if (!user.shadowpaySettings) {
+      user.shadowpaySettings = new ShadowpaySettings();
       await user.save();
     }
     return user;
