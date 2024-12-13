@@ -10,6 +10,7 @@ export interface SteamAcc {
   status: boolean;
   waxpeerSettings: WaxpeerSettings;
   shadowpaySettings: ShadowpaySettings;
+  marketcsgoSettings: MarketcsgoSettings;
   userSettings: IUserSettings;
   avatar?: string;
 }
@@ -25,6 +26,11 @@ export interface WaxpeerSettings extends MarketplaceSettings {
 }
 
 export interface ShadowpaySettings extends MarketplaceSettings {
+  apiKey: string;
+  state: boolean;
+}
+
+export interface MarketcsgoSettings extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
 }

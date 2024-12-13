@@ -43,6 +43,7 @@ export class TradeManager extends EventEmitter {
       status: !!this._steamClient.steamID,
       waxpeerSettings: this._user.waxpeerSettings,
       shadowpaySettings: this._user.shadowpaySettings,
+      marketcsgoSettings: this._user.marketcsgoSettings,
       userSettings: this._user.userSettings,
     };
   }
