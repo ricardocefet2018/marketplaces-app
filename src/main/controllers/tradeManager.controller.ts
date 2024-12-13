@@ -36,8 +36,12 @@ export class TradeManagerController {
       tm.on("waxpeerStateChanged", (state, username) => {
         this.webContents.send("waxpeerStateChanged", state, username);
       });
+      tm.on("shadowpayStateChanged", (state, username) => {
+        this.webContents.send("shadowpayStateChanged", state, username);
+      });
       try {
         this.changeWaxpeerState(user.waxpeerSettings.state, user.username);
+        this.changeShadowpayState(user.shadowpaySettings.state, user.username);
       } catch (err) {
         tm.handleError(err);
       }
@@ -118,6 +122,19 @@ export class TradeManagerController {
       return;
     } catch (err) {
       tm.emit("waxpeerStateChanged", !newState, username);
+      throw err;
+    }
+  }
+
+  public async changeShadowpayState(newState: boolean, username: string) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      if (newState) await tm.startShadowpayClient();
+      if (!newState) await tm.stopShadowpayClient();
+      return;
+    } catch (err) {
+      tm.emit("shadowpayStateChanged", !newState, username);
       throw err;
     }
   }

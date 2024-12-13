@@ -1,12 +1,17 @@
 import { EventEmitter } from "events";
 import WebSocket from "ws";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
+import {
+  TradeWebsocketCreateTradeData,
+  TradeWebsocketEvents,
+} from "../models/types";
 
-interface WaxpeerWebsocketEvents {
-  sendTrade: (data: TradeWebsocketCreateTradeData) => void;
-  cancelTrade: (data: TradeWebsocketCancelTradeData) => void;
-  acceptWithdraw: (data: TradeWebsocketAcceptWithdrawData) => void;
-  userChange: (data: UserOnlineChangePayload) => void;
+interface WaxpeerWebsocketEvents extends TradeWebsocketEvents {
+  sendTrade: (data: any) => void;
+  cancelTrade: (tradeOfferId: string) => void;
+  acceptWithdraw: (tradeOfferId: string) => void;
+  stateChange: (online: boolean) => void;
+  error: (error: any) => void;
 }
 
 export declare interface WaxpeerWebsocket {
@@ -77,11 +82,11 @@ export class WaxpeerWebsocket extends EventEmitter {
     const t = (this.w.tries + 1) * 1e3;
     this.w.ws = new WebSocket("wss://wssex.waxpeer.com");
     this.w.ws.on("error", (e) => {
-      console.log("TradeWebsocket error", e);
+      this.emit("error", e);
     });
     this.w.ws.on("close", async () => {
       this.w.tries += 1;
-      console.log(`TradeWebsocket closed`, this.steamid);
+      this.emit("stateChange", false);
       await sleepAsync(t);
       if (
         this.steamid &&
@@ -92,7 +97,6 @@ export class WaxpeerWebsocket extends EventEmitter {
       }
     });
     this.w.ws.on("open", () => {
-      console.log(`TradeWebsocket opened`, this.steamid);
       if (this.steamid) {
         clearInterval(this.w.int);
         const authObject: {
@@ -123,31 +127,43 @@ export class WaxpeerWebsocket extends EventEmitter {
       }
     });
 
-    this.w.ws.on("message", (e: any) => {
+    this.w.ws.on("message", (event: any) => {
       try {
-        const jMsg = JSON.parse(e);
+        const jMsg = JSON.parse(event);
+        let msg:
+          | TradeWebsocketCreateTradeData
+          | TradeWebsocketCancelTradeData
+          | TradeWebsocketAcceptWithdrawData
+          | UserOnlineChangePayload;
         switch (jMsg.name) {
           case "pong":
             break;
           case "send-trade":
-            this.emit("sendTrade", jMsg.data);
+            msg = jMsg.data as TradeWebsocketCreateTradeData;
+            this.emit("sendTrade", msg);
             break;
           case "cancelTrade":
-            this.emit("cancelTrade", jMsg.data);
+            msg = jMsg.data as TradeWebsocketCancelTradeData;
+            this.emit("cancelTrade", msg.trade_id);
             break;
           case "accept_withdraw":
-            this.emit("acceptWithdraw", jMsg.data);
+            msg = jMsg.data as TradeWebsocketAcceptWithdrawData;
+            this.emit("acceptWithdraw", msg.tradeid);
             break;
           case "user_change":
-            this.emit("userChange", jMsg.data);
+            msg = jMsg.data as UserOnlineChangePayload;
+            this.emit("stateChange", msg.can_p2p);
             break;
 
           default:
-            console.log("unknow message", jMsg);
+            this.emit(
+              "error",
+              new Error("Unknow waxpeer websocket message: " + event)
+            );
             break;
         }
-      } catch (e) {
-        console.log(e);
+      } catch (err) {
+        this.emit("error", err);
       }
     });
   }
@@ -189,33 +205,4 @@ export interface TradeWebSocketOptions {
   tradelink: string; // The trade link.
   waxApi: string; // The Waxpeer API key.
   accessToken: string; // The access token as string NOT encoded.
-}
-
-export interface TradeWebsocketCreateTradeData {
-  waxid: string;
-  wax_id: string;
-  json_tradeoffer: TradeWebsocketCreateTradeJsonTradeoffer;
-  tradeoffermessage: string;
-  tradelink: string;
-  partner: string;
-  created: string;
-  now: string;
-  send_until: string;
-}
-interface TradeWebsocketCreateTradeJsonTradeoffer {
-  newversion: boolean;
-  version: number;
-  me: TradeWebsocketCreateTradeSide;
-  them: TradeWebsocketCreateTradeSide;
-}
-interface TradeWebsocketCreateTradeSide {
-  assets: TradeWebsocketAsset[];
-  currency: any[];
-  ready: boolean;
-}
-interface TradeWebsocketAsset {
-  appid: number;
-  contextid: string;
-  amount: number;
-  assetid: string;
 }

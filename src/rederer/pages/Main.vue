@@ -128,9 +128,15 @@ onMounted(async () => {
     steamacc.value = steamaccMap.value.get(route.params.username as string);
   else steamacc.value = steamaccList.value[0];
   window.events.waxpeerStateChanged((state, username) => {
-    if (steamacc.value.username == username) {
+    if (steamacc.value.username == username)
       steamacc.value.waxpeerSettings.state = state;
-    }
+
+    updateSteamAccList();
+  });
+  window.events.shadowpayStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.shadowpaySettings.state = state;
+
     updateSteamAccList();
   });
 });
@@ -170,7 +176,14 @@ async function changeWaxpeerState(newState: boolean) {
   waxpeerDisabled.value = false;
 }
 
-async function changeShadowpayState(newState: boolean) {}
+async function changeShadowpayState(newState: boolean) {
+  shadowpayDisabled.value = true;
+  const result = await window.api.changeShadowpayState(
+    newState,
+    steamacc.value.username
+  );
+  shadowpayDisabled.value = false;
+}
 
 async function updateSteamAccList() {
   steamaccList.value = await window.api.getAccounts();

@@ -24,7 +24,7 @@ export default class ShadowpayClient {
 
   static async getInstance(api_key: string, proxy?: string) {
     const instance = new ShadowpayClient(api_key, proxy);
-    await instance.updateBalance();
+    await instance.updateBalance(); // This serves only to check if the apikey is correct;
     return instance;
   }
 
@@ -49,7 +49,6 @@ export default class ShadowpayClient {
 
   private async keepSendingSteamToken() {
     while (this.steamToken && this.keepingSendingSteamToken) {
-      console.log("Sending steam token to shadowpay...");
       const success = await this.sendSteamToken();
       if (!success) {
         this.keepingSendingSteamToken = false;
@@ -85,8 +84,8 @@ export default class ShadowpayClient {
     const options = {
       method: "POST",
       body: JSON.stringify({
-        trade_id: Number(shadowpayTradeId),
-        tradeoffer_id: Number(tradeOfferId),
+        trade_id: shadowpayTradeId.toString(),
+        tradeoffer_id: tradeOfferId.toString(),
       }),
     };
     const res = await this.internalFetch(url, options);
@@ -111,7 +110,7 @@ export default class ShadowpayClient {
   private internalFetch(url: URL | RequestInfo, init: RequestInit = {}) {
     if (this.proxy) init.agent = new HttpsProxyAgent(this.proxy);
 
-    const headers: any = init.headers;
+    const headers: any = init.headers ?? {};
     headers["Accept"] = "application/json";
     headers["Authorization"] = `Bearer ${this.api_key}`;
     if (init.body) {

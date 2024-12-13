@@ -24,6 +24,11 @@ const api = {
     ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
   changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
+  changeShadowpayState: (
+    newState: boolean,
+    username: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("changeShadowpayState", newState, username),
   logout: (username: string): Promise<void> =>
     ipcRenderer.invoke("logout", username),
   updateUserSettings: (
@@ -44,6 +49,12 @@ const api = {
 const events = {
   waxpeerStateChanged: (callback: (state: boolean, username: string) => void) =>
     ipcRenderer.on("waxpeerStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+  shadowpayStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("shadowpayStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
   apiReady: (callback: () => void) => ipcRenderer.on("apiReady", callback),

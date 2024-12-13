@@ -2,7 +2,7 @@ import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
-import { TradeWebsocketCreateTradeData } from "../models/types";
+import { JsonTradeoffer, TradeWebsocketCreateTradeData } from "../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
   handleError,
@@ -12,12 +12,19 @@ import {
 } from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
-import { IUserSettings, LoginData, SteamAcc } from "../../shared/types";
+import {
+  IUserSettings,
+  LoginData,
+  Marketplace,
+  SteamAcc,
+} from "../../shared/types";
 import { User } from "../models/user";
 import WaxpeerClient from "./waxpeerClient";
 import { WaxpeerWebsocket } from "./waxpeerWebsocket";
 import { FetchError } from "node-fetch";
 import { app } from "electron";
+import ShadowpayClient from "./shadowpayClient";
+import { SendTradePayload, ShadowpayWebsocket } from "./shadowpayWebsocket";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
@@ -27,6 +34,8 @@ export class TradeManager extends EventEmitter {
   private logsPath: string;
   private _wpClient?: WaxpeerClient;
   private _wpWebsocket?: WaxpeerWebsocket;
+  private _spClient?: ShadowpayClient;
+  private _spWebsocket?: ShadowpayWebsocket;
 
   public get steamAcc(): SteamAcc {
     return {
@@ -188,72 +197,120 @@ export class TradeManager extends EventEmitter {
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
+    if (this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) return;
+
     const tradeURL = data.tradelink;
-    const apps_contexts = getAppidContextidByCreateTradeData(data);
+    const json_tradeoffer = data.json_tradeoffer;
+    const id = data.wax_id;
+    const marketplace: Marketplace = "Waxpeer";
+    const message = data.tradeoffermessage;
+    const tradeOfferId = await this.createTrade(
+      tradeURL,
+      json_tradeoffer,
+      id,
+      marketplace,
+      message
+    );
+
+    if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
+
+    try {
+      const steamTradeRes = await this._wpClient.steamTrade(
+        tradeOfferId,
+        data.waxid
+      );
+      if (steamTradeRes.success) {
+        this.infoLogger(
+          `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
+        );
+        this._user.waxpeerSettings.sentTrades.push(data.wax_id);
+        await this._user.save();
+        if (this._user.userSettings.pendingTradesFilePath != "")
+          this.registerPendingTradeToFile(tradeOfferId);
+      }
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  public async createTradeForShadowpay(data: SendTradePayload) {
+    if (this._user.shadowpaySettings.sentTrades.includes(data.id.toString()))
+      return;
+
+    const tradeURL = data.tradelink;
+    const json_tradeoffer = data.json_tradeoffer;
+    const id = data.id;
+    const marketplace: Marketplace = "Shadowpay";
+    const tradeOfferId = await this.createTrade(
+      tradeURL,
+      json_tradeoffer,
+      id,
+      marketplace
+    );
+    if (!tradeOfferId) return;
+
+    try {
+      const reportedTrade = await this._spClient.reportTradeOffer(
+        data.id,
+        tradeOfferId
+      );
+      if (reportedTrade) {
+        this.infoLogger(
+          `Steam trade offer ${tradeOfferId} was successfully associated with shadowpay trade ${data.id}`
+        );
+        this._user.shadowpaySettings.sentTrades.push(data.id.toString());
+        await this._user.save();
+        if (this._user.userSettings.pendingTradesFilePath != "")
+          this.registerPendingTradeToFile(tradeOfferId);
+      }
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  private async createTrade(
+    tradeURL: string,
+    json_tradeoffer: JsonTradeoffer,
+    id: string | number,
+    marketplace: Marketplace,
+    message = ""
+  ) {
     const offer = this._steamTradeOfferManager.createOffer(tradeURL);
     try {
-      const inventories = await Promise.all(
-        apps_contexts.map((app_context) =>
-          this.getInventoryContents(app_context.appid, app_context.contextid)
-        )
-      );
-      const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
-      const assets = data.json_tradeoffer.me.assets;
-      const itemsToSend = assets.map((asset) =>
-        unifiedInv.find(
-          (econItem) =>
-            econItem.assetid == asset.assetid &&
-            econItem.appid == asset.appid &&
-            econItem.contextid.toString() == asset.contextid
-        )
-      );
+      const itemsToSend = await this.getItemsToSend(json_tradeoffer);
       if (!itemsToSend.every((v) => typeof v != "undefined")) {
         this.infoLogger(
-          `One or more items of waxpeer sale ${data.wax_id} wasn't in inventory`
+          `One or more items of ${marketplace} sale #${id} wasn't in inventory`
         );
         return; // Don't want to create trade if we don't have all items that we need
       }
 
-      const alreadyInTrade = await this.isItemsInTrade(
-        <CEconItem[]>itemsToSend
-      );
+      const alreadyInTrade = await this.isItemsInTrade(itemsToSend);
       if (alreadyInTrade) {
         this.infoLogger(
-          `One or more items of waxpeer ${data.wax_id} was already in trade`
+          `One or more items of ${marketplace} sale #${id} was already in trade`
         );
-        return;
-      } // Don't want to create trade one (or more item) is already in trade
-      offer.addMyItems(<CEconItem[]>itemsToSend);
-      offer.setMessage(data.tradeoffermessage);
-      const offerStatus = await new Promise<"pending" | "sent">((res, rej) => {
-        offer.send((err, status) => {
-          if (err) rej(err);
-
-          res(status);
-        });
-      });
+        return; // Don't want to create trade one (or more item) is already in trade
+      }
+      offer.addMyItems(itemsToSend);
+      offer.setMessage(message);
+      const offerStatus = await this.sendOffer(offer);
       this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
       return offer.id;
     } catch (err) {
       this.handleError(err);
       return;
     }
+  }
 
-    function getAppidContextidByCreateTradeData(
-      createTradeData: TradeWebsocketCreateTradeData
-    ) {
-      const app_contextFromAssets =
-        createTradeData.json_tradeoffer.me.assets.map(
-          (a) => a.appid.toString() + "_" + a.contextid
-        );
-      const app_context = app_contextFromAssets
-        .filter((value, index, self) => self.indexOf(value) == index)
-        .map((v) => ({
-          appid: Number(v.split("_")[0]),
-          contextid: Number(v.split("_")[1]),
-        }));
-      return app_context;
-    }
+  public sendOffer(offer: TradeOffer): Promise<"pending" | "sent"> {
+    return new Promise<"pending" | "sent">((res, rej) => {
+      offer.send((err, status) => {
+        if (err) rej(err);
+
+        res(status);
+      });
+    });
   }
 
   public async cancelTradeOffer(offerId: string, retry = true) {
@@ -270,7 +327,7 @@ export class TradeManager extends EventEmitter {
           return; // Offer was found but isn't cancellable
 
         await cancelOffer(offer);
-        this.infoLogger(`${offer.id} was canceled`);
+        this.infoLogger(`Trade offer #${offer.id} was canceled`);
         return;
       } catch (err) {
         if (err instanceof Error && err.message === "No matching offer found") {
@@ -318,6 +375,9 @@ export class TradeManager extends EventEmitter {
     });
   }
 
+  /**
+   * Doesn't throw errors
+   */
   public async acceptTradeOffer(offerId: string) {
     try {
       const offer = await this.getTradeOffer(offerId);
@@ -364,7 +424,51 @@ export class TradeManager extends EventEmitter {
     }
   }
 
-  private getInventoryContents(appid: number, contextid: number) {
+  private async getItemsToSend(
+    json_tradeoffer: JsonTradeoffer
+  ): Promise<CEconItem[]> {
+    const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
+    const inventories = await Promise.all(
+      apps_contexts.map((app_context) =>
+        this.getInventoryContents(app_context.appid, app_context.contextid)
+      )
+    );
+    const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
+    const assets = json_tradeoffer.me.assets;
+    const itemsToSend = assets.map((asset) =>
+      unifiedInv.find(
+        (econItem) =>
+          econItem.assetid == asset.assetid &&
+          econItem.appid == asset.appid &&
+          econItem.contextid.toString() == asset.contextid
+      )
+    );
+    return itemsToSend;
+
+    function getAppidContextidByJsonTradeOffer(
+      json_tradeoffer: JsonTradeoffer
+    ) {
+      const app_contextFromAssets = json_tradeoffer.me.assets.map(
+        (a) => a.appid.toString() + "_" + a.contextid
+      );
+      const app_context = app_contextFromAssets
+        .filter((value, index, self) => self.indexOf(value) == index)
+        .map((v) => ({
+          appid: Number(v.split("_")[0]),
+          contextid: Number(v.split("_")[1]),
+        }));
+      return app_context;
+    }
+  }
+
+  /**
+   * Get inventory contents based on appid and contextid
+   * @returns Array containing all intenvory items
+   */
+  private getInventoryContents(
+    appid: number,
+    contextid: number
+  ): Promise<CEconItem[]> {
     return new Promise<CEconItem[]>((res, rej) => {
       this._steamTradeOfferManager.getInventoryContents(
         appid,
@@ -395,7 +499,7 @@ export class TradeManager extends EventEmitter {
    */
   public async startWaxpeerClient(): Promise<void> {
     if (this._wpClient || this._wpWebsocket) return;
-    if (!this._steamClient.steamID) return; // Steam accound failed in login, don't try to start waxpeer
+    if (!this._steamClient.steamID) return; // Steam accound failed in login, don't try to start
     this._wpClient = await WaxpeerClient.getInstance(
       this._user.waxpeerSettings.apiKey,
       this._user.proxy
@@ -409,43 +513,65 @@ export class TradeManager extends EventEmitter {
     await this._wpClient.setSteamToken(accessToken);
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
-    this._wpWebsocket.on("userChange", async (data) => {
-      if (data.can_p2p == this._user.waxpeerSettings.state) return;
-      this._user.waxpeerSettings.state = data.can_p2p;
-      this.emit("waxpeerStateChanged", data.can_p2p, this._user.username);
+    this.registerWaxpeerSocketHandlers();
+    return;
+  }
+
+  public async startShadowpayClient(): Promise<void> {
+    if (this._spClient || this._spWebsocket) return;
+    if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
+    this._spClient = await ShadowpayClient.getInstance(
+      this._user.shadowpaySettings.apiKey,
+      this._user.proxy
+    );
+    let accessToken = this.getSteamLoginSecure();
+    // TODO this is necessary since when app start it need to await steam send the cookies before start shadowpay, maybe change it to a event
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
+    await this._spClient.setSteamToken(accessToken);
+    this._spWebsocket = new ShadowpayWebsocket(this._spClient);
+    this.registerShadowpaySocketHandlers();
+    return;
+  }
+
+  private registerWaxpeerSocketHandlers() {
+    this._wpWebsocket.on("stateChange", async (data) => {
+      if (data == this._user.waxpeerSettings.state) return;
+      this._user.waxpeerSettings.state = data;
+      this.emit("waxpeerStateChanged", data, this._user.username);
       await this._user.save();
     });
-    this._wpWebsocket.on("acceptWithdraw", (data) => {
-      this.acceptTradeOffer(data.tradeid); // error catched inside, can't throw err
+    this._wpWebsocket.on("acceptWithdraw", (tradeOfferId) => {
+      this.acceptTradeOffer(tradeOfferId); // error catched inside, can't throw err
     });
-    this._wpWebsocket.on("cancelTrade", (data) => {
-      this.cancelTradeOffer(data.trade_id, true); // retring till cancel or not cancellable anymore, can't throw err
+    this._wpWebsocket.on("cancelTrade", (tradeOfferId) => {
+      this.cancelTradeOffer(tradeOfferId); // retring till cancel or not cancellable anymore, can't throw err
     });
-    this._wpWebsocket.on("sendTrade", async (data) => {
-      if (this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) return;
+    this._wpWebsocket.on("sendTrade", (data) => {
+      this.createTradeForWaxpeer(data);
+    });
+    this._wpWebsocket.on("error", this.handleError);
+  }
 
-      const tradeOfferId = await this.createTradeForWaxpeer(data);
-      if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
-
-      try {
-        const steamTradeRes = await this._wpClient.steamTrade(
-          tradeOfferId,
-          data.waxid
-        );
-        if (steamTradeRes.success) {
-          this.infoLogger(
-            `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
-          );
-          this._user.waxpeerSettings.sentTrades.push(data.wax_id);
-          await this._user.save();
-          if (this._user.userSettings.pendingTradesFilePath != "")
-            this.registerPendingTradeToFile(tradeOfferId);
-        }
-      } catch (err) {
-        this.handleError(err);
-      }
+  private registerShadowpaySocketHandlers() {
+    this._spWebsocket.on("stateChange", async (data) => {
+      if (data == this._user.shadowpaySettings.state) return;
+      this._user.shadowpaySettings.state = data;
+      this.emit("shadowpayStateChanged", data, this._user.username);
+      await this._user.save();
     });
-    return;
+    this._spWebsocket.on("acceptWithdraw", (tradeOfferId) => {
+      this.acceptTradeOffer(tradeOfferId);
+    });
+    this._spWebsocket.on("cancelTrade", (tradeOfferId) => {
+      this.cancelTradeOffer(tradeOfferId);
+    });
+    this._spWebsocket.on("sendTrade", async (data) => {
+      this.createTradeForShadowpay(data);
+    });
+    this._spWebsocket.on("error", this.handleError);
   }
 
   /**
@@ -459,6 +585,22 @@ export class TradeManager extends EventEmitter {
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
     this._user.waxpeerSettings.state = false;
+    await this._user.save(); // TODO
+    // A DB error should close the app?
+    return;
+  }
+
+  /**
+   * @return Promise that resolve if it's all OK
+   * @throw (DB error) Fatal error.
+   */
+  public async stopShadowpayClient() {
+    if (!this._spWebsocket || !this._spClient) return; // Already stopped
+    this._spWebsocket.disconnect();
+    this._spWebsocket.removeAllListeners();
+    this._spClient = undefined;
+    this._spWebsocket = undefined;
+    this._user.shadowpaySettings.state = false;
     await this._user.save(); // TODO
     // A DB error should close the app?
     return;
@@ -500,6 +642,7 @@ export class TradeManager extends EventEmitter {
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
+  shadowpayStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
 }
 
