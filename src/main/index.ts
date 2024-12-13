@@ -72,6 +72,19 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     }
   });
 
+  myHandler("updateMarketcsgoApiKey", async (e, username, marketcsgoApiKey) => {
+    try {
+      const status = await tradeManagerController.updateMarketcsgoApiKey(
+        username,
+        marketcsgoApiKey
+      );
+      return status;
+    } catch (err) {
+      handleError(err);
+      return false;
+    }
+  });
+
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeWaxpeerState(newState, username);

@@ -113,6 +113,21 @@ export class TradeManagerController {
     }
   }
 
+  public async updateMarketcsgoApiKey(
+    username: string,
+    marketcsgoApiKey: string
+  ) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      await tm.updateMarketcsgoApiKey(marketcsgoApiKey);
+      return true;
+    } catch (err) {
+      tm.handleError(err);
+      return false;
+    }
+  }
+
   public async changeWaxpeerState(newState: boolean, username: string) {
     const tm = this.tradeManagers.get(username);
     if (!tm) throw new Error("User not found");

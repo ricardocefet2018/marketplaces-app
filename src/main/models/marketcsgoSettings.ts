@@ -21,6 +21,7 @@ export class MarketcsgoSettings extends BaseEntity {
   @Column({ nullable: false, type: "boolean", default: false })
   state: boolean;
 
+  // TODO limit this array to 1000(?) chars, default limitation on sqlite is 10^9 chars
   @Column({
     type: "simple-array",
     default: "",

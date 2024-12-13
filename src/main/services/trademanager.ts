@@ -495,6 +495,12 @@ export class TradeManager extends EventEmitter {
     return;
   }
 
+  public async updateMarketcsgoApiKey(newMarketcsgoApiKey: string) {
+    this._user.marketcsgoSettings.apiKey = newMarketcsgoApiKey;
+    await this._user.save();
+    return;
+  }
+
   /**
    * @throw DB or Fetch error.
    */

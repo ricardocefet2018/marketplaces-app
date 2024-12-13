@@ -22,6 +22,11 @@ const api = {
     shadowpayApiKey: string
   ): Promise<boolean> =>
     ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
+  updateMarketcsgoApiKey: (
+    username: string,
+    marketcsgoApiKey: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("updateMarketcsgoApiKey", username, marketcsgoApiKey),
   changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
   changeShadowpayState: (
