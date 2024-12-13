@@ -86,6 +86,15 @@
           :disabled="waxpeerDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
+        <MarketplaceCard
+          class="mb-2"
+          marketplace="MarketCSGO"
+          @api-key-changed="onUpdateMarketCSGOApiKey"
+          @state-changed="changeMarketCSGOState"
+          v-model="marketcsgoPlaceholder"
+          :disabled="marketcsgoDisabled"
+          v-if="!!steamacc"
+        ></MarketplaceCard>
       </fieldset>
     </div>
   </div>
@@ -113,6 +122,12 @@ const steamaccList = ref<SteamAcc[]>();
 const steamacc: Ref<SteamAcc> = ref();
 const waxpeerDisabled: Ref<boolean> = ref(false);
 const shadowpayDisabled: Ref<boolean> = ref(false);
+const marketcsgoDisabled: Ref<boolean> = ref(false);
+
+const marketcsgoPlaceholder = ref<{ apiKey: string; state: boolean }>({
+  apiKey: "",
+  state: false,
+}); // TODO tirar esse placeholder
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -167,6 +182,11 @@ async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {
   await updateSteamAccList();
 }
 
+async function onUpdateMarketCSGOApiKey(marketcsgoApiKey: string) {
+  marketcsgoPlaceholder.value.apiKey = marketcsgoApiKey;
+  return; // TODO
+}
+
 async function changeWaxpeerState(newState: boolean) {
   waxpeerDisabled.value = true;
   const result = await window.api.changeWaxpeerState(
@@ -183,6 +203,12 @@ async function changeShadowpayState(newState: boolean) {
     steamacc.value.username
   );
   shadowpayDisabled.value = false;
+}
+
+async function changeMarketCSGOState(newState: boolean) {
+  marketcsgoDisabled.value = true;
+  marketcsgoPlaceholder.value.state = newState;
+  marketcsgoDisabled.value = false;
 }
 
 async function updateSteamAccList() {
