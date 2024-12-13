@@ -6,6 +6,7 @@ import { User } from "../models/user";
 import { UserSettings } from "../models/userSettings";
 import { Settings } from "../models/settings";
 import { ShadowpaySettings } from "../models/shadowpaySettings";
+import { MarketcsgoSettings } from "../models/marketcsgoSettings";
 
 export class DB {
   public dataSource: DataSource;
@@ -21,6 +22,7 @@ export class DB {
         User,
         WaxpeerSettings,
         ShadowpaySettings,
+        MarketcsgoSettings,
         UserSettings,
         Settings,
       ],

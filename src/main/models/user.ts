@@ -10,6 +10,7 @@ import {
 import { WaxpeerSettings } from "./waxpeerSettings";
 import { UserSettings } from "./userSettings";
 import { ShadowpaySettings } from "./shadowpaySettings";
+import { MarketcsgoSettings } from "./marketcsgoSettings";
 
 @Entity()
 export class User extends BaseEntity {
@@ -49,6 +50,17 @@ export class User extends BaseEntity {
   )
   shadowpaySettings: ShadowpaySettings;
 
+  @OneToOne(
+    () => MarketcsgoSettings,
+    (marketcsgoSettings) => marketcsgoSettings.user,
+    {
+      cascade: true,
+      eager: true,
+      nullable: false,
+    }
+  )
+  marketcsgoSettings: MarketcsgoSettings;
+
   @OneToOne(() => UserSettings, (userSettings) => userSettings.user, {
     cascade: true,
     eager: true,
@@ -62,6 +74,7 @@ export class User extends BaseEntity {
     this.proxy = proxy;
     this.waxpeerSettings = new WaxpeerSettings();
     this.shadowpaySettings = new ShadowpaySettings();
+    this.marketcsgoSettings = new MarketcsgoSettings();
     this.userSettings = new UserSettings();
   }
 
@@ -69,18 +82,24 @@ export class User extends BaseEntity {
     const user = await this.findOneBy({
       username,
     });
+    let updated = false;
     if (!user.userSettings) {
       user.userSettings = new UserSettings();
-      await user.save();
+      updated = true;
     }
     if (!user.waxpeerSettings) {
       user.waxpeerSettings = new WaxpeerSettings();
-      await user.save();
+      updated = true;
     }
     if (!user.shadowpaySettings) {
       user.shadowpaySettings = new ShadowpaySettings();
-      await user.save();
+      updated = true;
     }
+    if (!user.marketcsgoSettings) {
+      user.marketcsgoSettings = new MarketcsgoSettings();
+      updated = true;
+    }
+    if (updated) await user.save();
     return user;
   }
 }
