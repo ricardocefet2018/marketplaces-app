@@ -34,6 +34,11 @@ const api = {
     username: string
   ): Promise<boolean> =>
     ipcRenderer.invoke("changeShadowpayState", newState, username),
+  changeMarketcsgoState: (
+    newState: boolean,
+    username: string
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("changeMarketcsgoState", newState, username),
   logout: (username: string): Promise<void> =>
     ipcRenderer.invoke("logout", username),
   updateUserSettings: (
@@ -60,6 +65,12 @@ const events = {
     callback: (state: boolean, username: string) => void
   ) =>
     ipcRenderer.on("shadowpayStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+  marketcsgoStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("marketcsgoStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
   apiReady: (callback: () => void) => ipcRenderer.on("apiReady", callback),

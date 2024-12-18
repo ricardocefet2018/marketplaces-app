@@ -5,6 +5,7 @@ import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
 import { AppController } from "./controllers/app.controller";
+import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
   const tradeManagerController = await TradeManagerController.factory(
@@ -127,6 +128,33 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
         body += " Most likely you or server is offline.";
       else if (err instanceof Error && err.message.startsWith("{"))
         body += " " + err.message;
+      else body += " Most likely your DB is corrupted.";
+      new Notification({
+        title: "Something gone wrong!",
+        body,
+      }).show();
+      handleError(err);
+    }
+    return false;
+  });
+
+  myHandler("changeMarketcsgoState", async (e, newState, username) => {
+    try {
+      await tradeManagerController.changeMarketcsgoState(newState, username);
+      new Notification({
+        title: "Marketcsgo state changed!",
+        body: `${username} marketcsgo state has successfully turn ${
+          newState ? "online" : "offline"
+        }`,
+      }).show();
+      return true;
+    } catch (err) {
+      let body = "Check out the logs.";
+      if (err instanceof FetchError)
+        body += " Most likely you or server is offline.";
+      else if (err instanceof Error && err.message.startsWith("{"))
+        body += " " + err.message;
+      else if (err instanceof AppError) body += " " + err.message;
       else body += " Most likely your DB is corrupted.";
       new Notification({
         title: "Something gone wrong!",

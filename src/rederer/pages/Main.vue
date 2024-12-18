@@ -83,7 +83,7 @@
           @api-key-changed="onUpdateShadowpayApiKey"
           @state-changed="changeShadowpayState"
           v-model="steamacc.shadowpaySettings"
-          :disabled="waxpeerDisabled"
+          :disabled="shadowpayDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
         <MarketplaceCard
@@ -149,6 +149,12 @@ onMounted(async () => {
 
     updateSteamAccList();
   });
+  window.events.marketcsgoStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.marketcsgoSettings.state = state;
+
+    updateSteamAccList();
+  });
 });
 
 async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
@@ -210,7 +216,10 @@ async function changeShadowpayState(newState: boolean) {
 
 async function changeMarketCSGOState(newState: boolean) {
   marketcsgoDisabled.value = true;
-
+  const result = await window.api.changeMarketcsgoState(
+    newState,
+    steamacc.value.username
+  );
   marketcsgoDisabled.value = false;
   return;
 }
