@@ -89,13 +89,9 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeWaxpeerState(newState, username);
-      new Notification({
-        title: "Waxpeer state changed!",
-        body: `${username} waxpeer state has successfully turn ${
-          newState ? "online" : "offline"
-        }`,
-      }).show();
-      return true;
+      return {
+        success: true,
+      };
     } catch (err) {
       let body = "Check out the logs.";
       if (err instanceof FetchError)
@@ -103,13 +99,12 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
       else if (err instanceof Error && err.message.startsWith("{"))
         body += " " + err.message;
       else body += " Most likely your DB is corrupted.";
-      new Notification({
-        title: "Something gone wrong!",
-        body,
-      }).show();
       handleError(err);
+      return {
+        success: false,
+        msg: body,
+      };
     }
-    return false;
   });
 
   myHandler("changeShadowpayState", async (e, newState, username) => {

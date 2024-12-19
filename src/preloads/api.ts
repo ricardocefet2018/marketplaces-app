@@ -1,5 +1,11 @@
 import { ipcRenderer } from "electron";
-import { LoginData, SteamAcc, IUserSettings, ISettings } from "../shared/types";
+import {
+  LoginData,
+  SteamAcc,
+  IUserSettings,
+  ISettings,
+  ApiResponse,
+} from "../shared/types";
 import { LoginResponses } from "../shared/enums";
 
 export const api = {
@@ -41,7 +47,10 @@ export const api = {
     ipcRenderer.invoke("updateCSFloatApiKey", username, csfloatApiKey),
 
   // Change States
-  changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
+  changeWaxpeerState: (
+    newState: boolean,
+    username: string
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
   changeShadowpayState: (
     newState: boolean,
