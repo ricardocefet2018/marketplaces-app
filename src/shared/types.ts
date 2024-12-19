@@ -8,9 +8,10 @@ export interface LoginData {
 export interface SteamAcc {
   username: string;
   status: boolean;
-  waxpeerSettings: WaxpeerSettings;
-  shadowpaySettings: ShadowpaySettings;
-  marketcsgoSettings: MarketcsgoSettings;
+  waxpeer: Waxpeer;
+  shadowpay: Shadowpay;
+  marketcsgo: MarketCSGO;
+  csfloat: CSFloat;
   userSettings: IUserSettings;
   avatar?: string;
 }
@@ -20,17 +21,22 @@ export interface MarketplaceSettings {
   state: boolean;
 }
 
-export interface WaxpeerSettings extends MarketplaceSettings {
+export interface Waxpeer extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
 }
 
-export interface ShadowpaySettings extends MarketplaceSettings {
+export interface Shadowpay extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
 }
 
-export interface MarketcsgoSettings extends MarketplaceSettings {
+export interface MarketCSGO extends MarketplaceSettings {
+  apiKey: string;
+  state: boolean;
+}
+
+export interface CSFloat extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
 }

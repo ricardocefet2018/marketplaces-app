@@ -2,23 +2,18 @@ import {
   BaseEntity,
   Column,
   CreateDateColumn,
-  Entity,
-  JoinColumn,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { User } from "./user";
 
-@Entity()
-export class WaxpeerSettings extends BaseEntity {
+export class BaseMarket extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ nullable: false, type: "text", default: "" })
   apiKey: string;
 
-  @Column({ nullable: true, default: false, type: "boolean" })
+  @Column({ nullable: false, type: "boolean", default: false })
   state: boolean;
 
   // TODO limit this array to 1000(?) chars, default limitation on sqlite is 10^9 chars
@@ -27,12 +22,6 @@ export class WaxpeerSettings extends BaseEntity {
     default: "",
   })
   sentTrades: string[];
-
-  @OneToOne(() => User, (user) => user.waxpeerSettings, {
-    nullable: false,
-  })
-  @JoinColumn()
-  user: User;
 
   @CreateDateColumn()
   createDate: Date;

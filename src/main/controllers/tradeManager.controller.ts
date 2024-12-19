@@ -1,7 +1,7 @@
 import { WebContents } from "electron";
 import { LoginData, SteamAcc, IUserSettings } from "../../shared/types";
-import { User } from "../models/user";
 import { TradeManager } from "../services/trademanager";
+import { User } from "../entities/user.entity";
 
 export class TradeManagerController {
   private static instance: TradeManagerController;
@@ -43,12 +43,9 @@ export class TradeManagerController {
         this.webContents.send("marketcsgoStateChanged", state, username);
       });
       try {
-        this.changeWaxpeerState(user.waxpeerSettings.state, user.username);
-        this.changeShadowpayState(user.shadowpaySettings.state, user.username);
-        this.changeMarketcsgoState(
-          user.marketcsgoSettings.state,
-          user.username
-        );
+        this.changeWaxpeerState(user.waxpeer.state, user.username);
+        this.changeShadowpayState(user.shadowpay.state, user.username);
+        this.changeMarketcsgoState(user.marketcsgo.state, user.username);
       } catch (err) {
         tm.handleError(err);
       }

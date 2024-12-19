@@ -73,7 +73,7 @@
           marketplace="Waxpeer"
           @api-key-changed="onUpdateWaxpeerApiKey"
           @state-changed="changeWaxpeerState"
-          v-model="steamacc.waxpeerSettings"
+          v-model="steamacc.waxpeer"
           :disabled="waxpeerDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
@@ -82,7 +82,7 @@
           marketplace="Shadowpay"
           @api-key-changed="onUpdateShadowpayApiKey"
           @state-changed="changeShadowpayState"
-          v-model="steamacc.shadowpaySettings"
+          v-model="steamacc.shadowpay"
           :disabled="shadowpayDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
@@ -91,8 +91,17 @@
           marketplace="MarketCSGO"
           @api-key-changed="onUpdateMarketCSGOApiKey"
           @state-changed="changeMarketCSGOState"
-          v-model="steamacc.marketcsgoSettings"
+          v-model="steamacc.marketcsgo"
           :disabled="marketcsgoDisabled"
+          v-if="!!steamacc"
+        ></MarketplaceCard>
+        <MarketplaceCard
+          class="mb-2"
+          marketplace="CSFLoat"
+          @api-key-changed="onUpdateCSFloatApiKey"
+          @state-changed="changeCSFloatState"
+          v-model="steamacc.csfloat"
+          :disabled="csgofloatDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
       </fieldset>
@@ -123,6 +132,7 @@ const steamacc: Ref<SteamAcc> = ref();
 const waxpeerDisabled: Ref<boolean> = ref(false);
 const shadowpayDisabled: Ref<boolean> = ref(false);
 const marketcsgoDisabled: Ref<boolean> = ref(false);
+const csgofloatDisabled: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -139,19 +149,26 @@ onMounted(async () => {
   else steamacc.value = steamaccList.value[0];
   window.events.waxpeerStateChanged((state, username) => {
     if (steamacc.value.username == username)
-      steamacc.value.waxpeerSettings.state = state;
+      steamacc.value.waxpeer.state = state;
 
     updateSteamAccList();
   });
   window.events.shadowpayStateChanged((state, username) => {
     if (steamacc.value.username == username)
-      steamacc.value.shadowpaySettings.state = state;
+      steamacc.value.shadowpay.state = state;
 
     updateSteamAccList();
   });
   window.events.marketcsgoStateChanged((state, username) => {
     if (steamacc.value.username == username)
-      steamacc.value.marketcsgoSettings.state = state;
+      steamacc.value.marketcsgo.state = state;
+
+    updateSteamAccList();
+  });
+
+  window.events.csgofloatStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.csfloat.state = state;
 
     updateSteamAccList();
   });
@@ -166,7 +183,7 @@ async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
     waxpeerDisabled.value = true;
     return;
   }
-  steamacc.value.waxpeerSettings.apiKey = waxpeerApiKey;
+  steamacc.value.waxpeer.apiKey = waxpeerApiKey;
   await updateSteamAccList();
 }
 
@@ -179,7 +196,7 @@ async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {
     shadowpayDisabled.value = true;
     return;
   }
-  steamacc.value.shadowpaySettings.apiKey = shadowpayApiKey;
+  steamacc.value.shadowpay.apiKey = shadowpayApiKey;
   await updateSteamAccList();
 }
 
@@ -192,7 +209,19 @@ async function onUpdateMarketCSGOApiKey(marketcsgoApiKey: string) {
     marketcsgoDisabled.value = true;
     return;
   }
-  steamacc.value.marketcsgoSettings.apiKey = marketcsgoApiKey;
+  steamacc.value.marketcsgo.apiKey = marketcsgoApiKey;
+  await updateSteamAccList();
+}
+async function onUpdateCSFloatApiKey(csfloatApiKey: string) {
+  const status = await window.api.updateCSFloatApiKey(
+    steamacc.value.username,
+    csfloatApiKey
+  );
+  if (!status) {
+    csgofloatDisabled.value = true;
+    return;
+  }
+  steamacc.value.csfloat.apiKey = csfloatApiKey;
   await updateSteamAccList();
 }
 
@@ -221,6 +250,13 @@ async function changeMarketCSGOState(newState: boolean) {
     steamacc.value.username
   );
   marketcsgoDisabled.value = false;
+  return;
+}
+
+async function changeCSFloatState() {
+  marketcsgoDisabled.value = true;
+
+  csgofloatDisabled.value = false;
   return;
 }
 

@@ -2,10 +2,7 @@ import { app, BrowserWindow } from "electron";
 import { DB } from "./main/services/db";
 import path from "path";
 import { registerHandlers } from "./main/index";
-import { TradeManagerController } from "./main/controllers/tradeManager.controller";
 import { handleError } from "./shared/helpers";
-import { AppController } from "./main/controllers/app.controller";
-
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 async function main() {
   if (require("electron-squirrel-startup")) {

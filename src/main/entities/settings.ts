@@ -1,14 +1,10 @@
 import { ISettings } from "../../shared/types";
-import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Settings extends BaseEntity implements ISettings {
-  @PrimaryColumn({
-    type: "int",
-    nullable: false,
-    unique: true,
-  })
-  id = 1;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({
     type: "boolean",

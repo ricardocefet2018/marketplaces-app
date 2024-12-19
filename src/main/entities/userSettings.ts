@@ -8,8 +8,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { User } from "./user";
+
 import { IUserSettings } from "../../shared/types";
+import { User } from "./user.entity";
 
 @Entity()
 export class UserSettings extends BaseEntity implements IUserSettings {

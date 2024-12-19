@@ -7,10 +7,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { WaxpeerSettings } from "./waxpeerSettings";
+
+import { Shadowpay } from "../entities/shadowpay.entity";
+import { MarketCSGO } from "../entities/marketcsgo.entity";
+import { CSFloat } from "../entities/csfloat.entity";
 import { UserSettings } from "./userSettings";
-import { ShadowpaySettings } from "./shadowpaySettings";
-import { MarketcsgoSettings } from "./marketcsgoSettings";
+import { Waxpeer } from "./waxpeer.entity";
 
 @Entity()
 export class User extends BaseEntity {
@@ -32,34 +34,33 @@ export class User extends BaseEntity {
   @UpdateDateColumn()
   updateDate: Date;
 
-  @OneToOne(() => WaxpeerSettings, (waxpeerSettings) => waxpeerSettings.user, {
+  @OneToOne(() => Waxpeer, (waxpeer) => waxpeer.user, {
     cascade: true,
     eager: true,
     nullable: false,
   })
-  waxpeerSettings: WaxpeerSettings;
+  waxpeer: Waxpeer;
 
-  @OneToOne(
-    () => ShadowpaySettings,
-    (shadowpaySettings) => shadowpaySettings.user,
-    {
-      cascade: true,
-      eager: true,
-      nullable: false,
-    }
-  )
-  shadowpaySettings: ShadowpaySettings;
+  @OneToOne(() => Shadowpay, (shadowpay) => shadowpay.user, {
+    cascade: true,
+    eager: true,
+    nullable: false,
+  })
+  shadowpay: Shadowpay;
 
-  @OneToOne(
-    () => MarketcsgoSettings,
-    (marketcsgoSettings) => marketcsgoSettings.user,
-    {
-      cascade: true,
-      eager: true,
-      nullable: false,
-    }
-  )
-  marketcsgoSettings: MarketcsgoSettings;
+  @OneToOne(() => MarketCSGO, (marketcsgo) => marketcsgo.user, {
+    cascade: true,
+    eager: true,
+    nullable: false,
+  })
+  marketcsgo: MarketCSGO;
+
+  @OneToOne(() => CSFloat, (csfloat) => csfloat.user, {
+    cascade: true,
+    eager: true,
+    nullable: false,
+  })
+  csfloat: CSFloat;
 
   @OneToOne(() => UserSettings, (userSettings) => userSettings.user, {
     cascade: true,
@@ -72,9 +73,10 @@ export class User extends BaseEntity {
     super();
     this.username = username;
     this.proxy = proxy;
-    this.waxpeerSettings = new WaxpeerSettings();
-    this.shadowpaySettings = new ShadowpaySettings();
-    this.marketcsgoSettings = new MarketcsgoSettings();
+    this.waxpeer = new Waxpeer();
+    this.shadowpay = new Shadowpay();
+    this.marketcsgo = new MarketCSGO();
+    this.csfloat = new CSFloat();
     this.userSettings = new UserSettings();
   }
 
@@ -87,16 +89,20 @@ export class User extends BaseEntity {
       user.userSettings = new UserSettings();
       updated = true;
     }
-    if (!user.waxpeerSettings) {
-      user.waxpeerSettings = new WaxpeerSettings();
+    if (!user.waxpeer) {
+      user.waxpeer = new Waxpeer();
       updated = true;
     }
-    if (!user.shadowpaySettings) {
-      user.shadowpaySettings = new ShadowpaySettings();
+    if (!user.shadowpay) {
+      user.shadowpay = new Shadowpay();
       updated = true;
     }
-    if (!user.marketcsgoSettings) {
-      user.marketcsgoSettings = new MarketcsgoSettings();
+    if (!user.marketcsgo) {
+      user.marketcsgo = new MarketCSGO();
+      updated = true;
+    }
+    if (!user.csfloat) {
+      user.csfloat = new CSFloat();
       updated = true;
     }
     if (updated) await user.save();

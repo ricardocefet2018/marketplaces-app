@@ -18,7 +18,7 @@ import {
   Marketplace,
   SteamAcc,
 } from "../../shared/types";
-import { User } from "../models/user";
+import { User } from "../entities/user.entity";
 import WaxpeerClient from "./waxpeerClient";
 import { WaxpeerWebsocket } from "./waxpeerWebsocket";
 import { FetchError } from "node-fetch";
@@ -48,9 +48,10 @@ export class TradeManager extends EventEmitter {
     return {
       username: this._user.username,
       status: !!this._steamClient.steamID,
-      waxpeerSettings: this._user.waxpeerSettings,
-      shadowpaySettings: this._user.shadowpaySettings,
-      marketcsgoSettings: this._user.marketcsgoSettings,
+      waxpeer: this._user.waxpeer,
+      shadowpay: this._user.shadowpay,
+      marketcsgo: this._user.marketcsgo,
+      csfloat: this._user.csfloat,
       userSettings: this._user.userSettings,
     };
   }
@@ -206,7 +207,7 @@ export class TradeManager extends EventEmitter {
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
-    if (this._user.waxpeerSettings.sentTrades.includes(data.wax_id)) return;
+    if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
 
     const tradeURL = data.tradelink;
     const json_tradeoffer = data.json_tradeoffer;
@@ -232,7 +233,7 @@ export class TradeManager extends EventEmitter {
         this.infoLogger(
           `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
         );
-        this._user.waxpeerSettings.sentTrades.push(data.wax_id);
+        this._user.waxpeer.sentTrades.push(data.wax_id);
         await this._user.save();
         if (this._user.userSettings.pendingTradesFilePath != "")
           this.registerPendingTradeToFile(tradeOfferId);
@@ -243,8 +244,7 @@ export class TradeManager extends EventEmitter {
   }
 
   public async createTradeForShadowpay(data: SendTradePayload) {
-    if (this._user.shadowpaySettings.sentTrades.includes(data.id.toString()))
-      return;
+    if (this._user.shadowpay.sentTrades.includes(data.id.toString())) return;
 
     const tradeURL = data.tradelink;
     const json_tradeoffer = data.json_tradeoffer;
@@ -267,7 +267,7 @@ export class TradeManager extends EventEmitter {
         this.infoLogger(
           `Steam trade offer #${tradeOfferId} was successfully associated with shadowpay trade ${data.id}`
         );
-        this._user.shadowpaySettings.sentTrades.push(data.id.toString());
+        this._user.shadowpay.sentTrades.push(data.id.toString());
         await this._user.save();
         if (this._user.userSettings.pendingTradesFilePath != "")
           this.registerPendingTradeToFile(tradeOfferId);
@@ -278,7 +278,7 @@ export class TradeManager extends EventEmitter {
   }
 
   public async createTradeForMarketcsgo(data: MarketcsgoTradeOfferPayload) {
-    if (this._user.marketcsgoSettings.sentTrades.includes(data.hash)) return;
+    if (this._user.marketcsgo.sentTrades.includes(data.hash)) return;
 
     const tradeUrl = `https://steamcommunity.com/tradeoffer/new/?partner=${data.partner}&token=${data.token}`;
     const id = data.hash;
@@ -318,7 +318,7 @@ export class TradeManager extends EventEmitter {
         this.infoLogger(
           `Steam trade offer #${tradeOfferId} was successfully associated with Marketcsgo trade ${data.hash}`
         );
-        this._user.marketcsgoSettings.sentTrades.push(data.hash);
+        this._user.marketcsgo.sentTrades.push(data.hash);
         await this._user.save();
         if (this._user.userSettings.pendingTradesFilePath != "")
           this.registerPendingTradeToFile(tradeOfferId);
@@ -543,19 +543,25 @@ export class TradeManager extends EventEmitter {
   }
 
   public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
-    this._user.waxpeerSettings.apiKey = newWaxpeerApiKey;
+    this._user.waxpeer.apiKey = newWaxpeerApiKey;
     await this._user.save();
     return;
   }
 
   public async updateShadowpayApiKey(newShadowpayApiKey: string) {
-    this._user.shadowpaySettings.apiKey = newShadowpayApiKey;
+    this._user.shadowpay.apiKey = newShadowpayApiKey;
     await this._user.save();
     return;
   }
 
   public async updateMarketcsgoApiKey(newMarketcsgoApiKey: string) {
-    this._user.marketcsgoSettings.apiKey = newMarketcsgoApiKey;
+    this._user.marketcsgo.apiKey = newMarketcsgoApiKey;
+    await this._user.save();
+    return;
+  }
+
+  public async updateCSFloatApiKey(newCSFloatApiKey: string) {
+    this._user.csfloat.apiKey = newCSFloatApiKey;
     await this._user.save();
     return;
   }
@@ -567,7 +573,7 @@ export class TradeManager extends EventEmitter {
     if (this._wpClient || this._wpWebsocket) return;
     if (!this._steamClient.steamID) return; // Steam accound failed in login, don't try to start
     this._wpClient = await WaxpeerClient.getInstance(
-      this._user.waxpeerSettings.apiKey,
+      this._user.waxpeer.apiKey,
       this._user.proxy
     );
     let accessToken = this.getSteamLoginSecure();
@@ -585,8 +591,8 @@ export class TradeManager extends EventEmitter {
   private registerWaxpeerSocketHandlers() {
     this._wpWebsocket.on("stateChange", async (data) => {
       this.emit("waxpeerStateChanged", data, this._user.username);
-      if (data == this._user.waxpeerSettings.state) return;
-      this._user.waxpeerSettings.state = data;
+      if (data == this._user.waxpeer.state) return;
+      this._user.waxpeer.state = data;
       await this._user.save();
     });
     this._wpWebsocket.on("acceptWithdraw", (tradeOfferId) => {
@@ -605,7 +611,7 @@ export class TradeManager extends EventEmitter {
     if (this._spClient || this._spWebsocket) return;
     if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
     this._spClient = await ShadowpayClient.getInstance(
-      this._user.shadowpaySettings.apiKey,
+      this._user.shadowpay.apiKey,
       this._user.proxy
     );
     let accessToken = this.getSteamLoginSecure();
@@ -623,8 +629,8 @@ export class TradeManager extends EventEmitter {
   private registerShadowpaySocketHandlers() {
     this._spWebsocket.on("stateChange", async (data) => {
       this.emit("shadowpayStateChanged", data, this._user.username);
-      if (data == this._user.shadowpaySettings.state) return;
-      this._user.shadowpaySettings.state = data;
+      if (data == this._user.shadowpay.state) return;
+      this._user.shadowpay.state = data;
       await this._user.save();
     });
     this._spWebsocket.on("acceptWithdraw", (tradeOfferId) => {
@@ -643,7 +649,7 @@ export class TradeManager extends EventEmitter {
     if (this._mcsgoClient || this._mcsgoSocket) return;
     if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
     this._mcsgoClient = await MarketcsgoClient.getInstance(
-      this._user.marketcsgoSettings.apiKey,
+      this._user.marketcsgo.apiKey,
       this._user.proxy
     );
     let accessToken = this.getSteamLoginSecure();
@@ -670,8 +676,8 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket.on("stateChange", async (online) => {
       console.log("stateChange", online);
       this.emit("marketcsgoStateChanged", online, this._user.username);
-      if (online == this._user.marketcsgoSettings.state) return;
-      this._user.marketcsgoSettings.state = online;
+      if (online == this._user.marketcsgo.state) return;
+      this._user.marketcsgo.state = online;
       await this._user.save();
     });
     this._mcsgoSocket.on("acceptWithdraw", (tradeOfferId) => {
@@ -699,7 +705,7 @@ export class TradeManager extends EventEmitter {
     this._wpWebsocket.removeAllListeners();
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
-    this._user.waxpeerSettings.state = false;
+    this._user.waxpeer.state = false;
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -715,7 +721,7 @@ export class TradeManager extends EventEmitter {
     this._spWebsocket.removeAllListeners();
     this._spClient = undefined;
     this._spWebsocket = undefined;
-    this._user.shadowpaySettings.state = false;
+    this._user.shadowpay.state = false;
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -727,7 +733,7 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket.removeAllListeners();
     this._mcsgoClient = undefined;
     this._mcsgoSocket = undefined;
-    this._user.marketcsgoSettings.state = false;
+    this._user.marketcsgo.state = false;
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -737,7 +743,7 @@ export class TradeManager extends EventEmitter {
     this._steamClient.logOff();
     this._steamCookies = [];
     this._steamTradeOfferManager.shutdown();
-    await this._user.waxpeerSettings.remove();
+    await this._user.waxpeer.remove();
     await this._user.remove();
     this._wpClient = undefined;
     if (this._wpWebsocket) this._wpWebsocket.disconnectWss();
