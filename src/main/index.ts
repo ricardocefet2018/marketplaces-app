@@ -49,40 +49,73 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
     try {
-      const status = await tradeManagerController.updateWaxpeerApiKey(
+      const success = await tradeManagerController.updateWaxpeerApiKey(
         username,
         waxpeerApiKey
       );
-      return status;
+      if (!success)
+        return {
+          success,
+          msg: `Error updating Waxpeer api key. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
     } catch (err) {
       handleError(err);
-      return false;
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
     }
   });
 
   myHandler("updateShadowpayApiKey", async (e, username, shadowpayApikey) => {
     try {
-      const status = await tradeManagerController.updateShadowpayApiKey(
+      const success = await tradeManagerController.updateShadowpayApiKey(
         username,
         shadowpayApikey
       );
-      return status;
+      if (!success)
+        return {
+          success,
+          msg: `Error updating Shadowpay api key. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
     } catch (err) {
       handleError(err);
-      return false;
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
     }
   });
 
   myHandler("updateMarketcsgoApiKey", async (e, username, marketcsgoApiKey) => {
     try {
-      const status = await tradeManagerController.updateMarketcsgoApiKey(
+      const success = await tradeManagerController.updateMarketcsgoApiKey(
         username,
         marketcsgoApiKey
       );
-      return status;
+      if (!success)
+        return {
+          success,
+          msg: `Error updating Marketcsgo api key. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
     } catch (err) {
       handleError(err);
-      return false;
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
     }
   });
 
@@ -110,13 +143,9 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   myHandler("changeShadowpayState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeShadowpayState(newState, username);
-      new Notification({
-        title: "Shadowpay state changed!",
-        body: `${username} shadowpay state has successfully turn ${
-          newState ? "online" : "offline"
-        }`,
-      }).show();
-      return true;
+      return {
+        success: true,
+      };
     } catch (err) {
       let body = "Check out the logs.";
       if (err instanceof FetchError)
@@ -124,25 +153,20 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
       else if (err instanceof Error && err.message.startsWith("{"))
         body += " " + err.message;
       else body += " Most likely your DB is corrupted.";
-      new Notification({
-        title: "Something gone wrong!",
-        body,
-      }).show();
       handleError(err);
+      return {
+        success: false,
+        msg: body,
+      };
     }
-    return false;
   });
 
   myHandler("changeMarketcsgoState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeMarketcsgoState(newState, username);
-      new Notification({
-        title: "Marketcsgo state changed!",
-        body: `${username} marketcsgo state has successfully turn ${
-          newState ? "online" : "offline"
-        }`,
-      }).show();
-      return true;
+      return {
+        success: true,
+      };
     } catch (err) {
       let body = "Check out the logs.";
       if (err instanceof FetchError)
@@ -151,13 +175,12 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
         body += " " + err.message;
       else if (err instanceof AppError) body += " " + err.message;
       else body += " Most likely your DB is corrupted.";
-      new Notification({
-        title: "Something gone wrong!",
-        body,
-      }).show();
       handleError(err);
+      return {
+        success: false,
+        msg: body,
+      };
     }
-    return false;
   });
 
   myHandler("logout", async (e, username) => {

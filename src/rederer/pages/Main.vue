@@ -239,7 +239,7 @@ async function changeWaxpeerState(newState: boolean) {
     newState,
     steamacc.value.username
   );
-  if (result.msg) toast.error(result.msg);
+  if (!result.success && result.msg) toast.error(result.msg);
   if (result.success)
     toast.success(
       `Waxpeer has successfully turned ${newState ? "on" : "off"}.`
@@ -253,6 +253,11 @@ async function changeShadowpayState(newState: boolean) {
     newState,
     steamacc.value.username
   );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `Shadowpay has successfully turned ${newState ? "on" : "off"}.`
+    );
   shadowpayDisabled.value = false;
 }
 
@@ -262,6 +267,11 @@ async function changeMarketCSGOState(newState: boolean) {
     newState,
     steamacc.value.username
   );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `Marketcsgo has successfully turned ${newState ? "on" : "off"}.`
+    );
   marketcsgoDisabled.value = false;
   return;
 }

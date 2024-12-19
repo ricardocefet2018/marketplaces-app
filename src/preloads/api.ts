@@ -28,22 +28,22 @@ export const api = {
   updateWaxpeerApiKey: (
     username: string,
     waxpeerApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
   updateShadowpayApiKey: (
     username: string,
     shadowpayApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
   updateMarketcsgoApiKey: (
     username: string,
     marketcsgoApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateMarketcsgoApiKey", username, marketcsgoApiKey),
   updateCSFloatApiKey: (
     username: string,
     csfloatApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateCSFloatApiKey", username, csfloatApiKey),
 
   // Change States
@@ -55,12 +55,12 @@ export const api = {
   changeShadowpayState: (
     newState: boolean,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeShadowpayState", newState, username),
   changeMarketcsgoState: (
     newState: boolean,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeMarketcsgoState", newState, username),
 
   // Settings
