@@ -21,7 +21,6 @@ import {
 import { User } from "../entities/user.entity";
 import WaxpeerClient from "./waxpeerClient";
 import { WaxpeerWebsocket } from "./waxpeerWebsocket";
-import { FetchError } from "node-fetch";
 import { app } from "electron";
 import ShadowpayClient from "./shadowpayClient";
 import { SendTradePayload, ShadowpayWebsocket } from "./shadowpayWebsocket";

@@ -185,6 +185,7 @@ export class TradeManagerController {
     if (!tm) throw new Error("User not found");
     try {
       await tm.updateSettings(newSettings);
+      return true;
     } catch (err) {
       tm.handleError(err);
       return false;

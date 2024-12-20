@@ -201,20 +201,25 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateUserSettings", async (e, newSettings, username) => {
     try {
-      await tradeManagerController.updateUserSettings(newSettings, username);
-      new Notification({
-        title: "User settings saved!",
-      }).show();
-      return true;
+      const success = await tradeManagerController.updateUserSettings(
+        newSettings,
+        username
+      );
+      if (!success)
+        return {
+          success,
+          msg: `Error updating user settings. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
     } catch (err) {
-      new Notification({
-        title: "Can't save settings.",
-        body:
-          err.message ??
-          "Most likely your DB is corrupted. Check out your logs.",
-      }).show();
       handleError(err);
-      return false;
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
     }
   });
 
@@ -242,17 +247,15 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   myHandler("setAppSettings", async (e, newSettings: ISettings) => {
     try {
       await appController.saveSettings(newSettings);
-      new Notification({
-        title: "Settings saved successfully.",
-      }).show();
-      return true;
+      return {
+        success: true,
+      };
     } catch (err) {
       handleError(err);
-      new Notification({
-        title: "Error getting app settings.",
-        body: "Most likely your DB is corrupted.",
-      }).show();
-      return false;
+      return {
+        success: false,
+        msg: "Unexpected Error. Most likely your DB is corrupted.",
+      };
     }
   });
 

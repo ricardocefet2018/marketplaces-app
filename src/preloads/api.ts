@@ -67,11 +67,11 @@ export const api = {
   updateUserSettings: (
     newSettings: IUserSettings,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateUserSettings", newSettings, username),
   getAppSettings: (): Promise<ISettings | null> =>
     ipcRenderer.invoke("getAppSettings"),
-  setAppSettings: (settings: ISettings): Promise<boolean> =>
+  setAppSettings: (settings: ISettings): Promise<ApiResponse> =>
     ipcRenderer.invoke("setAppSettings", settings),
 
   // Utilities
