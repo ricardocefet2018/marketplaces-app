@@ -18,7 +18,7 @@ export function useMyToast() {
         severity: "error",
         summary: "Error",
         detail: msg,
-        life: 3000,
+        life: 6000,
       });
     },
   };

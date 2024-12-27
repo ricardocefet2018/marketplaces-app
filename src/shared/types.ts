@@ -60,3 +60,9 @@ export type FormErrors<FormType> = {
 };
 
 export type Marketplace = "Waxpeer" | "Shadowpay" | "CSFLoat" | "MarketCSGO";
+
+export interface ApiResponse<T = null> {
+  success: boolean;
+  data?: T;
+  msg?: string;
+}

@@ -1,5 +1,11 @@
 import { ipcRenderer } from "electron";
-import { LoginData, SteamAcc, IUserSettings, ISettings } from "../shared/types";
+import {
+  LoginData,
+  SteamAcc,
+  IUserSettings,
+  ISettings,
+  ApiResponse,
+} from "../shared/types";
 import { LoginResponses } from "../shared/enums";
 
 export const api = {
@@ -22,47 +28,50 @@ export const api = {
   updateWaxpeerApiKey: (
     username: string,
     waxpeerApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
   updateShadowpayApiKey: (
     username: string,
     shadowpayApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
   updateMarketcsgoApiKey: (
     username: string,
     marketcsgoApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateMarketcsgoApiKey", username, marketcsgoApiKey),
   updateCSFloatApiKey: (
     username: string,
     csfloatApiKey: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateCSFloatApiKey", username, csfloatApiKey),
 
   // Change States
-  changeWaxpeerState: (newState: boolean, username: string): Promise<boolean> =>
+  changeWaxpeerState: (
+    newState: boolean,
+    username: string
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeWaxpeerState", newState, username),
   changeShadowpayState: (
     newState: boolean,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeShadowpayState", newState, username),
   changeMarketcsgoState: (
     newState: boolean,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeMarketcsgoState", newState, username),
 
   // Settings
   updateUserSettings: (
     newSettings: IUserSettings,
     username: string
-  ): Promise<boolean> =>
+  ): Promise<ApiResponse> =>
     ipcRenderer.invoke("updateUserSettings", newSettings, username),
   getAppSettings: (): Promise<ISettings | null> =>
     ipcRenderer.invoke("getAppSettings"),
-  setAppSettings: (settings: ISettings): Promise<boolean> =>
+  setAppSettings: (settings: ISettings): Promise<ApiResponse> =>
     ipcRenderer.invoke("setAppSettings", settings),
 
   // Utilities
