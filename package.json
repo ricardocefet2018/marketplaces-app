@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "dev": "nodemon --watch src --ext js,ts,vue --exec \"electron-forge start\"",
-    "package": "electron-forge package",
+    "package": "dotenv -e .env electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
@@ -16,6 +16,19 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npx ts-node ./scripts/migration-generate.ts",
     "migration:run": "npx typeorm-ts-node-commonjs migration:run -d ./src/main/services/db.ts"
+  },
+  "build": {
+    "files": [
+      "dist/**/*",
+      "migrations/**/*",
+      "src/main/services/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "./src/main/services/db.js",
+        "to": "resources/db.js"
+      }
+    ]
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.4.0",
@@ -28,6 +41,7 @@
     "@electron-forge/plugin-vite": "^7.4.0",
     "@electron/fuses": "^1.8.0",
     "@testing-library/webdriverio": "^3.2.1",
+    "@types/electron": "^1.4.38",
     "@types/node-fetch": "^2.6.11",
     "@types/steam-tradeoffer-manager": "^2.11.0",
     "@types/steam-user": "^5.0.2",
@@ -39,8 +53,10 @@
     "@wdio/local-runner": "^9.3.1",
     "@wdio/mocha-framework": "^9.2.8",
     "@wdio/spec-reporter": "^9.2.14",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
-    "electron": "32.0.2",
+    "dotenv-cli": "^8.0.0",
+    "electron": "^32.2.7",
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
     "nodemon": "^3.1.9",
@@ -59,6 +75,7 @@
   "dependencies": {
     "@doctormckay/stdlib": "^2.10.0",
     "@primevue/themes": "^4.0.5",
+    "asar": "^3.2.0",
     "async-validator": "^4.2.5",
     "electron-squirrel-startup": "^1.0.1",
     "node-fetch": "^2.7.0",
