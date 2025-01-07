@@ -8,10 +8,10 @@ import { AppController } from "./controllers/app.controller";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
+  const appController = await AppController.factory();
   const tradeManagerController = await TradeManagerController.factory(
     mainWindowWebContents
   );
-  const appController = await AppController.factory();
   const myHandler: apiHandler = ipcMain.handle;
 
   myHandler("test", async (e, msg) => {
