@@ -2,7 +2,12 @@ import fetch, { RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import assert from "node:assert";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../shared/helpers";
+import { minutesToMS } from "../../../shared/helpers";
+import {
+  GetTradesPayload,
+  TradePayload,
+} from "./interface/marketcsgo-interface";
+import { TradeRequestGiveP2PAll } from "./class/marketcsgo-class";
 
 export default class MarketcsgoClient {
   private static API_URL = "https://market.csgo.com/api/v2";
@@ -125,41 +130,4 @@ export default class MarketcsgoClient {
     init.headers = headers;
     return fetch(url, init);
   }
-}
-
-class TradeRequestGiveP2PAll {
-  success: boolean;
-  offers: MarketcsgoTradeOfferPayload[];
-  error?: string;
-}
-
-export interface MarketcsgoTradeOfferPayload {
-  hash: string;
-  partner: number;
-  token: string;
-  tradeoffermessage: string;
-  items: ItemInTrade[];
-  created?: boolean;
-}
-
-interface ItemInTrade {
-  appid: number;
-  contextid: number;
-  assetid: string;
-  amount: number;
-}
-
-interface GetTradesPayload {
-  success: boolean;
-  trades?: TradePayload[];
-  error?: string;
-}
-
-interface TradePayload {
-  dir: "out" | "in";
-  trade_id: string;
-  bot_id: string;
-  timestamp: number;
-  secret: string;
-  nik: string;
 }

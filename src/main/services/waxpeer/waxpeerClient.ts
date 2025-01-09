@@ -2,7 +2,13 @@ import assert from "assert";
 import fetch, { RequestInfo, RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
-import { minutesToMS } from "../../shared/helpers";
+import { minutesToMS } from "../../../shared/helpers";
+import {
+  ReadyToTransferP2PResponse,
+  SteamTokenResponse,
+  SteamTradeResponse,
+  UserResponse,
+} from "./interface/waxpeer-interface";
 
 export default class WaxpeerClient {
   private static API_URL = "https://api.waxpeer.com";
@@ -146,51 +152,6 @@ export default class WaxpeerClient {
   }
 }
 
-interface IReadyTransferTrade {
-  id: number;
-  costum_id: string;
-  trade_id: string;
-  tradelink: string;
-  trade_message: string;
-  done: boolean;
-  stage: number;
-  creator: string;
-  send_until: string;
-  last_updated: string;
-  for_steamid64: string;
-  user: IReadyTransferUser;
-  seller: IReadyTransferUser;
-  items: IReadyTransferItem[];
-}
-interface IReadyTransferItem {
-  id: number;
-  item_id: string;
-  give_amount: number;
-  merchant: string;
-  image: string;
-  price: number;
-  game: string;
-  name: string;
-  status: number;
-}
-interface IReadyTransferUser {
-  id: string;
-  avatar?: string;
-}
-interface ReadyToTransferP2PResponse {
-  success: boolean;
-  trades: IReadyTransferTrade[];
-}
-interface SteamTradeResponse {
-  success: boolean;
-  msg?: string;
-}
-interface SteamTokenResponse {
-  success: boolean;
-  msg: string;
-  exp: number;
-}
-
 class User {
   public sell_status: boolean;
   public id: string;
@@ -213,23 +174,4 @@ class User {
     this.partnerAndToken = user.tradelink.split("?")[1];
     this.steam_api = user.steam_api;
   }
-}
-
-interface UserResponse {
-  success: boolean;
-  user: {
-    wallet: number;
-    id: string;
-    userid: number;
-    id64: string;
-    avatar: string;
-    name: string;
-    sell_fees: number;
-    can_p2p: boolean;
-    tradelink: string;
-    login: string;
-    ref: string;
-    sell_status: boolean;
-    steam_api: string;
-  };
 }
