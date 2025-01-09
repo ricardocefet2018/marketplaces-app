@@ -1,8 +1,36 @@
+import { TradeWebsocketEvents } from "../models/types";
 import { EventEmitter } from "node:events";
-import MarketcsgoClient from "./marketcsgoClient";
+import MarketcsgoClient, {
+  MarketcsgoTradeOfferPayload,
+} from "./marketcsgoClient";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS, secondsToMS } from "../../../shared/helpers";
+import { minutesToMS, secondsToMS } from "../../shared/helpers";
 import { FetchError } from "node-fetch";
+
+interface MarketcsgoSocketEvents extends TradeWebsocketEvents {
+  sendTrade: (data: MarketcsgoTradeOfferPayload) => void;
+  cancelTrade: (tradeOfferId: string) => void;
+  acceptWithdraw: (tradeOfferId: string) => void;
+  stateChange: (online: boolean) => void;
+  error: (error: any) => void;
+}
+
+export declare interface MarketcsgoSocket {
+  emit<U extends keyof MarketcsgoSocketEvents>(
+    event: U,
+    ...args: Parameters<MarketcsgoSocketEvents[U]>
+  ): boolean;
+
+  on<U extends keyof MarketcsgoSocketEvents>(
+    event: U,
+    listener: MarketcsgoSocketEvents[U]
+  ): this;
+
+  once<U extends keyof MarketcsgoSocketEvents>(
+    event: U,
+    listener: MarketcsgoSocketEvents[U]
+  ): this;
+}
 
 export class MarketcsgoSocket extends EventEmitter {
   private static WS_URL = `wss://market.csgo.com/connection/websocket`;

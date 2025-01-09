@@ -162,6 +162,7 @@ onMounted(async () => {
   window.events.marketcsgoStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.marketcsgo.state = state;
+
     updateSteamAccList();
   });
 

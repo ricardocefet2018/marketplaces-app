@@ -2,7 +2,7 @@ import assert from "assert";
 import fetch, { RequestInfo, RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../../shared/helpers";
+import { minutesToMS } from "../../shared/helpers";
 
 export default class ShadowpayClient {
   private static API_URL = "https://api.shadowpay.com/api/v2";

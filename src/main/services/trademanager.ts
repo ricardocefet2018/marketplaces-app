@@ -2,17 +2,14 @@ import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
-import {
-  JsonTradeoffer,
-  TradeWebsocketCreateTradeData,
-} from "../../models/types";
+import { JsonTradeoffer, TradeWebsocketCreateTradeData } from "../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
   handleError,
   infoLogger,
   minutesToMS,
   pushElementToJsonFile,
-} from "../../../shared/helpers";
+} from "../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import {
@@ -20,19 +17,18 @@ import {
   LoginData,
   Marketplace,
   SteamAcc,
-} from "../../../shared/types";
-import { User } from "../../entities/user.entity";
-import WaxpeerClient from "../waxpeer/waxpeerClient";
-import { WaxpeerWebsocket } from "../waxpeer/waxpeerWebsocket";
+} from "../../shared/types";
+import { User } from "../entities/user.entity";
+import WaxpeerClient from "./waxpeerClient";
+import { WaxpeerWebsocket } from "./waxpeerWebsocket";
 import { app } from "electron";
-import ShadowpayClient from "../shadowpay/shadowpayClient";
-import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
-import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
-import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
-import AppError from "../../models/AppError";
-import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo-interface";
-import { SendTradePayload } from "../shadowpay/interface/shadowpay-interface";
-import { TradeManagerOptions } from "./interface/trade-manage-interface";
+import ShadowpayClient from "./shadowpayClient";
+import { SendTradePayload, ShadowpayWebsocket } from "./shadowpayWebsocket";
+import MarketcsgoClient, {
+  MarketcsgoTradeOfferPayload,
+} from "./marketcsgoClient";
+import { MarketcsgoSocket } from "./marketcsgoSocket";
+import AppError from "../models/AppError";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
@@ -54,6 +50,7 @@ export class TradeManager extends EventEmitter {
       waxpeer: this._user.waxpeer,
       shadowpay: this._user.shadowpay,
       marketcsgo: this._user.marketcsgo,
+      csfloat: this._user.csfloat,
       userSettings: this._user.userSettings,
     };
   }
@@ -425,7 +422,7 @@ export class TradeManager extends EventEmitter {
 
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
-      this._steamTradeOfferManager.getOffersContainingItem(
+      this._steamTradeOfferManager.getOffersContainingItems(
         items,
         (err, sent, received) => {
           if (err) rej(err);
@@ -557,6 +554,12 @@ export class TradeManager extends EventEmitter {
 
   public async updateMarketcsgoApiKey(newMarketcsgoApiKey: string) {
     this._user.marketcsgo.apiKey = newMarketcsgoApiKey;
+    await this._user.save();
+    return;
+  }
+
+  public async updateCSFloatApiKey(newCSFloatApiKey: string) {
+    this._user.csfloat.apiKey = newCSFloatApiKey;
     await this._user.save();
     return;
   }
@@ -766,4 +769,35 @@ export class TradeManager extends EventEmitter {
     );
     return;
   }
+}
+
+interface TradeManagerEvents {
+  waxpeerStateChanged: (state: boolean, username: string) => void;
+  shadowpayStateChanged: (state: boolean, username: string) => void;
+  marketcsgoStateChanged: (state: boolean, username: string) => void;
+  loggedOn: (tm: TradeManager) => void;
+}
+
+export declare interface TradeManager {
+  emit<U extends keyof TradeManagerEvents>(
+    event: U,
+    ...args: Parameters<TradeManagerEvents[U]>
+  ): boolean;
+
+  on<U extends keyof TradeManagerEvents>(
+    event: U,
+    listener: TradeManagerEvents[U]
+  ): this;
+
+  once<U extends keyof TradeManagerEvents>(
+    event: U,
+    listener: TradeManagerEvents[U]
+  ): this;
+}
+
+export interface TradeManagerOptions {
+  storagePathBase: string;
+  username: string;
+  login: string | LoginData; // Can be refreshToken or LoginData
+  proxy?: string;
 }

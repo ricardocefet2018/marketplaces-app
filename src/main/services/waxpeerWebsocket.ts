@@ -4,13 +4,7 @@ import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import {
   TradeWebsocketCreateTradeData,
   TradeWebsocketEvents,
-} from "../../models/types";
-import {
-  TradeWebsocketAcceptWithdrawData,
-  TradeWebsocketCancelTradeData,
-  TradeWebSocketOptions,
-  UserOnlineChangePayload,
-} from "./interface/waxpeer-interface";
+} from "../models/types";
 
 interface WaxpeerWebsocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: any) => void;
@@ -190,4 +184,25 @@ export class WaxpeerWebsocket extends EventEmitter {
 
     return false;
   }
+}
+
+interface UserOnlineChangePayload {
+  can_p2p: boolean;
+}
+
+interface TradeWebsocketCancelTradeData {
+  trade_id: string;
+  seller_steamid: string;
+}
+
+interface TradeWebsocketAcceptWithdrawData {
+  tradeid: string;
+  partner: string;
+}
+
+export interface TradeWebSocketOptions {
+  steamid: string; // The Steam ID.
+  tradelink: string; // The trade link.
+  waxApi: string; // The Waxpeer API key.
+  accessToken: string; // The access token as string NOT encoded.
 }
