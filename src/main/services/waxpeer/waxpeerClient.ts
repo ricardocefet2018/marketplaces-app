@@ -4,6 +4,12 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import { minutesToMS } from "../../../shared/helpers";
 import { WaxpeerUser } from "./class/waxpeer.class";
+import {
+  ReadyToTransferP2PResponse,
+  SteamTokenResponse,
+  SteamTradeResponse,
+  UserResponse,
+} from "./interface/waxpeer.interface";
 
 export default class WaxpeerClient {
   private static API_URL = "https://api.waxpeer.com";

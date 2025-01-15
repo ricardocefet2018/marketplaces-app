@@ -1,4 +1,4 @@
-interface UserResponse {
+export interface UserResponse {
   success: boolean;
   user: {
     wallet: number;
@@ -16,7 +16,8 @@ interface UserResponse {
     steam_api: string;
   };
 }
-interface IReadyTransferTrade {
+
+export interface IReadyTransferTrade {
   id: number;
   costum_id: string;
   trade_id: string;
@@ -32,7 +33,8 @@ interface IReadyTransferTrade {
   seller: IReadyTransferUser;
   items: IReadyTransferItem[];
 }
-interface IReadyTransferItem {
+
+export interface IReadyTransferItem {
   id: number;
   item_id: string;
   give_amount: number;
@@ -43,19 +45,23 @@ interface IReadyTransferItem {
   name: string;
   status: number;
 }
-interface IReadyTransferUser {
+
+export interface IReadyTransferUser {
   id: string;
   avatar?: string;
 }
-interface ReadyToTransferP2PResponse {
+
+export interface ReadyToTransferP2PResponse {
   success: boolean;
   trades: IReadyTransferTrade[];
 }
-interface SteamTradeResponse {
+
+export interface SteamTradeResponse {
   success: boolean;
   msg?: string;
 }
-interface SteamTokenResponse {
+
+export interface SteamTokenResponse {
   success: boolean;
   msg: string;
   exp: number;
