@@ -7,38 +7,11 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import path from "node:path";
-import glob from "glob";
-
-const migrationFiles = glob.sync(
-  path.resolve(__dirname, "./src/migrations/**/*.ts")
-);
-
-const migrationFilesTS = glob.sync(
-  path.resolve(__dirname, "./src/migrations/**/*.ts")
-);
-
-console.log(
-  "===============================================JS========================================================"
-);
-console.log(migrationFiles);
-
-console.log(
-  "================================================TS======================================================="
-);
-
-console.log(migrationFilesTS);
-
-console.log(
-  "======================================================================================================="
-);
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    extraResource: [
-      path.resolve(__dirname, "./db/db.sqlite"),
-      ...migrationFiles,
-    ],
+    extraResource: [path.resolve(__dirname, "./db/db.sqlite")],
   },
   rebuildConfig: {},
   makers: [

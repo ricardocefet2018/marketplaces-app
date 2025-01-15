@@ -13,14 +13,11 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "npm run package & npm run wdio",
     "wdio": "wdio run ./wdio.conf.ts",
-    "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "npx ts-node ./scripts/migration-generate.ts",
-    "migration:run": "npx typeorm-ts-node-commonjs migration:run -d ./src/main/services/db.ts"
+    "typeorm": "typeorm-ts-node-commonjs"
   },
   "build": {
     "files": [
       "dist/**/*",
-      "migrations/**/*",
       "src/main/services/**/*"
     ],
     "extraResources": [
