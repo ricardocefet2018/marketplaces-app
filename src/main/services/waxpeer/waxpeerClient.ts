@@ -3,6 +3,7 @@ import fetch, { RequestInfo, RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import { minutesToMS } from "../../../shared/helpers";
+import { WaxpeerUser } from "./class/waxpeer.class";
 
 export default class WaxpeerClient {
   private static API_URL = "https://api.waxpeer.com";

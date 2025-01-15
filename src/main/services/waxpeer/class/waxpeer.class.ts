@@ -1,4 +1,4 @@
-class WaxpeerUser {
+export class WaxpeerUser {
   public sell_status: boolean;
   public id: string;
   public name: string;
