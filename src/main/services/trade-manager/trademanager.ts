@@ -25,13 +25,13 @@ import { User } from "../../entities/user.entity";
 import WaxpeerClient from "../waxpeer/waxpeerClient";
 import { WaxpeerWebsocket } from "../waxpeer/waxpeerWebsocket";
 import { app } from "electron";
-import ShadowpayClient from "../shadow-pay/shadowpayClient";
-import { ShadowpayWebsocket } from "../shadow-pay/shadowpayWebsocket";
-import MarketcsgoClient from "../market-csgo/marketcsgoClient";
-import { MarketcsgoSocket } from "../market-csgo/marketcsgoSocket";
+import ShadowpayClient from "../shadowpay/shadowpayClient";
+import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
+import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import AppError from "../../models/AppError";
-import { SendTradePayload } from "../shadow-pay/interface/shadowpay.interface";
-import { MarketcsgoTradeOfferPayload } from "../market-csgo/interface/marketcsgo.interface";
+import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
+import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
 import { TradeManagerOptions } from "./interface/tradeManage.interface";
 
 export class TradeManager extends EventEmitter {
