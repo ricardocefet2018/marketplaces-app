@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "dev": "nodemon --watch src --ext js,ts,vue --exec \"electron-forge start\"",
-    "package": "dotenv -e .env electron-forge package",
+    "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
