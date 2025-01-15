@@ -2,14 +2,17 @@ import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
-import { JsonTradeoffer, TradeWebsocketCreateTradeData } from "../models/types";
+import {
+  JsonTradeoffer,
+  TradeWebsocketCreateTradeData,
+} from "../../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
   handleError,
   infoLogger,
   minutesToMS,
   pushElementToJsonFile,
-} from "../../shared/helpers";
+} from "../../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import {
@@ -17,20 +20,20 @@ import {
   LoginData,
   Marketplace,
   SteamAcc,
-} from "../../shared/types";
-import { User } from "../entities/user.entity";
-import WaxpeerClient from "./waxpeerClient";
-import { WaxpeerWebsocket } from "./waxpeerWebsocket";
+} from "../../../shared/types";
+import { User } from "../../entities/user.entity";
+import WaxpeerClient from "../waxpeerClient";
+import { WaxpeerWebsocket } from "../waxpeerWebsocket";
 import { FetchError } from "node-fetch";
 import { app } from "electron";
-import ShadowpayClient from "./shadowpayClient";
-import { SendTradePayload, ShadowpayWebsocket } from "./shadowpayWebsocket";
+import ShadowpayClient from "../shadowpayClient";
+import { SendTradePayload, ShadowpayWebsocket } from "../shadowpayWebsocket";
 import MarketcsgoClient, {
   MarketcsgoTradeOfferPayload,
-} from "./marketcsgoClient";
-import { MarketcsgoSocket } from "./marketcsgoSocket";
-import AppError from "../models/AppError";
-import { AppController } from "../controllers/app.controller";
+} from "../marketcsgoClient";
+import { MarketcsgoSocket } from "../marketcsgoSocket";
+import AppError from "../../models/AppError";
+import { AppController } from "../../controllers/app.controller";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
