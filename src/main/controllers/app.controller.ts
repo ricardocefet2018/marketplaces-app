@@ -1,5 +1,5 @@
 import { app, Notification, shell } from "electron";
-import { Settings } from "../entities/settings";
+import { Settings } from "../entities/settings.entity";
 import { ISettings } from "../../shared/types";
 
 // Every OS function is supposed to be there

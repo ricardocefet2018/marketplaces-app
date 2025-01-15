@@ -2,7 +2,14 @@ import assert from "assert";
 import fetch, { RequestInfo, RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
-import { minutesToMS } from "../../shared/helpers";
+import { minutesToMS } from "../../../shared/helpers";
+import { WaxpeerUser } from "./class/waxpeer.class";
+import {
+  ReadyToTransferP2PResponse,
+  SteamTokenResponse,
+  SteamTradeResponse,
+  UserResponse,
+} from "./interface/waxpeer.interface";
 
 export default class WaxpeerClient {
   private static API_URL = "https://api.waxpeer.com";
@@ -12,7 +19,7 @@ export default class WaxpeerClient {
   private keepingSendingSteamToken = false;
   private steamToken?: string;
   private proxy?: string;
-  private user?: User;
+  private user?: WaxpeerUser;
 
   public get balance() {
     return this.user.wallet_balance.toFixed(3);
@@ -36,7 +43,7 @@ export default class WaxpeerClient {
     const res = await this.internalFetch(url);
     const json = (await res.json()) as UserResponse;
     if (res.status != 200) throw new Error(JSON.stringify(json));
-    if (!this.user) this.user = new User(json.user);
+    if (!this.user) this.user = new WaxpeerUser(json.user);
     this.user.wallet_balance = json.user.wallet / 1000;
     this.lastBalanceUpdate = Date.now();
     return;
@@ -144,92 +151,4 @@ export default class WaxpeerClient {
     }
     return fetch(url, init);
   }
-}
-
-interface IReadyTransferTrade {
-  id: number;
-  costum_id: string;
-  trade_id: string;
-  tradelink: string;
-  trade_message: string;
-  done: boolean;
-  stage: number;
-  creator: string;
-  send_until: string;
-  last_updated: string;
-  for_steamid64: string;
-  user: IReadyTransferUser;
-  seller: IReadyTransferUser;
-  items: IReadyTransferItem[];
-}
-interface IReadyTransferItem {
-  id: number;
-  item_id: string;
-  give_amount: number;
-  merchant: string;
-  image: string;
-  price: number;
-  game: string;
-  name: string;
-  status: number;
-}
-interface IReadyTransferUser {
-  id: string;
-  avatar?: string;
-}
-interface ReadyToTransferP2PResponse {
-  success: boolean;
-  trades: IReadyTransferTrade[];
-}
-interface SteamTradeResponse {
-  success: boolean;
-  msg?: string;
-}
-interface SteamTokenResponse {
-  success: boolean;
-  msg: string;
-  exp: number;
-}
-
-class User {
-  public sell_status: boolean;
-  public id: string;
-  public name: string;
-  public steamid: string;
-  public wallet_balance: number;
-  public wallet_balance_int: number;
-  public tradeLink: string;
-  public partnerAndToken: string;
-  public steam_api: string;
-
-  public constructor(user: UserResponse["user"]) {
-    this.wallet_balance = user.wallet / 1000;
-    this.wallet_balance_int = user.wallet;
-    this.id = user.id;
-    this.steamid = user.id64;
-    this.name = user.name;
-    this.sell_status = user.sell_status;
-    this.tradeLink = user.tradelink;
-    this.partnerAndToken = user.tradelink.split("?")[1];
-    this.steam_api = user.steam_api;
-  }
-}
-
-interface UserResponse {
-  success: boolean;
-  user: {
-    wallet: number;
-    id: string;
-    userid: number;
-    id64: string;
-    avatar: string;
-    name: string;
-    sell_fees: number;
-    can_p2p: boolean;
-    tradelink: string;
-    login: string;
-    ref: string;
-    sell_status: boolean;
-    steam_api: string;
-  };
 }

@@ -4,7 +4,7 @@ import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import {
   TradeWebsocketCreateTradeData,
   TradeWebsocketEvents,
-} from "../models/types";
+} from "../../models/types";
 
 interface WaxpeerWebsocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: any) => void;

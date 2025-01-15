@@ -113,9 +113,11 @@ import InputText from "primevue/inputtext";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useRoute, useRouter } from "vue-router";
 import Loading from "./components/Loading.vue";
+import { useMyToast } from "../services/toast";
 
 const route = useRoute();
 const router = useRouter();
+const toast = useMyToast();
 const loading = ref(true);
 const accUsername = route.params.username as string;
 
@@ -165,11 +167,15 @@ async function submitForm(e: SubmitEvent) {
   const validated = await validateForm();
   if (!validated) return;
   const formvalue = Object.assign({}, form.value); // TODO form.value isn't seralizable for some reason
-  const success = await window.api.updateUserSettings(
+  const res = await window.api.updateUserSettings(
     formvalue,
     steamAcc.value.username
   );
-  if (!success) return;
+  if (!res.success && res.msg) {
+    toast.error(res.msg);
+    return;
+  }
+  toast.success(`${accUsername}'s settings saved successfully`);
   router.push({ name: "main", params: { username: steamAcc.value.username } });
 }
 

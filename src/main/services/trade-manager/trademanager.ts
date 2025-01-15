@@ -22,17 +22,17 @@ import {
   SteamAcc,
 } from "../../../shared/types";
 import { User } from "../../entities/user.entity";
-import WaxpeerClient from "../waxpeerClient";
-import { WaxpeerWebsocket } from "../waxpeerWebsocket";
-import { FetchError } from "node-fetch";
+import WaxpeerClient from "../waxpeer/waxpeerClient";
+import { WaxpeerWebsocket } from "../waxpeer/waxpeerWebsocket";
 import { app } from "electron";
-import ShadowpayClient from "../shadowpayClient";
-import { SendTradePayload, ShadowpayWebsocket } from "../shadowpayWebsocket";
-import MarketcsgoClient, {
-  MarketcsgoTradeOfferPayload,
-} from "../marketcsgoClient";
-import { MarketcsgoSocket } from "../marketcsgoSocket";
+import ShadowpayClient from "../shadowpay/shadowpayClient";
+import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
+import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
 import AppError from "../../models/AppError";
+import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
+import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
+import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
 
 export class TradeManager extends EventEmitter {
@@ -176,8 +176,11 @@ export class TradeManager extends EventEmitter {
       this._steamCookies = cookies;
       this._steamTradeOfferManager.setCookies(cookies);
       const accessToken = this.getSteamLoginSecure();
-      // TODO add the other marketplaces here to update access token when needed
-      this.updateAccessTokenWaxpeer(accessToken); // doesn't throw errors, no need to wait it
+      // doesn't throw errors, no need to wait it
+      this.updateAccessTokenWaxpeer(accessToken);
+      this.updateAccessTokenShadowpay(accessToken);
+      this.updateAccessTokenMarketcsgo(accessToken);
+      // TODO add csfloat here
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
@@ -197,26 +200,22 @@ export class TradeManager extends EventEmitter {
 
   private async updateAccessTokenWaxpeer(accessToken: string) {
     if (!this._wpWebsocket || !this._wpClient) return; // not running
-    let done = false;
-    let retries = 0;
-    do {
-      try {
-        await this._wpClient.setSteamToken(accessToken);
-        done = true;
-      } catch (err) {
-        if (!(err instanceof FetchError)) continue; // There is no reason to log fetch errors
-        this.handleError(err);
-        retries++;
-        await sleepAsync(minutesToMS());
-      }
-    } while (!done || retries < 10); // retry till setSteamToken done or 10 retries/minutes;
-    if (!done) {
-      await this.stopWaxpeerClient();
-      return;
-    } // Something wrong happened, disconnect user to show it's wrong
+    await this._wpClient.setSteamToken(accessToken);
     this._wpWebsocket.disconnectWss();
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
+  }
+
+  private async updateAccessTokenShadowpay(accessToken: string) {
+    if (!this._spWebsocket || !this._spClient) return; // not running
+    await this._spClient.setSteamToken(accessToken);
+    this._spWebsocket.disconnect();
+    this._spWebsocket = new ShadowpayWebsocket(this._spClient);
+  }
+
+  private async updateAccessTokenMarketcsgo(accessToken: string) {
+    if (!this._mcsgoClient || !this._mcsgoSocket) return;
+    this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
@@ -475,7 +474,8 @@ export class TradeManager extends EventEmitter {
 
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
-      this._steamTradeOfferManager.getOffersContainingItems(
+      // TODO update pkg @types/steam-tradeoffer-manager and update this name
+      this._steamTradeOfferManager.getOffersContainingItem(
         items,
         (err, sent, received) => {
           if (err) rej(err);
@@ -836,35 +836,4 @@ export class TradeManager extends EventEmitter {
     );
     return;
   }
-}
-
-interface TradeManagerEvents {
-  waxpeerStateChanged: (state: boolean, username: string) => void;
-  shadowpayStateChanged: (state: boolean, username: string) => void;
-  marketcsgoStateChanged: (state: boolean, username: string) => void;
-  loggedOn: (tm: TradeManager) => void;
-}
-
-export declare interface TradeManager {
-  emit<U extends keyof TradeManagerEvents>(
-    event: U,
-    ...args: Parameters<TradeManagerEvents[U]>
-  ): boolean;
-
-  on<U extends keyof TradeManagerEvents>(
-    event: U,
-    listener: TradeManagerEvents[U]
-  ): this;
-
-  once<U extends keyof TradeManagerEvents>(
-    event: U,
-    listener: TradeManagerEvents[U]
-  ): this;
-}
-
-export interface TradeManagerOptions {
-  storagePathBase: string;
-  username: string;
-  login: string | LoginData; // Can be refreshToken or LoginData
-  proxy?: string;
 }

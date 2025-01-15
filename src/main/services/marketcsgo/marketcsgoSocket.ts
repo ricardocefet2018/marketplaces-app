@@ -1,11 +1,10 @@
-import { TradeWebsocketEvents } from "../models/types";
+import { TradeWebsocketEvents } from "../../models/types";
 import { EventEmitter } from "node:events";
-import MarketcsgoClient, {
-  MarketcsgoTradeOfferPayload,
-} from "./marketcsgoClient";
+import MarketcsgoClient from "./marketcsgoClient";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../shared/helpers";
+import { minutesToMS, secondsToMS } from "../../../shared/helpers";
 import { FetchError } from "node-fetch";
+import { MarketcsgoTradeOfferPayload } from "./interface/marketcsgo.interface";
 
 interface MarketcsgoSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: MarketcsgoTradeOfferPayload) => void;
@@ -77,7 +76,7 @@ export class MarketcsgoSocket extends EventEmitter {
       } catch (err) {
         if (!(err instanceof FetchError)) this.emit("error", err);
       }
-      await sleepAsync(minutesToMS(0.5));
+      await sleepAsync(secondsToMS(50));
     }
   }
 

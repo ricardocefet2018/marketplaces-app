@@ -81,8 +81,10 @@ import { onMounted, ref } from "vue";
 import { Validator } from "../models/validator";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useRouter } from "vue-router";
+import { useMyToast } from "../services/toast";
 
 const router = useRouter();
+const toast = useMyToast();
 
 const loading = ref(true);
 const form = ref<ISettings>();
@@ -128,8 +130,12 @@ async function submitForm(e: SubmitEvent) {
   const validated = await validateForm();
   if (!validated) return;
   const formvalue = Object.assign({}, form.value); // TODO form.value isn't seralizable for some reason
-  const success = await window.api.setAppSettings(formvalue);
-  if (!success) return;
+  const response = await window.api.setAppSettings(formvalue);
+  if (!response.success && response.msg) {
+    toast.error(response.msg);
+    return;
+  }
+  toast.success("Settings saved successfully!");
   router.push({ name: "main" });
 }
 </script>

@@ -181,8 +181,10 @@ async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
   );
   if (!status) {
     waxpeerDisabled.value = true;
+    toast.error("Error updating Waxpeer api key, check out the logs.");
     return;
   }
+  toast.success("Waxpeer api key changed.");
   steamacc.value.waxpeer.apiKey = waxpeerApiKey;
   await updateSteamAccList();
 }
@@ -194,8 +196,10 @@ async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {
   );
   if (!status) {
     shadowpayDisabled.value = true;
+    toast.error("Error updating Shadowpay api key, check out the logs.");
     return;
   }
+  toast.success("Shadowpay api key changed.");
   steamacc.value.shadowpay.apiKey = shadowpayApiKey;
   await updateSteamAccList();
 }
@@ -207,8 +211,10 @@ async function onUpdateMarketCSGOApiKey(marketcsgoApiKey: string) {
   );
   if (!status) {
     marketcsgoDisabled.value = true;
+    toast.error("Error updating MarketCSGO api key, check out the logs.");
     return;
   }
+  toast.success("MarketCSGO api key changed.");
   steamacc.value.marketcsgo.apiKey = marketcsgoApiKey;
   await updateSteamAccList();
 }
@@ -219,8 +225,10 @@ async function onUpdateCSFloatApiKey(csfloatApiKey: string) {
   );
   if (!status) {
     csgofloatDisabled.value = true;
+    toast.error("Error updating CSFLoat api key, check out the logs.");
     return;
   }
+  toast.success("CSFLoat api key changed.");
   steamacc.value.csfloat.apiKey = csfloatApiKey;
   await updateSteamAccList();
 }
@@ -231,6 +239,11 @@ async function changeWaxpeerState(newState: boolean) {
     newState,
     steamacc.value.username
   );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `Waxpeer has successfully turned ${newState ? "on" : "off"}.`
+    );
   waxpeerDisabled.value = false;
 }
 
@@ -240,6 +253,11 @@ async function changeShadowpayState(newState: boolean) {
     newState,
     steamacc.value.username
   );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `Shadowpay has successfully turned ${newState ? "on" : "off"}.`
+    );
   shadowpayDisabled.value = false;
 }
 
@@ -249,6 +267,11 @@ async function changeMarketCSGOState(newState: boolean) {
     newState,
     steamacc.value.username
   );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `Marketcsgo has successfully turned ${newState ? "on" : "off"}.`
+    );
   marketcsgoDisabled.value = false;
   return;
 }
