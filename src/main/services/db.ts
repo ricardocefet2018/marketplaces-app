@@ -1,8 +1,6 @@
 import "reflect-metadata";
 import { getDBPath, infoLogger } from "../../shared/helpers";
 import { DataSource } from "typeorm";
-import { app } from "electron";
-import path from "path";
 import {
   CSFloat,
   MarketCSGO,
