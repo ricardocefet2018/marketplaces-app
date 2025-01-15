@@ -28,11 +28,11 @@ import { app } from "electron";
 import ShadowpayClient from "../shadowpay/shadowpayClient";
 import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
 import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
-import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
 import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
