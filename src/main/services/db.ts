@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { infoLogger } from "../../shared/helpers";
+import { getDBPath, infoLogger } from "../../shared/helpers";
 import { DataSource } from "typeorm";
 import { app } from "electron";
 import path from "path";
@@ -12,14 +12,6 @@ import {
   UserSettings,
   Waxpeer,
 } from "../entities/index.intities";
-
-const getDBPath = (): string => {
-  const basePath =
-    process.env.NODE_ENV === "production"
-      ? path.join(app.getPath("userData"), "db")
-      : path.resolve(__dirname, "../../db");
-  return path.join(basePath, "db.sqlite");
-};
 
 const entities = [
   CSFloat,
