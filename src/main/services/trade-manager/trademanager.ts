@@ -426,6 +426,7 @@ export class TradeManager extends EventEmitter {
 
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
+      // TODO update pkg @types/steam-tradeoffer-manager and update this name
       this._steamTradeOfferManager.getOffersContainingItem(
         items,
         (err, sent, received) => {
