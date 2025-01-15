@@ -1,18 +1,16 @@
 import "reflect-metadata";
 import { getDBPath, infoLogger } from "../../shared/helpers";
 import { DataSource } from "typeorm";
-import { Settings } from "../entities/settings";
-import { exec } from "child_process";
-import path from "path";
-import util from "util";
-import { CSFloat } from "../entities/csfloat.entity";
-import { MarketCSGO } from "../entities/marketcsgo.entity";
-import { Shadowpay } from "../entities/shadowpay.entity";
-import { User } from "../entities/user.entity";
-import { UserSettings } from "../entities/userSettings";
-import { Waxpeer } from "../entities/waxpeer.entity";
+import {
+  CSFloat,
+  MarketCSGO,
+  Settings,
+  Shadowpay,
+  User,
+  UserSettings,
+  Waxpeer,
+} from "../entities/index.intities";
 
-const execAsync = util.promisify(exec);
 const entities = [
   CSFloat,
   MarketCSGO,
@@ -25,63 +23,78 @@ const entities = [
 
 export const AppDataSource = new DataSource({
   type: "sqlite",
-  database: path.resolve(__dirname, "../../../db/db.sqlite"),
-  synchronize: false,
-  logging: process.env["NODE_ENV"] === "development", //process.env["NODE_ENV"] === "development",
-  entities: entities,
-  migrations: [path.resolve(__dirname, "../../migrations/*.ts")],
+  database: getDBPath(),
+  synchronize: true,
+  logging: process.env.NODE_ENV === "development",
+  entities,
   subscribers: [],
 });
 
 export class DB {
-  public dataSource: DataSource;
-  static instance: DB;
+  private static instance: DB;
+  private dataSource: DataSource;
 
-  constructor(dbPath: string) {
-    this.dataSource = AppDataSource.setOptions({
-      database: dbPath,
-    });
+  private constructor() {
+    this.dataSource = AppDataSource;
   }
 
-  static async start() {
-    if (this.instance) return;
-
-    const dbPath = await getDBPath();
-    this.instance = new DB(dbPath);
-
-    if (process.env["NODE_ENV"] === "test") {
-      console.log("Running in test mode, clearing database...");
-      const entities = this.instance.dataSource.entityMetadatas;
-      for (const entity of entities) {
-        const repository = this.instance.dataSource.getRepository(entity.name);
-        await repository.clear();
-      }
-      infoLogger("Database cleared!");
+  static async start(): Promise<void> {
+    if (this.instance?.dataSource.isInitialized) {
+      console.log(
+        "Database is already initialized, skipping reinitialization."
+      );
+      return;
     }
 
-    console.log("Initializing database...");
-    await this.instance.dataSource.initialize();
+    this.instance = new DB();
+    console.log("==============================");
+    console.log("Entities:", entities);
+    console.log("==============================");
 
-    console.log("Running migrations...");
+    await this.initializeDatabase();
+  }
+
+  private static async initializeDatabase(): Promise<void> {
     try {
-      const command = `npx typeorm-ts-node-commonjs migration:run -d ./src/main/services/db.ts`;
-      const { stdout, stderr } = await execAsync(command);
-      if (stdout) console.log(stdout);
-      if (stderr) console.error(stderr);
-    } catch (error: any) {
-      console.error("Error running migrations:", error.message);
+      await this.instance.dataSource.initialize();
+      console.log("Database initialized.");
+
+      if (process.env.NODE_ENV === "test") {
+        await this.clearDatabase();
+      }
+
+      await this.setupDefaultSettings();
+    } catch (error) {
+      console.error("Error during database initialization:", error.message);
       console.error(error.stack);
       process.exit(1);
     }
 
-    console.log("Starting database...");
-    const settings = await this.instance.dataSource
-      .getRepository(Settings)
-      .find();
-    if (settings.length === 0) {
-      const newSettings = new Settings();
-      await this.instance.dataSource.getRepository(Settings).save(newSettings);
-    }
     console.log("Database setup complete!");
+  }
+
+  private static async clearDatabase(): Promise<void> {
+    console.log("Running in test mode, clearing database...");
+    const { entityMetadatas } = this.instance.dataSource;
+    for (const entity of entityMetadatas) {
+      const repository = this.instance.dataSource.getRepository(entity.name);
+      await repository.clear();
+    }
+    infoLogger("Database cleared!");
+  }
+
+  private static async setupDefaultSettings(): Promise<void> {
+    console.log("Setting up initial database configurations...");
+
+    const settingsRepository = this.instance.dataSource.getRepository(Settings);
+    const existingSettings = await settingsRepository.find();
+
+    if (existingSettings.length === 0) {
+      const defaultSettings = settingsRepository.create();
+      await settingsRepository.save(defaultSettings);
+      console.log("Default settings saved to database.");
+    } else {
+      console.log("Settings already exist in the database.");
+    }
   }
 }

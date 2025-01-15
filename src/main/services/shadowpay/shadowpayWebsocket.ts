@@ -3,7 +3,16 @@ import ShadowpayClient from "./shadowpayClient";
 import { WebSocket } from "ws";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
 import { FetchError } from "node-fetch";
-import { JsonTradeoffer, TradeWebsocketEvents } from "../models/types";
+import { JsonTradeoffer, TradeWebsocketEvents } from "../../models/types";
+import {
+  AcceptTradePayload,
+  CancelTradePayload,
+  DeclineTradePayload,
+  SendTradePartialPayload,
+  SendTradePayload,
+  SpWSMessageReceived,
+  SpWSMessageSent,
+} from "./interface/shadowpay.interface";
 
 interface ShadowpayWebsocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: SendTradePayload) => void;
@@ -210,72 +219,4 @@ export class ShadowpayWebsocket extends EventEmitter {
       return -1;
     }
   }
-}
-
-interface SpWSMessageSent {
-  id: number;
-  params: any;
-  method?: number;
-}
-
-interface SpWSMessageReceived {
-  id?: number;
-  result: {
-    channel: string;
-    data: {
-      data: {
-        data:
-          | SendTradePartialPayload
-          | AcceptTradePayload
-          | CancelTradePayload
-          | DeclineTradePayload
-          | any;
-        token: string;
-        type: "sendOffer" | "acceptOffer" | "cancelOffer" | "declineOffer";
-      };
-    };
-  };
-}
-
-interface SendTradePartialPayload {
-  id: number;
-  assetid: string;
-  project: number;
-  json_tradeoffer: string;
-  tradelink: string;
-  tradeofferid: string;
-  from_steamid: string;
-  to_steamid: string;
-}
-
-export interface SendTradePayload {
-  id: number;
-  assetid: string;
-  project: number;
-  json_tradeoffer: JsonTradeoffer;
-  tradelink: string;
-  tradeofferid: string;
-  from_steamid: string;
-  to_steamid: string;
-}
-
-interface AcceptTradePayload {
-  id: number;
-  assetid: string;
-  project: number;
-  json_tradeoffer: string;
-  tradelink: string;
-  tradeofferid: string;
-  from_steamid: string;
-  to_steamid: string;
-}
-
-interface CancelTradePayload {
-  id: number;
-  tradeofferid: string;
-}
-
-interface DeclineTradePayload {
-  id: number;
-  tradeofferid: string;
 }

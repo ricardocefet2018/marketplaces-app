@@ -184,7 +184,7 @@ export async function infoLogger(info: string, logsStoragePath?: string) {
   await setFileContent(infosLogPath, content);
 }
 
-export async function getDBPath() {
+export function getDBPath() {
   if (process.env["NODE_ENV"] === "development") {
     const dbPath = path.join(".", "db", "db.sqlite");
     ensureDirectoryExistence(dbPath);

@@ -2,14 +2,17 @@ import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
-import { JsonTradeoffer, TradeWebsocketCreateTradeData } from "../models/types";
+import {
+  JsonTradeoffer,
+  TradeWebsocketCreateTradeData,
+} from "../../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import {
   handleError,
   infoLogger,
   minutesToMS,
   pushElementToJsonFile,
-} from "../../shared/helpers";
+} from "../../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 import { sleepAsync } from "@doctormckay/stdlib/promises.js";
 import {
@@ -17,18 +20,19 @@ import {
   LoginData,
   Marketplace,
   SteamAcc,
-} from "../../shared/types";
-import { User } from "../entities/user.entity";
-import WaxpeerClient from "./waxpeerClient";
-import { WaxpeerWebsocket } from "./waxpeerWebsocket";
+} from "../../../shared/types";
+import { User } from "../../entities/user.entity";
+import WaxpeerClient from "../waxpeer/waxpeerClient";
+import { WaxpeerWebsocket } from "../waxpeer/waxpeerWebsocket";
 import { app } from "electron";
-import ShadowpayClient from "./shadowpayClient";
-import { SendTradePayload, ShadowpayWebsocket } from "./shadowpayWebsocket";
-import MarketcsgoClient, {
-  MarketcsgoTradeOfferPayload,
-} from "./marketcsgoClient";
-import { MarketcsgoSocket } from "./marketcsgoSocket";
-import AppError from "../models/AppError";
+import ShadowpayClient from "../shadowpay/shadowpayClient";
+import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
+import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
+import AppError from "../../models/AppError";
+import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
+import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
+import { TradeManagerOptions } from "./interface/tradeManager.interface";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
@@ -422,7 +426,8 @@ export class TradeManager extends EventEmitter {
 
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
-      this._steamTradeOfferManager.getOffersContainingItems(
+      // TODO update pkg @types/steam-tradeoffer-manager and update this name
+      this._steamTradeOfferManager.getOffersContainingItem(
         items,
         (err, sent, received) => {
           if (err) rej(err);
@@ -769,35 +774,4 @@ export class TradeManager extends EventEmitter {
     );
     return;
   }
-}
-
-interface TradeManagerEvents {
-  waxpeerStateChanged: (state: boolean, username: string) => void;
-  shadowpayStateChanged: (state: boolean, username: string) => void;
-  marketcsgoStateChanged: (state: boolean, username: string) => void;
-  loggedOn: (tm: TradeManager) => void;
-}
-
-export declare interface TradeManager {
-  emit<U extends keyof TradeManagerEvents>(
-    event: U,
-    ...args: Parameters<TradeManagerEvents[U]>
-  ): boolean;
-
-  on<U extends keyof TradeManagerEvents>(
-    event: U,
-    listener: TradeManagerEvents[U]
-  ): this;
-
-  once<U extends keyof TradeManagerEvents>(
-    event: U,
-    listener: TradeManagerEvents[U]
-  ): this;
-}
-
-export interface TradeManagerOptions {
-  storagePathBase: string;
-  username: string;
-  login: string | LoginData; // Can be refreshToken or LoginData
-  proxy?: string;
 }

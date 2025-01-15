@@ -2,7 +2,11 @@ import assert from "assert";
 import fetch, { RequestInfo, RequestInit } from "node-fetch";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../shared/helpers";
+import { minutesToMS } from "../../../shared/helpers";
+import {
+  GetBalanceResponse,
+  GetWSTokenResponse,
+} from "./interface/shadowpay.interface";
 
 export default class ShadowpayClient {
   private static API_URL = "https://api.shadowpay.com/api/v2";
@@ -120,20 +124,4 @@ export default class ShadowpayClient {
     init.headers = headers;
     return fetch(url, init);
   }
-}
-
-interface GetBalanceResponse {
-  data: {
-    balance: number;
-  };
-  status: "success" | string;
-}
-
-interface GetWSTokenResponse {
-  data: {
-    token: string;
-    offers_token: string;
-    url: string;
-  };
-  status: string;
 }
