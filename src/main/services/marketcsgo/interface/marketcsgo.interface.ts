@@ -28,3 +28,9 @@ export interface TradePayload {
   secret: string;
   nik: string;
 }
+
+export interface TradeRequestGiveP2PAll {
+  success: boolean;
+  offers: MarketcsgoTradeOfferPayload[];
+  error?: string;
+}

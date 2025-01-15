@@ -3,8 +3,8 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import assert from "node:assert";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
 import { minutesToMS } from "../../../shared/helpers";
-import { TradeRequestGiveP2PAll } from "./class/marketcsgo.class";
 import {
+  TradeRequestGiveP2PAll,
   GetTradesPayload,
   TradePayload,
 } from "./interface/marketcsgo.interface";
