@@ -32,7 +32,7 @@ import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
-import { TradeManagerOptions } from "./interface/tradeManage.interface";
+import { TradeManagerOptions } from "./interface/tradeManager.interface";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
