@@ -1,8 +1,8 @@
 <template>
   <div>
-    <Card class="w-full">
+    <Card class="w-full" :dt="cardDT">
       <template #title>
-        <div class="flex gap-0">
+        <div class="flex">
           <div class="flex-1">{{ marketplace }}</div>
           <ToggleSwitch
             class="flex"
@@ -60,6 +60,12 @@ const props = defineProps<{
 const model = defineModel<MarketplaceSettings>();
 
 const apiKey = ref<string>();
+
+const cardDT = ref({
+  body: {
+    gap: 0,
+  },
+});
 
 onMounted(() => {
   apiKey.value = model.value.apiKey;
