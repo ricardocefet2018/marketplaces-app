@@ -46,6 +46,15 @@ export interface IUserSettings {
   pendingTradesFilePath: string;
 }
 
+export interface IUserMarketplacesSettings {
+  acceptGifts: boolean;
+  pendingTradesFilePath: string;
+  waxpeerApiKey: string;
+  shadowpayApiKey: string;
+  marketcsgoApiKey: string;
+  csfloatApiKey: string;
+}
+
 export interface ISettings {
   startWithWindow: boolean;
   notification: boolean;

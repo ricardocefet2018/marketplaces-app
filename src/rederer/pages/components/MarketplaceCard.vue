@@ -2,7 +2,7 @@
   <div>
     <Card class="w-full">
       <template #title>
-        <div class="flex">
+        <div class="flex gap-0">
           <div class="flex-1">{{ marketplace }}</div>
           <ToggleSwitch
             class="flex"
@@ -12,7 +12,7 @@
           />
         </div>
       </template>
-      <template #content>
+      <!-- <template #content>
         <div class="field">
           <div class="flex m-2">
             <label for="apiKey">{{ marketplace }} API key</label>
@@ -34,7 +34,7 @@
             />
           </div>
         </div>
-      </template>
+      </template> -->
     </Card>
   </div>
 </template>
