@@ -1,3 +1,5 @@
+import { UserResponse } from "../interface/waxpeer.interface";
+
 export class WaxpeerUser {
   public sell_status: boolean;
   public id: string;

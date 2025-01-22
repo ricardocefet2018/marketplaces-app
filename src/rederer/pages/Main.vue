@@ -101,7 +101,7 @@
           @api-key-changed="onUpdateCSFloatApiKey"
           @state-changed="changeCSFloatState"
           v-model="steamacc.csfloat"
-          :disabled="csgofloatDisabled"
+          :disabled="csfloatDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
       </fieldset>
@@ -132,7 +132,7 @@ const steamacc: Ref<SteamAcc> = ref();
 const waxpeerDisabled: Ref<boolean> = ref(false);
 const shadowpayDisabled: Ref<boolean> = ref(false);
 const marketcsgoDisabled: Ref<boolean> = ref(false);
-const csgofloatDisabled: Ref<boolean> = ref(false);
+const csfloatDisabled: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -166,7 +166,7 @@ onMounted(async () => {
     updateSteamAccList();
   });
 
-  window.events.csgofloatStateChanged((state, username) => {
+  window.events.csfloatStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.csfloat.state = state;
 
@@ -224,7 +224,7 @@ async function onUpdateCSFloatApiKey(csfloatApiKey: string) {
     csfloatApiKey
   );
   if (!status) {
-    csgofloatDisabled.value = true;
+    csfloatDisabled.value = true;
     toast.error("Error updating CSFLoat api key, check out the logs.");
     return;
   }
@@ -276,10 +276,18 @@ async function changeMarketCSGOState(newState: boolean) {
   return;
 }
 
-async function changeCSFloatState() {
-  marketcsgoDisabled.value = true;
-
-  csgofloatDisabled.value = false;
+async function changeCSFloatState(newState: boolean) {
+  csfloatDisabled.value = true;
+  const result = await window.api.changeCSFloatState(
+    newState,
+    steamacc.value.username
+  );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `CSFloat has successfully turned ${newState ? "on" : "off"}.`
+    );
+  csfloatDisabled.value = false;
   return;
 }
 

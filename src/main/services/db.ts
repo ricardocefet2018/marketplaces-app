@@ -47,9 +47,6 @@ export class DB {
     }
 
     this.instance = new DB();
-    console.log("==============================");
-    console.log("Entities:", entities);
-    console.log("==============================");
 
     await this.initializeDatabase();
   }

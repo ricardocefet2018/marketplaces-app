@@ -33,6 +33,8 @@ import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
 import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import CSFloatClient from "../csfloat/csfloatClient";
+import { CSFloatSocket } from "../csfloat/csfloatSocket";
 
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
@@ -46,6 +48,8 @@ export class TradeManager extends EventEmitter {
   private _spWebsocket?: ShadowpayWebsocket;
   private _mcsgoClient?: MarketcsgoClient;
   private _mcsgoSocket?: MarketcsgoSocket;
+  private _csfloatClient?: CSFloatClient;
+  private _csfloatSocket?: CSFloatSocket;
 
   public get steamAcc(): SteamAcc {
     return {
@@ -177,7 +181,10 @@ export class TradeManager extends EventEmitter {
       this.updateAccessTokenWaxpeer(accessToken);
       this.updateAccessTokenShadowpay(accessToken);
       this.updateAccessTokenMarketcsgo(accessToken);
-      // TODO add csfloat here
+      this.updateAccessTokenCSFloat(accessToken);
+
+      //need this for cancel tradeoffer
+      this.setSessionIDCSFloat(sessionID);
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
@@ -206,6 +213,16 @@ export class TradeManager extends EventEmitter {
   private async updateAccessTokenMarketcsgo(accessToken: string) {
     if (!this._mcsgoClient || !this._mcsgoSocket) return;
     this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
+  }
+
+  private async updateAccessTokenCSFloat(accessToken: string) {
+    if (!this._csfloatClient || !this._csfloatSocket) return;
+    this._csfloatClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
+  }
+
+  private async setSessionIDCSFloat(sessionID: string) {
+    if (!this._csfloatClient || !this._csfloatSocket) return;
+    this._csfloatClient.setSessionID(sessionID); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
@@ -698,6 +715,57 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket.on("error", this.handleError);
   }
 
+  public async startCSFloatClient(): Promise<void> {
+    if (this._csfloatClient || this._csfloatSocket) return;
+    if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
+    this._csfloatClient = await CSFloatClient.getInstance(
+      this._user.csfloat.apiKey,
+      this._user.proxy
+    );
+
+    let accessToken = this.getSteamLoginSecure();
+    // TODO this is necessary since when app start it need to await steam send the cookies before start shadowpay, maybe change it to a event
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
+    this._csfloatClient.setSteamToken(accessToken);
+    this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
+    this.registerCSFloatSocketHandlers();
+    const success = await new Promise((resolve) => {
+      this._csfloatSocket.once("stateChange", (online) => {
+        resolve(online);
+      });
+    });
+    if (!success) {
+      this.stopCSFloatClient();
+      throw new AppError("Try again later!");
+    }
+  }
+
+  private registerCSFloatSocketHandlers() {
+    this._csfloatSocket.on("stateChange", async (online) => {
+      console.log("stateChange", online);
+      this.emit("csfloatStateChanged", online, this._user.username);
+      if (online == this._user.csfloat.state) return;
+      this._user.csfloat.state = online;
+      await this._user.save();
+    });
+    this._csfloatSocket.on("acceptWithdraw", (tradeOfferId) => {
+      console.log("acceptWithdraw", tradeOfferId);
+      this.acceptTradeOffer(tradeOfferId);
+    });
+    this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
+      console.log("cancelTrade", tradeOfferId);
+      this.cancelTradeOffer(tradeOfferId);
+    });
+    this._csfloatSocket.on("sendTrade", (data) => {
+      console.log("sendTrade", data);
+      this.createTradeForMarketcsgo(data);
+    });
+    this._csfloatSocket.on("error", this.handleError);
+  }
+
   /**
    * @return Promise that resolve if it's all OK
    * @throw (DB error) Fatal error.
@@ -737,6 +805,18 @@ export class TradeManager extends EventEmitter {
     this._mcsgoClient = undefined;
     this._mcsgoSocket = undefined;
     this._user.marketcsgo.state = false;
+    // TODO a DB error should close the app?
+    await this._user.save();
+    return;
+  }
+
+  public async stopCSFloatClient() {
+    if (!this._csfloatClient || !this._csfloatSocket) return;
+    this._csfloatSocket.disconnect();
+    this._csfloatSocket.removeAllListeners();
+    this._csfloatClient = undefined;
+    this._csfloatSocket = undefined;
+    this._user.csfloat.state = false;
     // TODO a DB error should close the app?
     await this._user.save();
     return;
