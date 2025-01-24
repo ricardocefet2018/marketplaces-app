@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Card class="w-full">
+    <Card class="w-full" :dt="cardDT">
       <template #title>
         <div class="flex">
           <div class="flex-1">{{ marketplace }}</div>
@@ -12,29 +12,6 @@
           />
         </div>
       </template>
-      <template #content>
-        <div class="field">
-          <div class="flex m-2">
-            <label for="apiKey">{{ marketplace }} API key</label>
-          </div>
-          <div class="flex gap-2">
-            <Password
-              id="apiKey"
-              class="flex-1"
-              v-model="apiKey"
-              :disabled="model.state || props.disabled"
-              :feedback="false"
-              toggle-mask
-            />
-            <Button
-              label="Save"
-              class="flex"
-              @click="emit('apiKeyChanged', apiKey)"
-              :disabled="model.state || props.disabled"
-            />
-          </div>
-        </div>
-      </template>
     </Card>
   </div>
 </template>
@@ -42,8 +19,6 @@
 <script setup lang="ts">
 import Card from "primevue/card";
 import ToggleSwitch from "primevue/toggleswitch";
-import Password from "primevue/password";
-import Button from "primevue/button";
 import { Marketplace, MarketplaceSettings } from "../../../shared/types";
 import { onMounted, ref } from "vue";
 
@@ -60,6 +35,12 @@ const props = defineProps<{
 const model = defineModel<MarketplaceSettings>();
 
 const apiKey = ref<string>();
+
+const cardDT = ref({
+  body: {
+    gap: 0,
+  },
+});
 
 onMounted(() => {
   apiKey.value = model.value.apiKey;

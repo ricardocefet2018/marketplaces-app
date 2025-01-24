@@ -28,11 +28,12 @@ import { app } from "electron";
 import ShadowpayClient from "../shadowpay/shadowpayClient";
 import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
 import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
-import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
 import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
+import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
 
@@ -50,6 +51,7 @@ export class TradeManager extends EventEmitter {
   private _mcsgoSocket?: MarketcsgoSocket;
   private _csfloatClient?: CSFloatClient;
   private _csfloatSocket?: CSFloatSocket;
+  private _appController: AppController;
 
   public get steamAcc(): SteamAcc {
     return {
@@ -65,6 +67,7 @@ export class TradeManager extends EventEmitter {
 
   private constructor(options: TradeManagerOptions) {
     super();
+    this._appController = AppController.getInstance();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
     this._steamClient = new SteamUser(steamUserOptions);
@@ -190,6 +193,13 @@ export class TradeManager extends EventEmitter {
     this._steamTradeOfferManager.on("newOffer", (offer) => {
       const isGift =
         offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
+
+      if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
+        this._appController.notify({
+          title: `New offer for ${this._user.username}`,
+          body: ``,
+        });
+
       if (isGift && this._user.userSettings.acceptGifts)
         this.acceptTradeOffer(offer.id);
     });
@@ -228,6 +238,11 @@ export class TradeManager extends EventEmitter {
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
     if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
 
+    this._appController.notify({
+      title: `New Waxpeer sale!`,
+      body: `Creating trade...`,
+    });
+
     const tradeURL = data.tradelink;
     const json_tradeoffer = data.json_tradeoffer;
     const id = data.wax_id;
@@ -252,10 +267,21 @@ export class TradeManager extends EventEmitter {
         this.infoLogger(
           `Steam trade offer ${tradeOfferId} was successfully associated with waxpeer trade ${data.waxid}`
         );
+
         this._user.waxpeer.sentTrades.push(data.wax_id);
         await this._user.save();
-        if (this._user.userSettings.pendingTradesFilePath != "")
+        if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
+          this._appController.notify({
+            title: `Waxpeer trade created.`,
+            body: `Trade #${tradeOfferId} was registered on pending trades file.`,
+          });
+        } else {
+          this._appController.notify({
+            title: `Waxpeer trade created.`,
+            body: `Please confirm trade #${tradeOfferId} on your device.`,
+          });
+        }
       }
     } catch (err) {
       this.handleError(err);
@@ -264,6 +290,11 @@ export class TradeManager extends EventEmitter {
 
   public async createTradeForShadowpay(data: SendTradePayload) {
     if (this._user.shadowpay.sentTrades.includes(data.id.toString())) return;
+
+    this._appController.notify({
+      title: `New Shadowpay sale!`,
+      body: `Creating trade...`,
+    });
 
     const tradeURL = data.tradelink;
     const json_tradeoffer = data.json_tradeoffer;
@@ -288,8 +319,18 @@ export class TradeManager extends EventEmitter {
         );
         this._user.shadowpay.sentTrades.push(data.id.toString());
         await this._user.save();
-        if (this._user.userSettings.pendingTradesFilePath != "")
+        if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
+          this._appController.notify({
+            title: `Shadowpay trade created.`,
+            body: `Trade #${tradeOfferId} was registered on pending trades file`,
+          });
+        } else {
+          this._appController.notify({
+            title: `Shadowpay trade created.`,
+            body: `Please confirm trade #${tradeOfferId} on your device.`,
+          });
+        }
       }
     } catch (err) {
       this.handleError(err);
@@ -298,6 +339,11 @@ export class TradeManager extends EventEmitter {
 
   public async createTradeForMarketcsgo(data: MarketcsgoTradeOfferPayload) {
     if (this._user.marketcsgo.sentTrades.includes(data.hash)) return;
+
+    this._appController.notify({
+      title: `New MarketCSGO sale!`,
+      body: `Creating trade...`,
+    });
 
     const tradeUrl = `https://steamcommunity.com/tradeoffer/new/?partner=${data.partner}&token=${data.token}`;
     const id = data.hash;
@@ -339,8 +385,19 @@ export class TradeManager extends EventEmitter {
         );
         this._user.marketcsgo.sentTrades.push(data.hash);
         await this._user.save();
-        if (this._user.userSettings.pendingTradesFilePath != "")
+
+        if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
+          this._appController.notify({
+            title: `MarketCSGO trade created.`,
+            body: `Trade #${tradeOfferId} was registered on pending trades file`,
+          });
+        } else {
+          this._appController.notify({
+            title: `MarketCSGO trade created.`,
+            body: `Please confirm trade #${tradeOfferId} on your device.`,
+          });
+        }
       }
     } catch (err) {
       this.handleError(err);
@@ -392,7 +449,11 @@ export class TradeManager extends EventEmitter {
     });
   }
 
-  public async cancelTradeOffer(offerId: string, retry = true) {
+  public async cancelTradeOffer(
+    offerId: string,
+    marketplace: Marketplace,
+    retry = true
+  ) {
     let retriedTimes = 0;
     do {
       try {
@@ -406,6 +467,10 @@ export class TradeManager extends EventEmitter {
           return; // Offer was found but isn't cancellable
 
         await cancelOffer(offer);
+        this._appController.notify({
+          title: `${marketplace} sale cancelled.`,
+          body: `Steam trade offer #${offerId} was cancelled.`,
+        });
         this.infoLogger(`Trade offer #${offer.id} was canceled`);
         return;
       } catch (err) {
@@ -444,7 +509,7 @@ export class TradeManager extends EventEmitter {
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
       // TODO update pkg @types/steam-tradeoffer-manager and update this name
-      this._steamTradeOfferManager.getOffersContainingItem(
+      this._steamTradeOfferManager.getOffersContainingItems(
         items,
         (err, sent, received) => {
           if (err) rej(err);
@@ -462,7 +527,11 @@ export class TradeManager extends EventEmitter {
     try {
       const offer = await this.getTradeOffer(offerId);
       await acceptOffer(offer);
-      this.infoLogger(`${offer.id} was accepted`);
+      this._appController.notify({
+        title: `Accepted gift for ${this._user.username}.`,
+        body: `Trade offer #${offer.id} was accepted.`,
+      });
+      this.infoLogger(`Steam trade offer #${offer.id} was accepted`);
       return;
     } catch (err) {
       this.handleError(err);
@@ -608,6 +677,7 @@ export class TradeManager extends EventEmitter {
     this.registerWaxpeerSocketHandlers();
     return;
   }
+
   private registerWaxpeerSocketHandlers() {
     this._wpWebsocket.on("stateChange", async (data) => {
       this.emit("waxpeerStateChanged", data, this._user.username);
@@ -619,7 +689,7 @@ export class TradeManager extends EventEmitter {
       this.acceptTradeOffer(tradeOfferId); // error catched inside, can't throw err
     });
     this._wpWebsocket.on("cancelTrade", (tradeOfferId) => {
-      this.cancelTradeOffer(tradeOfferId); // retring till cancel or not cancellable anymore, can't throw err
+      this.cancelTradeOffer(tradeOfferId, "Waxpeer"); // retring till cancel or not cancellable anymore, can't throw err
     });
     this._wpWebsocket.on("sendTrade", (data) => {
       this.createTradeForWaxpeer(data);
@@ -657,7 +727,7 @@ export class TradeManager extends EventEmitter {
       this.acceptTradeOffer(tradeOfferId);
     });
     this._spWebsocket.on("cancelTrade", (tradeOfferId) => {
-      this.cancelTradeOffer(tradeOfferId);
+      this.cancelTradeOffer(tradeOfferId, "Shadowpay");
     });
     this._spWebsocket.on("sendTrade", async (data) => {
       this.createTradeForShadowpay(data);
@@ -701,15 +771,12 @@ export class TradeManager extends EventEmitter {
       await this._user.save();
     });
     this._mcsgoSocket.on("acceptWithdraw", (tradeOfferId) => {
-      console.log("acceptWithdraw", tradeOfferId);
       this.acceptTradeOffer(tradeOfferId);
     });
     this._mcsgoSocket.on("cancelTrade", (tradeOfferId) => {
-      console.log("cancelTrade", tradeOfferId);
-      this.cancelTradeOffer(tradeOfferId);
+      this.cancelTradeOffer(tradeOfferId, "MarketCSGO");
     });
     this._mcsgoSocket.on("sendTrade", (data) => {
-      console.log("sendTrade", data);
       this.createTradeForMarketcsgo(data);
     });
     this._mcsgoSocket.on("error", this.handleError);
@@ -757,7 +824,7 @@ export class TradeManager extends EventEmitter {
     });
     this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
       console.log("cancelTrade", tradeOfferId);
-      this.cancelTradeOffer(tradeOfferId);
+      this.cancelTradeOffer(tradeOfferId, "CSFLoat");
     });
     this._csfloatSocket.on("sendTrade", (data) => {
       console.log("sendTrade", data);
