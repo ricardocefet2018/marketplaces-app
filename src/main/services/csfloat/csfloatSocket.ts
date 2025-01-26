@@ -56,7 +56,7 @@ export class CSFloatSocket extends EventEmitter {
     //Parte 1: Atualização de último ping
     // const lastPing = Date.now();
 
-    //Parte 2: Verificação de permissões
+    //Parte 2: Verificação de permissões da steam
     const hasPermission = await this.csfloatClient.verifySteamPermission();
 
     if (!hasPermission) {
@@ -65,14 +65,16 @@ export class CSFloatSocket extends EventEmitter {
     }
 
     //Parte 3: Busca de trocas pendentes
-    const tradesToSend = await this.csfloatClient.getTradesInPending();
+    const pedingTrades = await this.csfloatClient.getTrades(
+      EStatusTradeCSFLOAT.PENDING
+    );
 
     //Parte 4: Obtenção do token de acesso
     // const steamToken = await this.csfloatClient.getSteamToken();
 
     //Parte 5: Atualização de trocas pendentes
-    if (tradesToSend.length < 0) return;
-    await this.csfloatClient.pingUpdates(tradesToSend);
+    if (pedingTrades.length < 0) return;
+    await this.csfloatClient.pingUpdates(pedingTrades);
 
     //Parte 6: Ping do status da extensão
     await this.csfloatClient.pingExtensionStatus({

@@ -39,6 +39,7 @@ export default class CSFloatClient {
   }
 
   static async getInstance(api_key: string, proxy?: string) {
+    if (!api_key) throw new Error("API key is required");
     const instance = new CSFloatClient(api_key, proxy);
     await instance.updateBalance();
     return instance;
@@ -57,7 +58,9 @@ export default class CSFloatClient {
     const url = `${CSFloatClient.API_URL}/me`;
     const res = await this.internalFetch(url);
 
-    return await res.json();
+    const data = await res.json();
+
+    return data;
   }
 
   public setSteamToken(steamToken: string) {
@@ -87,14 +90,17 @@ export default class CSFloatClient {
     return result.trades;
   }
 
-  public async getTradesInPending(req?: getTradesInQueuedRequest): Promise<[]> {
-    const state = req?.state || "pending";
+  public async getTrades(
+    status: EStatusTradeCSFLOAT,
+    req?: getTradesInQueuedRequest
+  ): Promise<[]> {
     const limit = req?.limit || 100;
-    const url = `${CSFloatClient.API_URL}/me/trades?state=${state}&limit=${limit}&page=0`;
+    const url = `${CSFloatClient.API_URL}/me/trades?state=${status}&limit=${limit}&page=0`;
 
     const res = await this.internalFetch(url);
+
     if (res.status !== 200) {
-      throw new Error("Invalid status while fetching pending trades");
+      throw new Error(`Invalid status while fetching ${status} trades`);
     }
 
     const result = await res.json();
@@ -150,60 +156,60 @@ export default class CSFloatClient {
 
   private async cancelUnconfirmedTradeOffers(pendingTrades: Trade[]) {
     const oneHourMs = 60 * 60 * 1000;
+    const oneHourAgo = Date.now() - oneHourMs;
+    const filteredTrades = pendingTrades.filter((trade) => {
+      const { state, sent_at } = trade.steam_offer;
+
+      return (
+        state === TradeOfferState.CreatedNeedsConfirmation &&
+        new Date(sent_at).getTime() < oneHourAgo
+      );
+    });
+
     const offerIDsToCancel = [
-      ...new Set(
-        pendingTrades
-          .filter(
-            (e) =>
-              e.steam_offer.state ===
-                TradeOfferState.CreatedNeedsConfirmation &&
-              new Date(e.steam_offer.sent_at).getTime() < Date.now() - oneHourMs
-          )
-          .map((e) => e.steam_offer.id)
-      ),
+      ...new Set(filteredTrades.map((trade) => trade.steam_offer.id)),
     ];
 
-    if (offerIDsToCancel.length === 0) {
-      console.log("if cancelUnconfirmedTradeOffers");
-      return;
-    }
-
     const offers = await this.getSentTradeOffersFromAPI();
-    const resp = { offers, type: TradeOffersType.API };
 
-    const offersIDsStillNeedsConfirmation = offerIDsToCancel.filter((id) => {
-      const sentOffer = resp.offers.find((offer) => offer.offer_id === id);
-      if (!sentOffer) {
-        return false;
-      }
-
-      return sentOffer.state === TradeOfferState.CreatedNeedsConfirmation;
-    });
+    const offersIDsStillNeedsConfirmation = offerIDsToCancel.filter((id) =>
+      offers.some(
+        (offer) =>
+          offer.offer_id === id &&
+          offer.state === TradeOfferState.CreatedNeedsConfirmation
+      )
+    );
 
     if (offersIDsStillNeedsConfirmation.length === 0) {
       return;
     }
 
     const sessionID = this.getSessionID();
+
     if (!sessionID) {
       return;
     }
 
     for (const offerID of offersIDsStillNeedsConfirmation) {
+      const url = `https://steamcommunity.com/tradeoffer/${offerID}/cancel`;
+      const body = new URLSearchParams({
+        sessionid: this.getSessionID(),
+      }).toString();
+
       try {
-        await fetch(`https://steamcommunity.com/tradeoffer/${offerID}/cancel`, {
+        const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           },
-          body: new URLSearchParams({
-            sessionid: this.getSessionID(),
-          } as any).toString(),
+          body,
         });
-      } catch (e: any) {
-        console.error(
-          `failed to cancel needs confirmation trade, returning early: ${e.toString()}`
-        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to cancel trade offer with ID ${offerID}`);
+        }
+      } catch (error) {
+        console.error(`Error canceling trade offer with ID ${offerID}:`, error);
         return;
       }
     }
@@ -296,22 +302,21 @@ export default class CSFloatClient {
 
   private async getSentTradeOffersFromAPI(): Promise<OfferStatus[]> {
     const access = this.getSteamToken();
+    const url = `${csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`;
 
-    const resp = await fetch(
-      `${csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`,
-      {}
-    );
-    console.log("resp--------------------------------------------", resp);
+    const resp = await fetch(url, {});
 
     if (resp.status !== 200) {
-      throw new Error("invalid status");
+      throw new Error("Error when searching trade history.");
     }
 
     const data = (await resp.json()) as TradeOffersAPIResponse;
-    return (data.response?.trade_offers_sent || []).map(this.offerStateMapper);
+    return (data.response?.trade_offers_sent || []).map(
+      this.mapTradeOfferToStatus
+    );
   }
 
-  offerStateMapper(e: TradeOffersAPIOffer): OfferStatus {
+  mapTradeOfferToStatus(e: TradeOffersAPIOffer): OfferStatus {
     return {
       offer_id: e.tradeofferid,
       state: e.trade_offer_state,
@@ -511,9 +516,11 @@ export default class CSFloatClient {
     const data = (await resp.json()) as TradeOffersAPIResponse;
     return {
       received: (data.response?.trade_offers_received || []).map(
-        this.offerStateMapper
+        this.mapTradeOfferToStatus
       ),
-      sent: (data.response?.trade_offers_sent || []).map(this.offerStateMapper),
+      sent: (data.response?.trade_offers_sent || []).map(
+        this.mapTradeOfferToStatus
+      ),
       steam_id: this.getSteamId(),
     };
   }

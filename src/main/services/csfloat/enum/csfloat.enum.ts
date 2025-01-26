@@ -1,0 +1,3 @@
+enum EStatusTradeCSFLOAT {
+  PENDING = "pending",
+}
