@@ -20,10 +20,9 @@
 import Card from "primevue/card";
 import ToggleSwitch from "primevue/toggleswitch";
 import { Marketplace, MarketplaceSettings } from "../../../shared/types";
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 
 const emit = defineEmits<{
-  apiKeyChanged: [apiKey: string];
   stateChanged: [state: boolean];
 }>();
 
@@ -34,16 +33,10 @@ const props = defineProps<{
 
 const model = defineModel<MarketplaceSettings>();
 
-const apiKey = ref<string>();
-
 const cardDT = ref({
   body: {
     gap: 0,
   },
-});
-
-onMounted(() => {
-  apiKey.value = model.value.apiKey;
 });
 </script>
 
