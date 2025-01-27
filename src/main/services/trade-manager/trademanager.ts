@@ -35,6 +35,30 @@ import { TradeManagerOptions } from "./interface/tradeManager.interface";
 import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
 
+interface TradeManagerEvents {
+  waxpeerStateChanged: (state: boolean, username: string) => void;
+  shadowpayStateChanged: (state: boolean, username: string) => void;
+  marketcsgoStateChanged: (state: boolean, username: string) => void;
+  loggedOn: (tm: TradeManager) => void;
+}
+
+export declare interface TradeManager {
+  emit<U extends keyof TradeManagerEvents>(
+    event: U,
+    ...args: Parameters<TradeManagerEvents[U]>
+  ): boolean;
+
+  on<U extends keyof TradeManagerEvents>(
+    event: U,
+    listener: TradeManagerEvents[U]
+  ): this;
+
+  once<U extends keyof TradeManagerEvents>(
+    event: U,
+    listener: TradeManagerEvents[U]
+  ): this;
+}
+
 export class TradeManager extends EventEmitter {
   private _steamClient: SteamUser;
   private _steamTradeOfferManager: TradeOfferManager;
@@ -770,12 +794,14 @@ export class TradeManager extends EventEmitter {
    * @throw (DB error) Fatal error.
    */
   public async stopWaxpeerClient() {
-    if (!this._wpWebsocket || !this._wpClient) return; // Already stopped
-    this._wpWebsocket.disconnectWss();
-    this._wpWebsocket.removeAllListeners();
+    if (this._wpWebsocket) {
+      this._wpWebsocket.disconnectWss();
+      this._wpWebsocket.removeAllListeners();
+    }
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
     this._user.waxpeer.state = false;
+    this.emit("waxpeerStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -786,24 +812,28 @@ export class TradeManager extends EventEmitter {
    * @throw (DB error) Fatal error.
    */
   public async stopShadowpayClient() {
-    if (!this._spWebsocket || !this._spClient) return; // Already stopped
-    this._spWebsocket.disconnect();
-    this._spWebsocket.removeAllListeners();
+    if (this._spWebsocket) {
+      this._spWebsocket.disconnect();
+      this._spWebsocket.removeAllListeners();
+    }
     this._spClient = undefined;
     this._spWebsocket = undefined;
     this._user.shadowpay.state = false;
+    this.emit("shadowpayStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
   }
 
   public async stopMarketcsgoClient() {
-    if (!this._mcsgoClient || !this._mcsgoSocket) return;
-    this._mcsgoSocket.disconnect();
-    this._mcsgoSocket.removeAllListeners();
+    if (this._mcsgoSocket) {
+      this._mcsgoSocket.disconnect();
+      this._mcsgoSocket.removeAllListeners();
+    }
     this._mcsgoClient = undefined;
     this._mcsgoSocket = undefined;
     this._user.marketcsgo.state = false;
+    this.emit("marketcsgoStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
