@@ -16,10 +16,11 @@ import {
 import assert from "assert";
 import { CSFloatUser } from "./class/csfloat.class";
 
-let csfloat_base_api_url: "https://csfloat.com/api";
-let csgo_base_api_url: "https://api.steampowered.com";
-let csgo_base_store_url: `https://store.steampowered.com/`;
 export default class CSFloatClient {
+  csfloat_base_api_url = "https://csfloat.com/api";
+  csgo_base_api_url = "https://api.steampowered.com";
+  csgo_base_store_url = "https://store.steampowered.com/";
+
   private static API_URL = "https://csfloat.com/api/v1";
   private api_key: string;
   private steamToken: string;
@@ -28,6 +29,7 @@ export default class CSFloatClient {
   private lastBalanceUpdate: number;
   private user_balance: number;
   private user?: CSFloatUser;
+  private steamID: string;
 
   public get balance() {
     return this.user_balance;
@@ -50,8 +52,10 @@ export default class CSFloatClient {
     if (!bought && this.lastBalanceUpdate > fifteenMinutesAgo) return;
 
     const json = await this.getDataProfile();
+
     if (!json.user) throw new Error(JSON.stringify(json));
     this.user_balance = json.user.balance;
+    this.steamID = json.user.steam_id;
   }
 
   public async getDataProfile(): Promise<any> {
@@ -72,8 +76,8 @@ export default class CSFloatClient {
   }
 
   public getSteamId() {
-    assert(!!this.user, "User not setted!");
-    return this.user.steamid;
+    assert(!!this.steamID, "User not setted!");
+    return this.steamID;
   }
 
   public async getTradesInQueued(req?: getTradesInQueuedRequest): Promise<[]> {
@@ -91,7 +95,7 @@ export default class CSFloatClient {
   }
 
   public async getTrades(
-    status: EStatusTradeCSFLOAT,
+    status: string,
     req?: getTradesInQueuedRequest
   ): Promise<[]> {
     const limit = req?.limit || 100;
@@ -119,7 +123,7 @@ export default class CSFloatClient {
 
   public async verifySteamPermission() {
     try {
-      const res = await fetch(csgo_base_store_url);
+      const res = await fetch(this.csgo_base_store_url);
       return res.status === 200;
     } catch (error) {
       console.error("Failed to fetch Steam URL:", error);
@@ -216,7 +220,7 @@ export default class CSFloatClient {
   }
 
   private async pingTradeHistory(pendingTrades: Trade[]) {
-    const { history, type } = await this.getTradeHistoryFromAPI();
+    const historyTrades = await this.getTradeHistory();
 
     // premature optimization in case it's 100 trades
     const assetsToFind = pendingTrades.reduce((acc, e) => {
@@ -225,16 +229,15 @@ export default class CSFloatClient {
     }, {} as { [key: string]: boolean });
 
     // We only want to send history that is relevant to verifying trades on CSFloat
-    const historyForCSFloat = history.filter((e) => {
-      const received_ids = e.received_assets.map((e) => e.asset_id);
-      const given_ids = e.given_assets.map((e) => e.asset_id);
+    const historyForCSFloat = historyTrades.filter((trade) => {
+      const received_ids = trade.received_assets.map((e) => e.asset_id);
+      const given_ids = trade.given_assets.map((e) => e.asset_id);
       return !![...received_ids, ...given_ids].find((e) => {
         return assetsToFind[e];
       });
     });
 
     if (historyForCSFloat.length === 0) {
-      console.log("if historyForCSFloat");
       return;
     }
 
@@ -244,8 +247,9 @@ export default class CSFloatClient {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          authorization: `${this.api_key}`,
         },
-        body: JSON.stringify({ history: historyForCSFloat, type }),
+        body: JSON.stringify({ history: historyForCSFloat, type: 1 }),
       }
     );
 
@@ -253,56 +257,65 @@ export default class CSFloatClient {
       throw new Error("invalid status");
     }
   }
-  async getTradeHistoryFromAPI(): Promise<{
-    history: TradeHistoryStatus[];
-    type: TradeOffersType;
-  }> {
+  async getTradeHistory(): Promise<TradeHistoryStatus[]> {
     const access = this.getSteamToken();
+    const url = `${this.csgo_base_api_url}/IEconService/GetTradeHistory/v1/?access_token=${access}&max_trades=200`;
 
     // This only works if they have granted permission for https://api.steampowered.com
-    const resp = await fetch(
-      `${csgo_base_api_url}/IEconService/GetTradeHistory/v1/?access_token=${access}&max_trades=200`,
-      {}
-    );
+    const steamValidation = await this.verifySteamPermission();
+    if (!steamValidation)
+      throw new Error(`"${this.csgo_base_api_url}" is not available`);
 
-    if (resp.status !== 200) {
-      throw new Error("invalid status");
+    const tradeHistoryResponse = await fetch(url, {});
+
+    if (tradeHistoryResponse.status !== 200) {
+      throw new Error("Error when searching trade history. (getTradeHistory)");
     }
 
-    const data = (await resp.json()) as TradeHistoryAPIResponse;
-    const history = await (data.response?.trades || [])
-      .filter((e) => e.status === 3) // Ensure we only count _complete_ trades (k_ETradeStatus_Complete)
-      .filter(
-        (e) =>
-          !e.time_escrow_end ||
-          new Date(parseInt(e.time_escrow_end) * 1000).getTime() < Date.now()
-      )
-      .map((e) => {
-        return {
-          other_party_url: `https://steamcommunity.com/profiles/${e.steamid_other}`,
-          received_assets: (e.assets_received || [])
-            .filter((e) => e.appid === AppId.CSGO)
-            .map((e) => {
-              return { asset_id: e.assetid, new_asset_id: e.new_assetid };
-            }),
-          given_assets: (e.assets_given || [])
-            .filter((e) => e.appid === AppId.CSGO)
-            .map((e) => {
-              return { asset_id: e.assetid, new_asset_id: e.new_assetid };
-            }),
-        } as TradeHistoryStatus;
-      })
-      .filter((e) => {
-        // Remove non-CS related assets
-        return e.received_assets.length > 0 || e.given_assets.length > 0;
-      });
+    const tradeHistory =
+      (await tradeHistoryResponse.json()) as TradeHistoryAPIResponse;
 
-    return { history, type: TradeOffersType.API };
+    const historyResponse = (tradeHistory.response?.trades || []).flatMap(
+      (trade) => {
+        // Filtra trades completos e que não estão em escrow ou cujo escrow já expirou
+        if (
+          trade.status === 3 && // k_ETradeStatus_Complete
+          (!trade.time_escrow_end ||
+            parseInt(trade.time_escrow_end) * 1000 < Date.now())
+        ) {
+          const receivedAssets = (trade.assets_received || [])
+            .filter((asset) => asset.appid === AppId.CSGO)
+            .map(({ assetid, new_assetid }) => ({
+              asset_id: assetid,
+              new_asset_id: new_assetid,
+            }));
+
+          const givenAssets = (trade.assets_given || [])
+            .filter((asset) => asset.appid === AppId.CSGO)
+            .map(({ assetid, new_assetid }) => ({
+              asset_id: assetid,
+              new_asset_id: new_assetid,
+            }));
+
+          // Retorna apenas trades que têm pelo menos um asset CSGO
+          if (receivedAssets.length > 0 || givenAssets.length > 0) {
+            return {
+              other_party_url: `https://steamcommunity.com/profiles/${trade.steamid_other}`,
+              received_assets: receivedAssets,
+              given_assets: givenAssets,
+            } as TradeHistoryStatus;
+          }
+        }
+        return [];
+      }
+    );
+
+    return historyResponse;
   }
 
   private async getSentTradeOffersFromAPI(): Promise<OfferStatus[]> {
     const access = this.getSteamToken();
-    const url = `${csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`;
+    const url = `${this.csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`;
 
     const resp = await fetch(url, {});
 
@@ -331,29 +344,18 @@ export default class CSFloatClient {
   }
 
   async pingSentTradeOffers(pendingTrades: Trade[]) {
-    console.log(
-      "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-    );
-    console.log("pendingTrades", pendingTrades);
-    console.log(
-      "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-    );
-
     const offers = await this.getSentTradeOffersFromAPI();
     const type = TradeOffersType.API;
-    console.log("1");
 
     const offersToFind = pendingTrades.reduce((acc, e) => {
       acc[e.steam_offer.id] = true;
       return acc;
     }, {} as { [key: string]: boolean });
-    console.log("2", offersToFind);
 
     // We only want to send offers that are relevant to verifying trades on CSFloat
     const offersForCSFloat = offers.filter((e) => {
       return !!offersToFind[e.offer_id];
     });
-    console.log("3", offersForCSFloat);
 
     if (offersForCSFloat.length > 0) {
       const resp = await fetch(
@@ -362,6 +364,7 @@ export default class CSFloatClient {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            authorization: `${this.api_key}`,
           },
           body: JSON.stringify({ sent_offers: offersForCSFloat, type }),
         }
@@ -371,14 +374,9 @@ export default class CSFloatClient {
         throw new Error("invalid status");
       }
     }
-    console.log("4");
 
     // Any trade offers to attempt to annotate in case they sent the trade offer outside of CSFloat
     // This is something they shouldn't do, but you can't control the will of users to defy
-    console.log(
-      "offers--------------------------------------------",
-      offers.length
-    );
     for (const offer of offers) {
       // console.log("entrou no for");
 
@@ -386,9 +384,6 @@ export default class CSFloatClient {
         // If it was already accepted, trade history will send the appropriate ping
         continue;
       }
-      console.log(
-        "==================================PASSOU================================================================="
-      );
       const hasTradeWithNoOfferAnnotated = pendingTrades.find((e) => {
         if (e.steam_offer.id) {
           // Already has a steam offer
@@ -398,24 +393,19 @@ export default class CSFloatClient {
         return (offer.given_asset_ids || []).includes(e.contract.item.asset_id);
       });
 
-      console.log("hasTradeWithNoOfferAnnotated", hasTradeWithNoOfferAnnotated);
       if (!hasTradeWithNoOfferAnnotated) {
-        console.log(
-          "!hasTradeWithNoOfferAnnotated",
-          !hasTradeWithNoOfferAnnotated
-        );
         // Couldn't find matching trade on CSFloat
         continue;
       }
 
       try {
-        console.log("try------------------");
         const resp = await fetch(
-          `${csfloat_base_api_url}/v1/trades/steam-status/new-offer`,
+          `${this.csfloat_base_api_url}/v1/trades/steam-status/new-offer`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              authorization: `${this.api_key}`,
             },
             body: JSON.stringify({
               offer_id: offer.offer_id,
@@ -425,8 +415,6 @@ export default class CSFloatClient {
             }),
           }
         );
-
-        console.log("try------------------", resp);
 
         if (resp.status !== 200) {
           throw new Error("invalid status");
@@ -476,7 +464,7 @@ export default class CSFloatClient {
 
       try {
         const resp = await fetch(
-          `${csfloat_base_api_url}/v1/trades/${trade.id}/cancel-ping`,
+          `${this.csfloat_base_api_url}/v1/trades/${trade.id}/cancel-ping`,
           {
             method: "POST",
             headers: {
@@ -506,7 +494,7 @@ export default class CSFloatClient {
     const access = this.getSteamToken();
 
     const resp = await fetch(
-      `${csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_received_offers=true&get_sent_offers=true`
+      `${this.csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_received_offers=true&get_sent_offers=true`
     );
 
     if (resp.status !== 200) {
@@ -526,22 +514,35 @@ export default class CSFloatClient {
   }
 
   async pingExtensionStatus(req: any) {
-    const resp = await fetch(`${csfloat_base_api_url}/v1/me/extension/status`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        steam_community_permission: true,
-        steam_powered_permission: true,
-        access_token_steam_id: this.getSteamId() || "",
-        history_error: req.history_error || "",
-        trade_offer_error: req.trade_offer_error || "",
-      }),
-    });
+    const steamPoweredPermissions = { granted: true };
+    const steamCommunityPermissions = { granted: true };
+    const version = "5.2.0";
 
-    if (resp.status !== 200) {
-      throw new Error("invalid status");
+    const resp1 = await fetch(
+      "https://csfloat.com/api/v1/me/extension/status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `${this.api_key}`,
+          priority: "u=1, i",
+        },
+        body: JSON.stringify({
+          steam_community_permission: steamCommunityPermissions.granted,
+          steam_powered_permission: steamPoweredPermissions.granted,
+          version,
+          access_token_steam_id: this.getSteamId() || "",
+          history_error: req.history_error || "",
+          trade_offer_error: req.trade_offer_error || "",
+        }),
+      }
+    );
+    const jsonResponse = await resp1.json();
+
+    if (resp1.status !== 200) {
+      throw new Error("Erro ao enviar status da extensão");
     }
+
+    return jsonResponse;
   }
 }

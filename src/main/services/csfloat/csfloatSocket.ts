@@ -2,6 +2,7 @@ import { TradeWebsocketEvents } from "../../models/types";
 import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
 import { CSFloatTradeOfferPayload } from "./interface/csfloat.interface";
+import { EStatusTradeCSFLOAT } from "./enum/csfloat.enum";
 
 interface CSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: CSFloatTradeOfferPayload) => void;
@@ -55,10 +56,11 @@ export class CSFloatSocket extends EventEmitter {
   async main() {
     //Parte 1: Atualização de último ping
     // const lastPing = Date.now();
+    await this.csfloatClient.updateBalance();
 
     //Parte 2: Verificação de permissões da steam
     const hasPermission = await this.csfloatClient.verifySteamPermission();
-
+    console.log("hasPermission------>", hasPermission);
     if (!hasPermission) {
       this.emit("stateChange", false);
       return;

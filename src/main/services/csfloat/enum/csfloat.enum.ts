@@ -1,3 +1,3 @@
-enum EStatusTradeCSFLOAT {
+export enum EStatusTradeCSFLOAT {
   PENDING = "pending",
 }
