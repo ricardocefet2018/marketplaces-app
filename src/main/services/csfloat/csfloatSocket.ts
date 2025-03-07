@@ -56,6 +56,7 @@ export class CSFloatSocket extends EventEmitter {
   }
 
   private async loop() {
+    this.emit("stateChange", true);
     let count = 1;
     while (this.connected) {
       count++;

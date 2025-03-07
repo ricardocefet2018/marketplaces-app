@@ -94,7 +94,7 @@
         ></MarketplaceCard>
         <MarketplaceCard
           class="mb-2"
-          marketplace="CSFLoat"
+          marketplace="CSFloat"
           @state-changed="changeCSFloatState"
           v-model="steamacc.csfloat"
           :disabled="csfloatDisabled"
@@ -161,7 +161,6 @@ onMounted(async () => {
 
     updateSteamAccList();
   });
-
   window.events.csfloatStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.csfloat.state = state;

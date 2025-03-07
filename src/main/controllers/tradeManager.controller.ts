@@ -42,6 +42,9 @@ export class TradeManagerController {
       tm.on("marketcsgoStateChanged", (state, username) => {
         this.webContents.send("marketcsgoStateChanged", state, username);
       });
+      tm.on("csfloatStateChanged", (state, username) => {
+        this.webContents.send("csfloatStateChanged", state, username);
+      });
       try {
         this.changeWaxpeerState(user.waxpeer.state, user.username);
         this.changeShadowpayState(user.shadowpay.state, user.username);
@@ -197,6 +200,7 @@ export class TradeManagerController {
   }
 
   public async changeCSFloatState(newState: boolean, username: string) {
+    console.log("changeCSFloatState", newState);
     const tm = this.tradeManagers.get(username);
     if (!tm) throw new Error("User not found");
     try {
@@ -204,7 +208,8 @@ export class TradeManagerController {
       if (!newState) await tm.stopCSFloatClient();
       return;
     } catch (err) {
-      tm.emit("marketcsgoStateChanged", !newState, username);
+      if (!newState) await tm.startCSFloatClient();
+      if (newState) await tm.stopCSFloatClient();
       throw err;
     }
   }

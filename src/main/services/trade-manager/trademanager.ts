@@ -41,7 +41,12 @@ interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
   shadowpayStateChanged: (state: boolean, username: string) => void;
   marketcsgoStateChanged: (state: boolean, username: string) => void;
+  csfloatStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
+  fetchInventory: (appidContextid: {
+    appid: number;
+    contextid: number;
+  }) => void;
 }
 
 export declare interface TradeManager {
@@ -94,6 +99,7 @@ export class TradeManager extends EventEmitter {
     this._appController = AppController.getInstance();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
+    console.log("optisteamUserOptionsons", steamUserOptions);
     this._steamClient = new SteamUser(steamUserOptions);
     this._steamTradeOfferManager = new TradeOfferManager({
       steam: this._steamClient,
@@ -244,18 +250,18 @@ export class TradeManager extends EventEmitter {
     this._spWebsocket.disconnect();
     this._spWebsocket = new ShadowpayWebsocket(this._spClient);
   }
-
+  //TODO: nao a nescessidade desse async
   private async updateAccessTokenMarketcsgo(accessToken: string) {
     if (!this._mcsgoClient || !this._mcsgoSocket) return;
     this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
   }
 
-  private async updateAccessTokenCSFloat(accessToken: string) {
+  private updateAccessTokenCSFloat(accessToken: string) {
     if (!this._csfloatClient || !this._csfloatSocket) return;
     this._csfloatClient.setSteamToken(accessToken);
   }
 
-  private async setSessionIDCSFloat(sessionID: string) {
+  private setSessionIDCSFloat(sessionID: string) {
     this._csfloatClient.setSessionID(sessionID);
   }
 
@@ -838,9 +844,12 @@ export class TradeManager extends EventEmitter {
     });
     this._mcsgoSocket.on("error", this.handleError);
   }
-
+  //TODO NAO ESTA CHEGADNO O STEAM ID
   public async startCSFloatClient(): Promise<void> {
-    if (this._csfloatClient || this._csfloatSocket) return;
+    console.log(
+      "this._steamClient.steamID=======================>",
+      this._steamClient.steamID
+    );
     if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
     this._csfloatClient = await CSFloatClient.getInstance(
       this._user.csfloat.apiKey,
@@ -956,12 +965,14 @@ export class TradeManager extends EventEmitter {
   }
 
   public async stopCSFloatClient() {
-    if (!this._csfloatClient || !this._csfloatSocket) return;
-    this._csfloatSocket.disconnect();
-    this._csfloatSocket.removeAllListeners();
+    if (this._csfloatSocket) {
+      this._csfloatSocket.disconnect();
+      this._csfloatSocket.removeAllListeners();
+    }
     this._csfloatClient = undefined;
     this._csfloatSocket = undefined;
     this._user.csfloat.state = false;
+    this.emit("csfloatStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
