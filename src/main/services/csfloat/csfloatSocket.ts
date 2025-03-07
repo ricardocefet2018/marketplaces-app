@@ -8,6 +8,7 @@ import { minutesToMS } from "../../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 import { ITradeOffer } from "../trade-manager/interface/tradeManager.interface";
 import { Marketplace } from "../../../shared/types";
+import { FetchError } from "node-fetch";
 
 interface CSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: ITradeOffer) => void;
@@ -59,8 +60,14 @@ export class CSFloatSocket extends EventEmitter {
     this.emit("stateChange", true);
     let count = 1;
     while (this.connected) {
-      count++;
-      await this.main();
+      try {
+        this.emit("stateChange", true);
+        count++;
+        await this.main();
+      } catch (error) {
+        if (!(error instanceof FetchError)) this.emit("error", error);
+        this.emit("stateChange", false);
+      }
       await sleepAsync(minutesToMS(3));
     }
   }

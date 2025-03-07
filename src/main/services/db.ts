@@ -40,9 +40,6 @@ export class DB {
 
   static async start(): Promise<void> {
     if (this.instance?.dataSource.isInitialized) {
-      console.log(
-        "Database is already initialized, skipping reinitialization."
-      );
       return;
     }
 
@@ -54,7 +51,6 @@ export class DB {
   private static async initializeDatabase(): Promise<void> {
     try {
       await this.instance.dataSource.initialize();
-      console.log("Database initialized.");
 
       if (process.env.NODE_ENV === "test") {
         await this.clearDatabase();
@@ -66,12 +62,9 @@ export class DB {
       console.error(error.stack);
       process.exit(1);
     }
-
-    console.log("Database setup complete!");
   }
 
   private static async clearDatabase(): Promise<void> {
-    console.log("Running in test mode, clearing database...");
     const { entityMetadatas } = this.instance.dataSource;
     for (const entity of entityMetadatas) {
       const repository = this.instance.dataSource.getRepository(entity.name);
@@ -81,15 +74,12 @@ export class DB {
   }
 
   private static async setupDefaultSettings(): Promise<void> {
-    console.log("Setting up initial database configurations...");
-
     const settingsRepository = this.instance.dataSource.getRepository(Settings);
     const existingSettings = await settingsRepository.find();
 
     if (existingSettings.length === 0) {
       const defaultSettings = settingsRepository.create();
       await settingsRepository.save(defaultSettings);
-      console.log("Default settings saved to database.");
     } else {
       console.log("Settings already exist in the database.");
     }

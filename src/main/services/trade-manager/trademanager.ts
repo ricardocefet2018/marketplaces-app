@@ -99,7 +99,6 @@ export class TradeManager extends EventEmitter {
     this._appController = AppController.getInstance();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
-    console.log("optisteamUserOptionsons", steamUserOptions);
     this._steamClient = new SteamUser(steamUserOptions);
     this._steamTradeOfferManager = new TradeOfferManager({
       steam: this._steamClient,
@@ -845,51 +844,37 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket.on("error", this.handleError);
   }
   //TODO NAO ESTA CHEGADNO O STEAM ID
+
   public async startCSFloatClient(): Promise<void> {
-    console.log(
-      "this._steamClient.steamID=======================>",
-      this._steamClient.steamID
-    );
-    if (!this._steamClient.steamID) return; // Steam account failed loging in, don't try to start
+    if (this._csfloatClient || this._csfloatSocket) return;
+    if (!this._steamClient.steamID) return;
     this._csfloatClient = await CSFloatClient.getInstance(
       this._user.csfloat.apiKey,
       this._user.proxy
     );
-
     let accessToken = this.getSteamLoginSecure();
-    // TODO this is necessary since when app start it need to await steam send the cookies before start shadowpay, maybe change it to a event
+
     while (!accessToken || accessToken == "") {
       await sleepAsync(100);
       accessToken = this.getSteamLoginSecure();
     }
-    this._csfloatClient.setSteamToken(accessToken);
+    await this._csfloatClient.setSteamToken(accessToken);
     this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
     this.registerCSFloatSocketHandlers();
-    const success = await new Promise((resolve) => {
-      this._csfloatSocket.once("stateChange", (online) => {
-        resolve(online);
-      });
-    });
-    if (!success) {
-      this.stopCSFloatClient();
-      throw new AppError("Try again later!");
-    }
+    return;
   }
 
   private registerCSFloatSocketHandlers() {
     this._csfloatSocket.on("stateChange", async (online) => {
-      console.log("stateChange", online);
       this.emit("csfloatStateChanged", online, this._user.username);
       if (online == this._user.csfloat.state) return;
       this._user.csfloat.state = online;
       await this._user.save();
     });
     this._csfloatSocket.on("acceptWithdraw", (tradeOfferId) => {
-      console.log("acceptWithdraw", tradeOfferId);
       this.acceptTradeOffer(tradeOfferId);
     });
     this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
-      console.log("cancelTrade", tradeOfferId);
       this.cancelTradeOffer(tradeOfferId, "CSFloat");
     });
     this._csfloatSocket.on("sendTrade", (data) => {

@@ -200,7 +200,6 @@ export class TradeManagerController {
   }
 
   public async changeCSFloatState(newState: boolean, username: string) {
-    console.log("changeCSFloatState", newState);
     const tm = this.tradeManagers.get(username);
     if (!tm) throw new Error("User not found");
     try {
