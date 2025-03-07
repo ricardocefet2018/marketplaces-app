@@ -17,9 +17,9 @@ import assert from "assert";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export default class CSFloatClient {
-  csfloat_base_api_url = "https://csfloat.com/api";
-  csgo_base_api_url = "https://api.steampowered.com";
-  csgo_base_store_url = "https://store.steampowered.com/";
+  csfloat_base_api_url = "https://csfloat.com/api"; //TODO: Why is this duplicated? use the *STATIC API_URL*
+  csgo_base_api_url = "https://api.steampowered.com"; //TODO: Steam request shouln't being in CSFloatClient
+  csgo_base_store_url = "https://store.steampowered.com/"; //TODO: Steam request shouln't being in CSFloatClient
   private static API_URL = "https://csfloat.com/api/v1";
   private api_key: string;
   private steamToken: string;
@@ -119,6 +119,8 @@ export default class CSFloatClient {
     return fetch(url, init);
   }
 
+  //TODO: Steam request shouln't being in CSFloatClient
+  //TODO: Doesn't need to verify steam permissions
   public async verifySteamPermission() {
     try {
       const res = await fetch(this.csgo_base_store_url);
@@ -251,6 +253,8 @@ export default class CSFloatClient {
       throw new Error("invalid status");
     }
   }
+
+  //TODO: Steam request shouln't being in CSFloatClient
   async getTradeHistory(): Promise<TradeHistoryStatus[]> {
     const access = this.getSteamToken();
     const url = `${this.csgo_base_api_url}/IEconService/GetTradeHistory/v1/?access_token=${access}&max_trades=200`;
@@ -262,7 +266,7 @@ export default class CSFloatClient {
     const tradeHistoryResponse = await fetch(url, {});
 
     if (tradeHistoryResponse.status !== 200) {
-      throw new Error("Error when searching trade history. (getTradeHistory)");
+      throw new Error("Error when searching trade history. (getTradeHistory)"); //TODO: this is duplicated with verifySteamPermission() function 7 lines before
     }
 
     const tradeHistory =
@@ -306,6 +310,7 @@ export default class CSFloatClient {
     return historyResponse;
   }
 
+  //TODO: Steam request shouln't being in CSFloatClient
   async getSentTradeOffersFromAPI(): Promise<OfferStatus[]> {
     const access = this.getSteamToken();
     const url = `${this.csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`;
@@ -322,6 +327,7 @@ export default class CSFloatClient {
     );
   }
 
+  //TODO: Steam request shouln't being in CSFloatClient
   async getSentTradeOffersFromAPINoMap(): Promise<TradeOffersAPIOffer[]> {
     const access = this.getSteamToken();
     const url = `${this.csgo_base_api_url}/IEconService/GetTradeOffers/v1/?access_token=${access}&get_sent_offers=true`;
@@ -491,6 +497,7 @@ export default class CSFloatClient {
     });
   }
 
+  //TODO: Steam request shouln't being in CSFloatClient
   async getSentAndReceivedTradeOffersFromAPI(): Promise<{
     received: OfferStatus[];
     sent: OfferStatus[];
