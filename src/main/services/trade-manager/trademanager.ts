@@ -1,6 +1,6 @@
 import path from "path";
 import { EventEmitter } from "events";
-import TradeOfferManager from "steam-tradeoffer-manager";
+import TradeOfferManager, { EOfferFilter } from "steam-tradeoffer-manager";
 import SteamUser from "steam-user";
 import {
   JsonTradeoffer,
@@ -82,6 +82,9 @@ export class TradeManager extends EventEmitter {
       options.storagePathBase,
       `acc_${options.username}`
     );
+  }
+  public requestInventory() {
+    this.emit("fetchInventory", { appid: 730, contextid: 2 });
   }
 
   public static async login(loginData: LoginData): Promise<TradeManager> {
@@ -177,6 +180,7 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamClient.on("webSession", (sessionID, cookies) => {
+      this.setSessionIDCSFloat(sessionID);
       this._steamCookies = cookies;
       this._steamTradeOfferManager.setCookies(cookies);
       const accessToken = this.getSteamLoginSecure();
@@ -185,9 +189,6 @@ export class TradeManager extends EventEmitter {
       this.updateAccessTokenShadowpay(accessToken);
       this.updateAccessTokenMarketcsgo(accessToken);
       this.updateAccessTokenCSFloat(accessToken);
-
-      //need this for cancel tradeoffer
-      this.setSessionIDCSFloat(sessionID);
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
@@ -227,12 +228,11 @@ export class TradeManager extends EventEmitter {
 
   private async updateAccessTokenCSFloat(accessToken: string) {
     if (!this._csfloatClient || !this._csfloatSocket) return;
-    this._csfloatClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
+    this._csfloatClient.setSteamToken(accessToken);
   }
 
   private async setSessionIDCSFloat(sessionID: string) {
-    if (!this._csfloatClient || !this._csfloatSocket) return;
-    this._csfloatClient.setSessionID(sessionID); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
+    this._csfloatClient.setSessionID(sessionID);
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
@@ -404,6 +404,26 @@ export class TradeManager extends EventEmitter {
     }
   }
 
+  public async createTradeForCSFloat(data: any) {
+    this._appController.notify({
+      title: `New CSFloat sale!`,
+      body: `Creating trade...`,
+    });
+
+    const marketplace: Marketplace = "CSFloat";
+
+    const tradeOfferId = await this.createTrade(
+      data.tradeURL,
+      data.json_tradeoffer,
+      data.id,
+      marketplace,
+      data.tradeoffermessage
+    );
+
+    if (!tradeOfferId) return;
+    await this.registerPendingTradeToFile(tradeOfferId);
+  }
+
   private async createTrade(
     tradeURL: string,
     json_tradeoffer: JsonTradeoffer,
@@ -503,6 +523,18 @@ export class TradeManager extends EventEmitter {
 
         resolve(offer);
       });
+    });
+  }
+
+  private async getTradeOffers(): Promise<TradeOffer[]> {
+    return new Promise((resolve, reject) => {
+      this._steamTradeOfferManager.getOffers(
+        EOfferFilter.ActiveOnly,
+        (err, sent, received) => {
+          if (err) reject(err);
+          resolve(sent.concat(received));
+        }
+      );
     });
   }
 
@@ -614,15 +646,16 @@ export class TradeManager extends EventEmitter {
    * Get inventory contents based on appid and contextid
    * @returns Array containing all intenvory items
    */
-  private getInventoryContents(
+  getInventoryContents(
     appid: number,
-    contextid: number
+    contextid: number,
+    tradables = true
   ): Promise<CEconItem[]> {
     return new Promise<CEconItem[]>((res, rej) => {
       this._steamTradeOfferManager.getInventoryContents(
         appid,
         contextid,
-        true,
+        tradables,
         (err, inv) => {
           if (err) rej(err);
           res(inv);
@@ -824,13 +857,28 @@ export class TradeManager extends EventEmitter {
     });
     this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
       console.log("cancelTrade", tradeOfferId);
-      this.cancelTradeOffer(tradeOfferId, "CSFLoat");
+      this.cancelTradeOffer(tradeOfferId, "CSFloat");
     });
     this._csfloatSocket.on("sendTrade", (data) => {
-      console.log("sendTrade", data);
-      this.createTradeForMarketcsgo(data);
+      this.createTradeForCSFloat(data);
     });
     this._csfloatSocket.on("error", this.handleError);
+    this._csfloatSocket.on("getInventory", async (callback) => {
+      try {
+        const items = await this.getInventoryContents(730, 2);
+        callback(items);
+      } catch (err) {
+        callback([], err);
+      }
+    });
+    this._csfloatSocket.on("getTradeOffers", async (callback) => {
+      try {
+        const itemsForTrade = await this.getTradeOffers();
+        callback(itemsForTrade);
+      } catch (err) {
+        callback([], err);
+      }
+    });
   }
 
   /**

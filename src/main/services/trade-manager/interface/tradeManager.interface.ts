@@ -1,4 +1,5 @@
-import { LoginData } from "../../../../shared/types";
+import { JsonTradeoffer } from "../../../models/types";
+import { LoginData, Marketplace } from "../../../../shared/types";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -29,4 +30,12 @@ export interface TradeManagerOptions {
   username: string;
   login: string | LoginData; // Can be refreshToken or LoginData
   proxy?: string;
+}
+
+export interface ITradeOffer {
+  tradeURL: string;
+  json_tradeoffer: JsonTradeoffer;
+  id: string | number;
+  marketplace: Marketplace;
+  message?: string;
 }

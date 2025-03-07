@@ -1,15 +1,26 @@
-import { TradeWebsocketEvents } from "../../models/types";
+import CEconItem from "steamcommunity/classes/CEconItem.js";
+import { JsonTradeoffer, TradeWebsocketEvents } from "../../models/types";
 import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
-import { CSFloatTradeOfferPayload } from "./interface/csfloat.interface";
 import { EStatusTradeCSFLOAT } from "./enum/csfloat.enum";
+import { sleepAsync } from "@doctormckay/stdlib/promises";
+import { minutesToMS } from "../../../shared/helpers";
+import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
+import { ITradeOffer } from "../trade-manager/interface/tradeManager.interface";
+import { Marketplace } from "../../../shared/types";
 
 interface CSFloatSocketEvents extends TradeWebsocketEvents {
-  sendTrade: (data: CSFloatTradeOfferPayload) => void;
+  sendTrade: (data: ITradeOffer) => void;
   cancelTrade: (tradeOfferId: string) => void;
   acceptWithdraw: (tradeOfferId: string) => void;
   stateChange: (online: boolean) => void;
   error: (error: any) => void;
+  getInventory: (
+    callback: (items: CEconItem[], error?: unknown) => void
+  ) => void;
+  getTradeOffers: (
+    callback: (tradeOffers: TradeOffer[], error?: unknown) => void
+  ) => void;
 }
 
 export declare interface CSFloatSocket {
@@ -48,40 +59,117 @@ export class CSFloatSocket extends EventEmitter {
     let count = 1;
     while (this.connected) {
       count++;
-      await this.main(); // Espera a execução da função main terminar
-      await new Promise((resolve) => setTimeout(resolve, 1000 * 60)); // Aguarda 1 minuto antes da próxima iteração
+      await this.main();
+      await sleepAsync(minutesToMS(3));
     }
   }
 
   async main() {
-    //Parte 1: Atualização de último ping
-    // const lastPing = Date.now();
+    const tradesInQueue: any[] = await this.csfloatClient.getTrades(
+      EStatusTradeCSFLOAT.QUEUED
+    );
+
+    if (tradesInQueue.length > 0) {
+      const itemsTradables: CEconItem[] = await new Promise(
+        (resolve, reject) => {
+          this.emit("getInventory", (items: CEconItem[], error?: unknown) => {
+            if (error) {
+              console.error("Error:", error);
+              reject(error);
+              return;
+            }
+
+            resolve(items);
+          });
+        }
+      );
+
+      tradesInQueue.forEach(async (trade) => {
+        const hasMatchingItem = itemsTradables.some(
+          (item) => item.assetid === trade.contract.item.asset_id
+        );
+        if (!hasMatchingItem) return;
+
+        const itemsInTrade: any[] = await new Promise((resolve, reject) => {
+          this.emit(
+            "getTradeOffers",
+            async (tradeOffers: TradeOffer[], error) => {
+              resolve(tradeOffers);
+              reject(error);
+            }
+          );
+        });
+
+        itemsInTrade.forEach(async (tradeOffer) => {
+          tradeOffer.itemsToGive.forEach(async (item: any) => {
+            if (item.assetid === trade.contract.item.asset_id) return;
+          });
+        });
+
+        await this.csfloatClient.acceptTrade([trade.id]);
+      });
+    }
+
+    await this.csfloatClient.pingExtensionStatus({
+      history_error: undefined,
+      trade_offer_error: undefined,
+    });
+
     await this.csfloatClient.updateBalance();
 
-    //Parte 2: Verificação de permissões da steam
     const hasPermission = await this.csfloatClient.verifySteamPermission();
-    console.log("hasPermission------>", hasPermission);
+
     if (!hasPermission) {
       this.emit("stateChange", false);
       return;
     }
 
-    //Parte 3: Busca de trocas pendentes
-    const pedingTrades = await this.csfloatClient.getTrades(
+    const pedingTrades: any[] = await this.csfloatClient.getTrades(
       EStatusTradeCSFLOAT.PENDING
     );
 
-    //Parte 4: Obtenção do token de acesso
-    // const steamToken = await this.csfloatClient.getSteamToken();
+    if (pedingTrades.length <= 0) return;
 
-    //Parte 5: Atualização de trocas pendentes
-    if (pedingTrades.length < 0) return;
+    const dataTrades = pedingTrades.map((objectTrade: any) => {
+      const JSON_tradeOffer: JsonTradeoffer = {
+        newversion: true,
+        version: 2,
+        me: {
+          assets: [
+            {
+              appid: 730,
+              contextid: "2",
+              amount: 1,
+              assetid: objectTrade.contract.item.asset_id,
+            },
+          ],
+          currency: [] as any[],
+          ready: true,
+        },
+        them: {
+          assets: [] as any[],
+          currency: [] as any[],
+          ready: true,
+        },
+      };
+
+      return {
+        tradeURL: objectTrade.trade_url,
+        json_tradeoffer: JSON_tradeOffer,
+        id: objectTrade.id,
+        marketplace: "CSFloat" as Marketplace,
+        message: "",
+      };
+    });
+
+    await Promise.all(
+      dataTrades.map((dataTrade) => this.emit("sendTrade", dataTrade))
+    );
     await this.csfloatClient.pingUpdates(pedingTrades);
 
-    //Parte 6: Ping do status da extensão
     await this.csfloatClient.pingExtensionStatus({
-      history_error: "",
-      trade_offer_error: "",
+      history_error: undefined,
+      trade_offer_error: undefined,
     });
     return;
   }
