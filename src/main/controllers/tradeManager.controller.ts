@@ -162,7 +162,8 @@ export class TradeManagerController {
       if (!newState) await tm.stopWaxpeerClient();
       return;
     } catch (err) {
-      tm.emit("waxpeerStateChanged", !newState, username);
+      if (!newState) await tm.startWaxpeerClient();
+      if (newState) await tm.stopWaxpeerClient();
       throw err;
     }
   }
@@ -175,7 +176,8 @@ export class TradeManagerController {
       if (!newState) await tm.stopShadowpayClient();
       return;
     } catch (err) {
-      tm.emit("shadowpayStateChanged", !newState, username);
+      if (!newState) await tm.startShadowpayClient();
+      if (newState) await tm.stopShadowpayClient();
       throw err;
     }
   }
@@ -188,7 +190,8 @@ export class TradeManagerController {
       if (!newState) await tm.stopMarketcsgoClient();
       return;
     } catch (err) {
-      tm.emit("marketcsgoStateChanged", !newState, username);
+      if (!newState) await tm.startMarketcsgoClient();
+      if (newState) await tm.stopMarketcsgoClient();
       throw err;
     }
   }

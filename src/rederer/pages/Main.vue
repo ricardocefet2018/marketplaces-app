@@ -71,7 +71,6 @@
         <MarketplaceCard
           class="mb-2"
           marketplace="Waxpeer"
-          @api-key-changed="onUpdateWaxpeerApiKey"
           @state-changed="changeWaxpeerState"
           v-model="steamacc.waxpeer"
           :disabled="waxpeerDisabled"
@@ -80,7 +79,6 @@
         <MarketplaceCard
           class="mb-2"
           marketplace="Shadowpay"
-          @api-key-changed="onUpdateShadowpayApiKey"
           @state-changed="changeShadowpayState"
           v-model="steamacc.shadowpay"
           :disabled="shadowpayDisabled"
@@ -89,7 +87,6 @@
         <MarketplaceCard
           class="mb-2"
           marketplace="MarketCSGO"
-          @api-key-changed="onUpdateMarketCSGOApiKey"
           @state-changed="changeMarketCSGOState"
           v-model="steamacc.marketcsgo"
           :disabled="marketcsgoDisabled"
@@ -98,7 +95,6 @@
         <MarketplaceCard
           class="mb-2"
           marketplace="CSFLoat"
-          @api-key-changed="onUpdateCSFloatApiKey"
           @state-changed="changeCSFloatState"
           v-model="steamacc.csfloat"
           :disabled="csfloatDisabled"
