@@ -94,10 +94,10 @@
         ></MarketplaceCard>
         <MarketplaceCard
           class="mb-2"
-          marketplace="CSFLoat"
+          marketplace="CSFloat"
           @state-changed="changeCSFloatState"
           v-model="steamacc.csfloat"
-          :disabled="csgofloatDisabled"
+          :disabled="csfloatDisabled"
           v-if="!!steamacc"
         ></MarketplaceCard>
       </fieldset>
@@ -128,7 +128,7 @@ const steamacc: Ref<SteamAcc> = ref();
 const waxpeerDisabled: Ref<boolean> = ref(false);
 const shadowpayDisabled: Ref<boolean> = ref(false);
 const marketcsgoDisabled: Ref<boolean> = ref(false);
-const csgofloatDisabled: Ref<boolean> = ref(false);
+const csfloatDisabled: Ref<boolean> = ref(false);
 
 function onUpdateListbox(e: SteamAcc | null) {
   if (!e) return;
@@ -161,14 +161,72 @@ onMounted(async () => {
 
     updateSteamAccList();
   });
-
-  window.events.csgofloatStateChanged((state, username) => {
+  window.events.csfloatStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.csfloat.state = state;
 
     updateSteamAccList();
   });
 });
+
+async function onUpdateWaxpeerApiKey(waxpeerApiKey: string) {
+  const status = await window.api.updateWaxpeerApiKey(
+    steamacc.value.username,
+    waxpeerApiKey
+  );
+  if (!status) {
+    waxpeerDisabled.value = true;
+    toast.error("Error updating Waxpeer api key, check out the logs.");
+    return;
+  }
+  toast.success("Waxpeer api key changed.");
+  steamacc.value.waxpeer.apiKey = waxpeerApiKey;
+  await updateSteamAccList();
+}
+
+async function onUpdateShadowpayApiKey(shadowpayApiKey: string) {
+  const status = await window.api.updateShadowpayApiKey(
+    steamacc.value.username,
+    shadowpayApiKey
+  );
+  if (!status) {
+    shadowpayDisabled.value = true;
+    toast.error("Error updating Shadowpay api key, check out the logs.");
+    return;
+  }
+  toast.success("Shadowpay api key changed.");
+  steamacc.value.shadowpay.apiKey = shadowpayApiKey;
+  await updateSteamAccList();
+}
+
+async function onUpdateMarketCSGOApiKey(marketcsgoApiKey: string) {
+  const status = await window.api.updateMarketcsgoApiKey(
+    steamacc.value.username,
+    marketcsgoApiKey
+  );
+  if (!status) {
+    marketcsgoDisabled.value = true;
+    toast.error("Error updating MarketCSGO api key, check out the logs.");
+    return;
+  }
+  toast.success("MarketCSGO api key changed.");
+  steamacc.value.marketcsgo.apiKey = marketcsgoApiKey;
+  await updateSteamAccList();
+}
+async function onUpdateCSFloatApiKey(csfloatApiKey: string) {
+  const status = await window.api.updateCSFloatApiKey(
+    steamacc.value.username,
+    csfloatApiKey
+  );
+  if (!status) {
+    csfloatDisabled.value = true;
+    toast.error("Error updating CSFLoat api key, check out the logs.");
+    return;
+  }
+  toast.success("CSFLoat api key changed.");
+  steamacc.value.csfloat.apiKey = csfloatApiKey;
+  await updateSteamAccList();
+}
 
 async function changeWaxpeerState(newState: boolean) {
   waxpeerDisabled.value = true;
@@ -213,10 +271,18 @@ async function changeMarketCSGOState(newState: boolean) {
   return;
 }
 
-async function changeCSFloatState() {
-  marketcsgoDisabled.value = true;
-
-  csgofloatDisabled.value = false;
+async function changeCSFloatState(newState: boolean) {
+  csfloatDisabled.value = true;
+  const result = await window.api.changeCSFloatState(
+    newState,
+    steamacc.value.username
+  );
+  if (!result.success && result.msg) toast.error(result.msg);
+  if (result.success)
+    toast.success(
+      `CSFloat has successfully turned ${newState ? "on" : "off"}.`
+    );
+  csfloatDisabled.value = false;
   return;
 }
 
