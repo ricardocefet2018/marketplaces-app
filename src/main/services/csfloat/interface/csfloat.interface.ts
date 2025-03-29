@@ -1,3 +1,5 @@
+import { JsonTradeoffer } from "../../../models/types";
+import { Marketplace } from "../../../../shared/types";
 export interface CSFloatTradeOfferPayload {
   hash: string;
   partner: number;
@@ -140,17 +142,15 @@ export enum TradeOfferState {
   InEscrow = 11,
 }
 
-export interface TradeHistoryAPIResponse {
-  response: {
-    trades: {
-      tradeid: string;
-      steamid_other: string;
-      status: number;
-      assets_given?: HistoryAsset[];
-      assets_received?: HistoryAsset[];
-      time_escrow_end?: string;
-    }[];
-  };
+export interface GetTradeHistoryAPIResponse {
+  trades: {
+    tradeid: string;
+    steamid_other: string;
+    status: number;
+    assets_given?: HistoryAsset[];
+    assets_received?: HistoryAsset[];
+    time_escrow_end?: string;
+  }[];
 }
 
 interface HistoryAsset {
@@ -207,7 +207,6 @@ export interface TradeHistoryStatus {
 
 export interface TradeHistoryAsset {
   asset_id: string;
-  new_asset_id?: string;
 }
 export interface UserResponse {
   success: boolean;
@@ -215,4 +214,12 @@ export interface UserResponse {
     userid: number;
     id64: string;
   };
+}
+
+export interface IMakeData {
+  tradeURL: string;
+  json_tradeoffer: JsonTradeoffer;
+  id: string;
+  marketplace: Marketplace;
+  message: string;
 }

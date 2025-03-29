@@ -567,6 +567,18 @@ export class TradeManager extends EventEmitter {
     });
   }
 
+  private async getTradeHistory(): Promise<TradeOffer[]> {
+    return new Promise((resolve, reject) => {
+      this._steamTradeOfferManager.getOffers(
+        EOfferFilter.All,
+        (err, sent, received) => {
+          if (err) reject(err);
+          resolve(sent.concat(received));
+        }
+      );
+    });
+  }
+
   private async isItemsInTrade(items: CEconItem[]) {
     return new Promise<boolean>((res, rej) => {
       // TODO update pkg @types/steam-tradeoffer-manager and update this name
@@ -893,6 +905,14 @@ export class TradeManager extends EventEmitter {
       try {
         const itemsForTrade = await this.getTradeOffers();
         callback(itemsForTrade);
+      } catch (err) {
+        callback([], err);
+      }
+    });
+    this._csfloatSocket.on("getTradeHistory", async (callback) => {
+      try {
+        const itemsHistoryForTrade = await this.getTradeHistory();
+        callback(itemsHistoryForTrade);
       } catch (err) {
         callback([], err);
       }
