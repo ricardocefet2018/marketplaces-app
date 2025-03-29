@@ -126,8 +126,6 @@ export default class CSFloatClient {
     tradesSteamOffers: TradeOffer[],
     tradeOffersHistory: TradeOffer[]
   ): Promise<void> {
-    if (!tradesSteamOffers) return;
-
     await this.pingTradeHistory(pendingTrades, tradeOffersHistory).then(() =>
       console.log("Finalized pingTradeHistory")
     );
@@ -151,18 +149,17 @@ export default class CSFloatClient {
       acc[e.contract.item.asset_id] = true;
       return acc;
     }, {} as { [key: string]: boolean });
-
     const historyForCSFloat = historyTrades.filter((trade) => {
-      const received_ids = trade.received_assets.map((e) => e.asset_id);
-      const given_ids = trade.given_assets.map((e) => e.asset_id);
-      return !![...received_ids, ...given_ids].find((e) => {
-        return assetsToFind[e];
-      });
-    });
+      const received_ids = trade?.received_assets
+        ? trade.received_assets.map((e) => e.asset_id)
+        : [];
 
-    if (historyForCSFloat.length === 0) {
-      return;
-    }
+      const given_ids = trade?.given_assets
+        ? trade.given_assets.map((e) => e.asset_id)
+        : [];
+
+      return [...received_ids, ...given_ids].some((e) => assetsToFind[e]);
+    });
 
     const resp = await fetch(
       `${CSFloatClient.API_URL}/trades/steam-status/trade-history`,

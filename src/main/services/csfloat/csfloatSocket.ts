@@ -149,13 +149,15 @@ export class CSFloatSocket extends EventEmitter {
     const pendingTrades: Trade[] = await this.csfloatClient.getTrades(
       EStatusTradeCSFLOAT.PENDING
     );
+    console.log("pendingTrades", pendingTrades);
+    console.log("tradesSteamOffers", tradesSteamOffers);
 
-    if (pendingTrades.length <= 0) return;
+    if (pendingTrades.length > 0) {
+      const dataTrades = this.makeDataByPingUpdate(pendingTrades);
 
-    const dataTrades = this.makeDataByPingUpdate(pendingTrades);
-
-    for (const dataTrade of dataTrades) {
-      await this.emit("sendTrade", dataTrade);
+      for (const dataTrade of dataTrades) {
+        await this.emit("sendTrade", dataTrade);
+      }
     }
 
     await this.cancelUnconfirmedTradeOffers(pendingTrades, tradesSteamOffers);
