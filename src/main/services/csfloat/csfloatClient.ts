@@ -14,8 +14,6 @@ import assert from "assert";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
 export default class CSFloatClient {
-  csgo_base_api_url = "https://api.steampowered.com"; //TODO: Steam request shouln't being in CSFloatClient
-  csgo_base_store_url = "https://store.steampowered.com/"; //TODO: Steam request shouln't being in CSFloatClient
   private static API_URL = "https://csfloat.com/api/v1";
   private api_key: string;
   private steamToken: string;
