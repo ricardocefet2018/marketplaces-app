@@ -224,7 +224,7 @@ async function changeCSFloatState(newState: boolean): Promise<void> {
       steamacc.value.username
     );
     if (responseStateFloat.success) {
-      toast.success(`Float has successfully turned on`);
+      toast.success(`Float has successfully turned ${newState ? "on" : "off"}`);
     }
   } catch (error) {
     toast.error(`Error - (changeCSFloatState): ${error}`);
