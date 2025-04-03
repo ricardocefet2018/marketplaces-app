@@ -94,7 +94,7 @@
         ></MarketplaceCard>
         <MarketplaceCard
           class="mb-2"
-          marketplace="CSFLoat"
+          marketplace="Float"
           @state-changed="changeCSFloatState"
           v-model="steamacc.csfloat"
           :disabled="csgofloatDisabled"
@@ -213,10 +213,24 @@ async function changeMarketCSGOState(newState: boolean) {
   return;
 }
 
-async function changeCSFloatState() {
-  marketcsgoDisabled.value = true;
+async function changeCSFloatState(newState: boolean): Promise<void> {
+  toast.clear();
+  toast.info(`${newState ? "Starting" : "Stopping"} extension Float...`);
+  csgofloatDisabled.value = true;
 
-  csgofloatDisabled.value = false;
+  try {
+    const responseStateFloat = await window.api.changeCSFloatState(
+      newState,
+      steamacc.value.username
+    );
+    if (responseStateFloat.success) {
+      toast.success(`Float has successfully turned on`);
+    }
+  } catch (error) {
+    toast.error(`Error - (changeCSFloatState): ${error}`);
+  } finally {
+    csgofloatDisabled.value = false;
+  }
   return;
 }
 
