@@ -108,4 +108,13 @@ export class User extends BaseEntity {
     if (updated) await user.save();
     return user;
   }
+
+  public async cascadeRemove() {
+    await this.waxpeer.remove();
+    await this.shadowpay.remove();
+    await this.marketcsgo.remove();
+    await this.csfloat.remove();
+    await this.userSettings.remove();
+    await this.remove();
+  }
 }

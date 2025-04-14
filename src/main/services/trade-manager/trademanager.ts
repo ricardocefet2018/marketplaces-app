@@ -843,11 +843,24 @@ export class TradeManager extends EventEmitter {
     this._steamClient.logOff();
     this._steamCookies = [];
     this._steamTradeOfferManager.shutdown();
-    await this._user.waxpeer.remove();
-    await this._user.remove();
+    await this._user.cascadeRemove();
     this._wpClient = undefined;
     if (this._wpWebsocket) this._wpWebsocket.disconnectWss();
     this._wpWebsocket = undefined;
+
+    this._spClient = undefined;
+    if (this._spWebsocket) this._spWebsocket.disconnect();
+    this._spWebsocket = undefined;
+
+    this._mcsgoClient = undefined;
+    if (this._mcsgoSocket) this._mcsgoSocket.disconnect();
+    this._mcsgoSocket = undefined;
+
+    // TODO add csfloat here
+    // this._csfloatClient = undefined;
+    // if (this._csfloatSocket) this._csfloatSocket.disconnect();
+    // this._csfloatSocket = undefined;
+
     return;
   }
 
