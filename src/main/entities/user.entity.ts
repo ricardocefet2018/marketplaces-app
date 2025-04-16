@@ -5,6 +5,7 @@ import {
   Entity,
   OneToOne,
   PrimaryGeneratedColumn,
+  RelationOptions,
   UpdateDateColumn,
 } from "typeorm";
 
@@ -13,6 +14,14 @@ import { MarketCSGO } from "../entities/marketcsgo.entity";
 import { CSFloat } from "../entities/csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
+
+const eagerCascadeNonNullableOptions: RelationOptions = {
+  cascade: true,
+  eager: true,
+  nullable: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+};
 
 @Entity()
 export class User extends BaseEntity {
@@ -34,39 +43,39 @@ export class User extends BaseEntity {
   @UpdateDateColumn()
   updateDate: Date;
 
-  @OneToOne(() => Waxpeer, (waxpeer) => waxpeer.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => Waxpeer,
+    (waxpeer) => waxpeer.user,
+    eagerCascadeNonNullableOptions
+  )
   waxpeer: Waxpeer;
 
-  @OneToOne(() => Shadowpay, (shadowpay) => shadowpay.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => Shadowpay,
+    (shadowpay) => shadowpay.user,
+    eagerCascadeNonNullableOptions
+  )
   shadowpay: Shadowpay;
 
-  @OneToOne(() => MarketCSGO, (marketcsgo) => marketcsgo.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => MarketCSGO,
+    (marketcsgo) => marketcsgo.user,
+    eagerCascadeNonNullableOptions
+  )
   marketcsgo: MarketCSGO;
 
-  @OneToOne(() => CSFloat, (csfloat) => csfloat.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => CSFloat,
+    (csfloat) => csfloat.user,
+    eagerCascadeNonNullableOptions
+  )
   csfloat: CSFloat;
 
-  @OneToOne(() => UserSettings, (userSettings) => userSettings.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => UserSettings,
+    (userSettings) => userSettings.user,
+    eagerCascadeNonNullableOptions
+  )
   userSettings: UserSettings;
 
   public constructor(username?: string, proxy?: string) {
@@ -107,14 +116,5 @@ export class User extends BaseEntity {
     }
     if (updated) await user.save();
     return user;
-  }
-
-  public async cascadeRemove() {
-    await this.waxpeer.remove();
-    await this.shadowpay.remove();
-    await this.marketcsgo.remove();
-    await this.csfloat.remove();
-    await this.userSettings.remove();
-    await this.remove();
   }
 }

@@ -843,7 +843,7 @@ export class TradeManager extends EventEmitter {
     this._steamClient.logOff();
     this._steamCookies = [];
     this._steamTradeOfferManager.shutdown();
-    await this._user.cascadeRemove();
+    await this._user.remove();
     this._wpClient = undefined;
     if (this._wpWebsocket) this._wpWebsocket.disconnectWss();
     this._wpWebsocket = undefined;

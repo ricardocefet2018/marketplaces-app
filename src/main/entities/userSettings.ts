@@ -33,6 +33,8 @@ export class UserSettings extends BaseEntity implements IUserSettings {
 
   @OneToOne(() => User, (user) => user.userSettings, {
     nullable: false,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
   })
   @JoinColumn()
   user: User;
