@@ -15,7 +15,7 @@ import { CSFloat } from "../entities/csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
 
-const eagerCascadeNonNullableOptions: RelationOptions = {
+const baseRelationOptions: RelationOptions = {
   cascade: true,
   eager: true,
   nullable: false,
@@ -43,38 +43,26 @@ export class User extends BaseEntity {
   @UpdateDateColumn()
   updateDate: Date;
 
-  @OneToOne(
-    () => Waxpeer,
-    (waxpeer) => waxpeer.user,
-    eagerCascadeNonNullableOptions
-  )
+  @OneToOne(() => Waxpeer, (waxpeer) => waxpeer.user, baseRelationOptions)
   waxpeer: Waxpeer;
 
-  @OneToOne(
-    () => Shadowpay,
-    (shadowpay) => shadowpay.user,
-    eagerCascadeNonNullableOptions
-  )
+  @OneToOne(() => Shadowpay, (shadowpay) => shadowpay.user, baseRelationOptions)
   shadowpay: Shadowpay;
 
   @OneToOne(
     () => MarketCSGO,
     (marketcsgo) => marketcsgo.user,
-    eagerCascadeNonNullableOptions
+    baseRelationOptions
   )
   marketcsgo: MarketCSGO;
 
-  @OneToOne(
-    () => CSFloat,
-    (csfloat) => csfloat.user,
-    eagerCascadeNonNullableOptions
-  )
+  @OneToOne(() => CSFloat, (csfloat) => csfloat.user, baseRelationOptions)
   csfloat: CSFloat;
 
   @OneToOne(
     () => UserSettings,
     (userSettings) => userSettings.user,
-    eagerCascadeNonNullableOptions
+    baseRelationOptions
   )
   userSettings: UserSettings;
 
