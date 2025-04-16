@@ -5,6 +5,7 @@ import {
   Entity,
   OneToOne,
   PrimaryGeneratedColumn,
+  RelationOptions,
   UpdateDateColumn,
 } from "typeorm";
 
@@ -13,6 +14,14 @@ import { MarketCSGO } from "../entities/marketcsgo.entity";
 import { CSFloat } from "../entities/csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
+
+const baseRelationOptions: RelationOptions = {
+  cascade: true,
+  eager: true,
+  nullable: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+};
 
 @Entity()
 export class User extends BaseEntity {
@@ -34,39 +43,27 @@ export class User extends BaseEntity {
   @UpdateDateColumn()
   updateDate: Date;
 
-  @OneToOne(() => Waxpeer, (waxpeer) => waxpeer.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(() => Waxpeer, (waxpeer) => waxpeer.user, baseRelationOptions)
   waxpeer: Waxpeer;
 
-  @OneToOne(() => Shadowpay, (shadowpay) => shadowpay.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(() => Shadowpay, (shadowpay) => shadowpay.user, baseRelationOptions)
   shadowpay: Shadowpay;
 
-  @OneToOne(() => MarketCSGO, (marketcsgo) => marketcsgo.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => MarketCSGO,
+    (marketcsgo) => marketcsgo.user,
+    baseRelationOptions
+  )
   marketcsgo: MarketCSGO;
 
-  @OneToOne(() => CSFloat, (csfloat) => csfloat.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(() => CSFloat, (csfloat) => csfloat.user, baseRelationOptions)
   csfloat: CSFloat;
 
-  @OneToOne(() => UserSettings, (userSettings) => userSettings.user, {
-    cascade: true,
-    eager: true,
-    nullable: false,
-  })
+  @OneToOne(
+    () => UserSettings,
+    (userSettings) => userSettings.user,
+    baseRelationOptions
+  )
   userSettings: UserSettings;
 
   public constructor(username?: string, proxy?: string) {

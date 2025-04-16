@@ -7,6 +7,8 @@ import { BaseMarket } from "../models/base-market";
 export class MarketCSGO extends BaseMarket {
   @OneToOne(() => User, (user) => user.marketcsgo, {
     nullable: false,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
   })
   @JoinColumn()
   user: User;

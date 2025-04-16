@@ -6,6 +6,8 @@ import { BaseMarket } from "../models/base-market";
 export class CSFloat extends BaseMarket {
   @OneToOne(() => User, (user) => user.csfloat, {
     nullable: false,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
   })
   @JoinColumn()
   user: User;

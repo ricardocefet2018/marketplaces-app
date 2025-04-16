@@ -5,6 +5,8 @@ import { User } from "./user.entity";
 export class Waxpeer extends BaseMarket {
   @OneToOne(() => User, (user) => user.waxpeer, {
     nullable: false,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
   })
   @JoinColumn()
   user: User;
