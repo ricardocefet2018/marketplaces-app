@@ -62,6 +62,11 @@ export const api = {
     username: string
   ): Promise<ApiResponse> =>
     ipcRenderer.invoke("changeMarketcsgoState", newState, username),
+  changeCSFloatState: (
+    newState: boolean,
+    username: string
+  ): Promise<ApiResponse> =>
+    ipcRenderer.invoke("changeCSFloatState", newState, username),
 
   // Settings
   updateUserSettings: (

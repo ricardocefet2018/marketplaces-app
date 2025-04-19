@@ -341,7 +341,7 @@ async function submitForm(e: SubmitEvent) {
     window.api.updateWaxpeerApiKey(username, form.value.waxpeerApiKey),
     window.api.updateShadowpayApiKey(username, form.value.shadowpayApiKey),
     window.api.updateMarketcsgoApiKey(username, form.value.marketcsgoApiKey),
-    // TODO window.api.updateCSFloatApiKey(username, form.value.csfloatApiKey),
+    window.api.updateCSFloatApiKey(username, form.value.csfloatApiKey),
   ]);
   updateResponses.forEach((res) => {
     if (!res.success && res.msg) {

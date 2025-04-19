@@ -42,10 +42,14 @@ export class TradeManagerController {
       tm.on("marketcsgoStateChanged", (state, username) => {
         this.webContents.send("marketcsgoStateChanged", state, username);
       });
+      tm.on("csfloatStateChanged", (state, username) => {
+        this.webContents.send("csfloatStateChanged", state, username);
+      });
       try {
         this.changeWaxpeerState(user.waxpeer.state, user.username);
         this.changeShadowpayState(user.shadowpay.state, user.username);
         this.changeMarketcsgoState(user.marketcsgo.state, user.username);
+        this.changeCSFloatState(user.csfloat.state, user.username);
       } catch (err) {
         tm.handleError(err);
       }
@@ -63,6 +67,9 @@ export class TradeManagerController {
     });
     tm.on("marketcsgoStateChanged", (state, username) => {
       this.webContents.send("marketcsgoStateChanged", state, username);
+    });
+    tm.on("csfloatStateChanged", (state, username) => {
+      this.webContents.send("csfloatStateChanged", state, username);
     });
     this.tradeManagers.set(loginOptions.username, tm);
     return;
@@ -138,6 +145,18 @@ export class TradeManagerController {
     }
   }
 
+  public async updateCSFloatApiKey(username: string, csfloatApiKey: string) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      await tm.updateCSFloatApiKey(csfloatApiKey);
+      return true;
+    } catch (err) {
+      tm.handleError(err);
+      return false;
+    }
+  }
+
   public async changeWaxpeerState(newState: boolean, username: string) {
     const tm = this.tradeManagers.get(username);
     if (!tm) throw new Error("User not found");
@@ -176,6 +195,20 @@ export class TradeManagerController {
     } catch (err) {
       if (!newState) await tm.startMarketcsgoClient();
       if (newState) await tm.stopMarketcsgoClient();
+      throw err;
+    }
+  }
+
+  public async changeCSFloatState(newState: boolean, username: string) {
+    const tm = this.tradeManagers.get(username);
+    if (!tm) throw new Error("User not found");
+    try {
+      if (newState) await tm.startCSFloatClient();
+      if (!newState) await tm.stopCSFloatClient();
+      return;
+    } catch (err) {
+      if (!newState) await tm.startCSFloatClient();
+      if (newState) await tm.stopCSFloatClient();
       throw err;
     }
   }
