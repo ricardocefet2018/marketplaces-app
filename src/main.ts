@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu, Tray } from "electron";
 import { DB } from "./main/services/db";
 import path from "path";
 import { registerHandlers } from "./main/index";
@@ -21,6 +21,8 @@ async function main() {
     });
 
     mainWindow.webContents.openDevTools();
+    await createTray(mainWindow);
+    hideWindow(mainWindow);
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -31,6 +33,30 @@ async function main() {
     }
 
     return mainWindow.webContents;
+  };
+
+  const hideWindow = (mainWindow: BrowserWindow) => {
+    mainWindow.on("minimize", (event: Event) => {
+      event.preventDefault();
+      mainWindow.hide();
+    });
+  };
+
+  const createTray = async (mainWindow: BrowserWindow) => {
+    const icon = app.getFileIcon(process.execPath);
+    let tray = new Tray(await icon);
+    tray.setToolTip("Multi-Apps");
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: "Show App", click: () => mainWindow && mainWindow.show() },
+        {
+          label: "Quit",
+          click: () => {
+            app.quit();
+          },
+        },
+      ])
+    );
   };
 
   app.on("ready", async () => {
