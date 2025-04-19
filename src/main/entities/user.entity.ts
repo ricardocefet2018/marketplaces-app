@@ -12,7 +12,7 @@ import {
 import { Shadowpay } from "../entities/shadowpay.entity";
 import { MarketCSGO } from "../entities/marketcsgo.entity";
 import { CSFloat } from "../entities/csfloat.entity";
-import { UserSettings } from "./userSettings";
+import { UserSettings } from "./userSettings.entity";
 import { Waxpeer } from "./waxpeer.entity";
 
 const baseRelationOptions: RelationOptions = {

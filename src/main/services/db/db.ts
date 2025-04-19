@@ -1,34 +1,8 @@
 import "reflect-metadata";
-import { getDBPath, infoLogger } from "../../shared/helpers";
+import { infoLogger } from "../../../shared/helpers";
+import AppDataSource from "./dataSource";
 import { DataSource } from "typeorm";
-import {
-  CSFloat,
-  MarketCSGO,
-  Settings,
-  Shadowpay,
-  User,
-  UserSettings,
-  Waxpeer,
-} from "../entities/index.intities";
-
-const entities = [
-  CSFloat,
-  MarketCSGO,
-  Settings,
-  Shadowpay,
-  User,
-  UserSettings,
-  Waxpeer,
-];
-
-export const AppDataSource = new DataSource({
-  type: "sqlite",
-  database: getDBPath(),
-  synchronize: true,
-  logging: process.env.NODE_ENV === "development",
-  entities,
-  subscribers: [],
-});
+import { Settings } from "../../entities/settings.entity";
 
 export class DB {
   private static instance: DB;
@@ -47,9 +21,6 @@ export class DB {
     }
 
     this.instance = new DB();
-    console.log("==============================");
-    console.log("Entities:", entities);
-    console.log("==============================");
 
     await this.initializeDatabase();
   }

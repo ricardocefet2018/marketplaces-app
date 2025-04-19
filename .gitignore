@@ -92,4 +92,4 @@ typings/
 out/
 
 # development db path
-db/
+db.sqlite

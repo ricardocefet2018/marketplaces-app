@@ -185,11 +185,16 @@ export async function infoLogger(info: string, logsStoragePath?: string) {
 }
 
 export function getDBPath() {
-  if (process.env["NODE_ENV"] === "development") {
+  console.log(process.env);
+  if (
+    process.env["NODE_ENV"] === "development" ||
+    !!process.env["npm_command"]
+  ) {
     const dbPath = path.join(".", "db", "db.sqlite");
     ensureDirectoryExistence(dbPath);
     return dbPath;
   }
+  // TODO change this process.env["APPDATA"] if willing to build to any plataform unless WINDOWS
   const dbPath = path.join(app.getPath("userData"), "db.sqlite");
   ensureDirectoryExistence(dbPath);
   return dbPath;
