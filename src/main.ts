@@ -57,6 +57,11 @@ async function main() {
         },
       ])
     );
+
+    tray.on("double-click", () => {
+      if (!mainWindow) return;
+      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+    });
   };
 
   app.on("ready", async () => {
