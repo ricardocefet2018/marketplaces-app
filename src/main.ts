@@ -20,7 +20,8 @@ async function main() {
       resizable: false,
     });
 
-    mainWindow.webContents.openDevTools();
+    // The following line is only needed if you want to use the dev tools
+    // mainWindow.webContents.openDevTools();
     await createTray(mainWindow);
     hideWindow(mainWindow);
 
