@@ -20,12 +20,11 @@ async function main() {
       resizable: false,
     });
 
-    // The following line is only needed if you want to use the dev tools
-    // mainWindow.webContents.openDevTools();
     await createTray(mainWindow);
     hideWindow(mainWindow);
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      mainWindow.webContents.openDevTools();
       await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       await mainWindow.loadFile(
@@ -51,7 +50,7 @@ async function main() {
       Menu.buildFromTemplate([
         {
           label: "Show App",
-          click: () => mainWindow && mainWindow.show()
+          click: () => mainWindow && mainWindow.show(),
         },
         {
           label: "Quit",
