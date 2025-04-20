@@ -49,12 +49,13 @@ async function main() {
     tray.setToolTip("Multi-Apps");
     tray.setContextMenu(
       Menu.buildFromTemplate([
-        { label: "Show App", click: () => mainWindow && mainWindow.show() },
+        {
+          label: "Show App",
+          click: () => mainWindow && mainWindow.show()
+        },
         {
           label: "Quit",
-          click: () => {
-            app.quit();
-          },
+          click: () => app.quit(),
         },
       ])
     );
