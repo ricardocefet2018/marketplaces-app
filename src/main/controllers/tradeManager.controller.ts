@@ -33,14 +33,23 @@ export class TradeManagerController {
         user.proxy
       );
       this.tradeManagers.set(user.username, tm);
+      tm.on("waxpeerCanSellStateChanged", (state, username) => {
+        this.webContents.send("waxpeerCanSellStateChanged", state, username);
+      });
       tm.on("waxpeerStateChanged", (state, username) => {
         this.webContents.send("waxpeerStateChanged", state, username);
+      });
+      tm.on("shadowpayCanSellStateChanged", (state, username) => {
+        this.webContents.send("shadowpayCanSellStateChanged", state, username);
       });
       tm.on("shadowpayStateChanged", (state, username) => {
         this.webContents.send("shadowpayStateChanged", state, username);
       });
       tm.on("marketcsgoStateChanged", (state, username) => {
         this.webContents.send("marketcsgoStateChanged", state, username);
+      });
+      tm.on("marketcsgoCanSellStateChanged", (state, username) => {
+        this.webContents.send("marketcsgoCanSellStateChanged", state, username);
       });
       try {
         this.changeWaxpeerState(user.waxpeer.state, user.username);

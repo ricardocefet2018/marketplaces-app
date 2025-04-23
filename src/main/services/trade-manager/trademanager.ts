@@ -37,8 +37,11 @@ import { AppController } from "../../controllers/app.controller";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
+  waxpeerCanSellStateChanged: (state: boolean, username: string) => void;
   shadowpayStateChanged: (state: boolean, username: string) => void;
+  shadowpayCanSellStateChanged: (state: boolean, username: string) => void;
   marketcsgoStateChanged: (state: boolean, username: string) => void;
+  marketcsgoCanSellStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
 }
 
@@ -672,6 +675,11 @@ export class TradeManager extends EventEmitter {
       this._user.waxpeer.apiKey,
       this._user.proxy
     );
+
+    this.emit("waxpeerStateChanged", true, this._user.username);
+    this._user.waxpeer.state = true;
+    await this._user.save();
+
     let accessToken = this.getSteamLoginSecure();
     // TODO this is necessary since when app start it need to await steam send the cookies before star waxpeer, maybe change it to a event
     while (!accessToken || accessToken == "") {
@@ -687,10 +695,8 @@ export class TradeManager extends EventEmitter {
 
   private registerWaxpeerSocketHandlers() {
     this._wpWebsocket.on("stateChange", async (data) => {
-      this.emit("waxpeerStateChanged", data, this._user.username);
-      if (data == this._user.waxpeer.state) return;
-      this._user.waxpeer.state = data;
-      await this._user.save();
+      this.emit("waxpeerCanSellStateChanged", data, this._user.username);
+      this._user.waxpeer.canSell = data;
     });
     this._wpWebsocket.on("acceptWithdraw", (tradeOfferId) => {
       this.acceptTradeOffer(tradeOfferId); // error catched inside, can't throw err
@@ -711,6 +717,11 @@ export class TradeManager extends EventEmitter {
       this._user.shadowpay.apiKey,
       this._user.proxy
     );
+
+    this.emit("shadowpayStateChanged", true, this._user.username);
+    this._user.shadowpay.state = true;
+    await this._user.save();
+
     let accessToken = this.getSteamLoginSecure();
     // TODO this is necessary since when app start it need to await steam send the cookies before start shadowpay, maybe change it to a event
     while (!accessToken || accessToken == "") {
@@ -725,10 +736,8 @@ export class TradeManager extends EventEmitter {
 
   private registerShadowpaySocketHandlers() {
     this._spWebsocket.on("stateChange", async (data) => {
-      this.emit("shadowpayStateChanged", data, this._user.username);
-      if (data == this._user.shadowpay.state) return;
-      this._user.shadowpay.state = data;
-      await this._user.save();
+      this.emit("shadowpayCanSellStateChanged", data, this._user.username);
+      this._user.shadowpay.canSell = data;
     });
     this._spWebsocket.on("acceptWithdraw", (tradeOfferId) => {
       this.acceptTradeOffer(tradeOfferId);
@@ -749,6 +758,11 @@ export class TradeManager extends EventEmitter {
       this._user.marketcsgo.apiKey,
       this._user.proxy
     );
+
+    this.emit("marketcsgoStateChanged", true, this._user.username);
+    this._user.marketcsgo.state = true;
+    await this._user.save();
+
     let accessToken = this.getSteamLoginSecure();
     // TODO this is necessary since when app start it need to await steam send the cookies before start shadowpay, maybe change it to a event
     while (!accessToken || accessToken == "") {
@@ -771,11 +785,8 @@ export class TradeManager extends EventEmitter {
 
   private registerMarketcsgoSocketHandlers() {
     this._mcsgoSocket.on("stateChange", async (online) => {
-      console.log("stateChange", online);
-      this.emit("marketcsgoStateChanged", online, this._user.username);
-      if (online == this._user.marketcsgo.state) return;
-      this._user.marketcsgo.state = online;
-      await this._user.save();
+      this.emit("marketcsgoCanSellStateChanged", online, this._user.username);
+      this._user.marketcsgo.canSell = online;
     });
     this._mcsgoSocket.on("acceptWithdraw", (tradeOfferId) => {
       this.acceptTradeOffer(tradeOfferId);
@@ -801,7 +812,9 @@ export class TradeManager extends EventEmitter {
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
     this._user.waxpeer.state = false;
+    this._user.waxpeer.canSell = false;
     this.emit("waxpeerStateChanged", false, this._user.username);
+    this.emit("waxpeerCanSellStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -819,7 +832,9 @@ export class TradeManager extends EventEmitter {
     this._spClient = undefined;
     this._spWebsocket = undefined;
     this._user.shadowpay.state = false;
+    this._user.shadowpay.canSell = false;
     this.emit("shadowpayStateChanged", false, this._user.username);
+    this.emit("shadowpayCanSellStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;
@@ -834,6 +849,7 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket = undefined;
     this._user.marketcsgo.state = false;
     this.emit("marketcsgoStateChanged", false, this._user.username);
+    this.emit("marketcsgoCanSellStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
     await this._user.save();
     return;

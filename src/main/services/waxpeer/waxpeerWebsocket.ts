@@ -41,10 +41,10 @@ export class WaxpeerWebsocket extends EventEmitter {
     tries: number;
     int: any;
   } = {
-    ws: null,
-    tries: 0,
-    int: null,
-  };
+      ws: null,
+      tries: 0,
+      int: null,
+    };
   private allowReconnect = true;
   private readonly readyStatesMap = {
     CONNECTING: 0,
@@ -97,6 +97,8 @@ export class WaxpeerWebsocket extends EventEmitter {
       }
     });
     this.w.ws.on("open", () => {
+      this.emit("stateChange", true);
+
       if (this.steamid) {
         clearInterval(this.w.int);
         const authObject: {
