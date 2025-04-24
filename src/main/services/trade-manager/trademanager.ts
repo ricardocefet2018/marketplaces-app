@@ -34,11 +34,14 @@ import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.
 import { TradeManagerOptions } from "./interface/tradeManager.interface";
 import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
+import CSFloatClient from "../csfloat/csfloatClient";
+import { CSFloatSocket } from "../csfloat/csfloatSocket";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
   shadowpayStateChanged: (state: boolean, username: string) => void;
   marketcsgoStateChanged: (state: boolean, username: string) => void;
+  csfloatStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
 }
 
@@ -71,6 +74,8 @@ export class TradeManager extends EventEmitter {
   private _spWebsocket?: ShadowpayWebsocket;
   private _mcsgoClient?: MarketcsgoClient;
   private _mcsgoSocket?: MarketcsgoSocket;
+  private _csfloatClient?: CSFloatClient;
+  private _csfloatSocket?: CSFloatSocket;
   private _appController: AppController;
 
   public get steamAcc(): SteamAcc {
@@ -769,6 +774,38 @@ export class TradeManager extends EventEmitter {
     }
   }
 
+  public async startCSFloatClient(): Promise<void> {
+    if (
+      this._csfloatClient ||
+      this._csfloatSocket ||
+      !this._steamClient.steamID
+    )
+      return;
+
+    this._csfloatClient = CSFloatClient.getInstance(
+      this._user.csfloat.apiKey,
+      this._user.proxy
+    );
+    let accessToken = this.getSteamLoginSecure();
+
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
+    this._csfloatClient.setSteamToken(accessToken);
+    this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
+    this.registerCSFloatSocketHandlers();
+    const success = await new Promise((resolve) => {
+      this._csfloatSocket.once("stateChange", (online) => {
+        resolve(online);
+      });
+    });
+    if (!success) {
+      this.stopCSFloatClient();
+      throw new AppError("Try again later!");
+    }
+  }
+
   private registerMarketcsgoSocketHandlers() {
     this._mcsgoSocket.on("stateChange", async (online) => {
       console.log("stateChange", online);
@@ -787,6 +824,25 @@ export class TradeManager extends EventEmitter {
       this.createTradeForMarketcsgo(data);
     });
     this._mcsgoSocket.on("error", this.handleError);
+  }
+
+  private registerCSFloatSocketHandlers() {
+    this._csfloatSocket.on("stateChange", async (online) => {
+      this.emit("csfloatStateChanged", online, this._user.username);
+      if (online == this._user.csfloat.state) return;
+      this._user.csfloat.state = online;
+      await this._user.save();
+    });
+    this._csfloatSocket.on("acceptWithdraw", (tradeOfferId) => {
+      this.acceptTradeOffer(tradeOfferId);
+    });
+    this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
+      this.cancelTradeOffer(tradeOfferId, "CSFloat");
+    });
+    this._csfloatSocket.on("sendTrade", (data) => {
+      // this.createTradeForMarketcsgo(data);
+    });
+    this._csfloatSocket.on("error", this.handleError);
   }
 
   /**
@@ -835,6 +891,20 @@ export class TradeManager extends EventEmitter {
     this._user.marketcsgo.state = false;
     this.emit("marketcsgoStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
+    await this._user.save();
+    return;
+  }
+
+  async stopCSFloatClient() {
+    if (this._csfloatSocket) {
+      this._csfloatSocket.disconnect();
+      this._csfloatSocket.removeAllListeners();
+    }
+    this._csfloatClient = undefined;
+    this._csfloatSocket = undefined;
+    this._user.csfloat.state = false;
+    this.emit("csfloatStateChanged", false, this._user.username);
+
     await this._user.save();
     return;
   }

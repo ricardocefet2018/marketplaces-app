@@ -42,10 +42,14 @@ export class TradeManagerController {
       tm.on("marketcsgoStateChanged", (state, username) => {
         this.webContents.send("marketcsgoStateChanged", state, username);
       });
+      tm.on("csfloatStateChanged", (state, username) => {
+        this.webContents.send("csfloatStateChanged", state, username);
+      });
       try {
         this.changeWaxpeerState(user.waxpeer.state, user.username);
         this.changeShadowpayState(user.shadowpay.state, user.username);
         this.changeMarketcsgoState(user.marketcsgo.state, user.username);
+        this.changeCSFloatState(user.csfloat.state, user.username);
       } catch (err) {
         tm.handleError(err);
       }
@@ -63,6 +67,9 @@ export class TradeManagerController {
     });
     tm.on("marketcsgoStateChanged", (state, username) => {
       this.webContents.send("marketcsgoStateChanged", state, username);
+    });
+    tm.on("csfloatStateChanged", (state, username) => {
+      this.webContents.send("csfloatStateChanged", state, username);
     });
     this.tradeManagers.set(loginOptions.username, tm);
     return;
@@ -176,6 +183,22 @@ export class TradeManagerController {
     } catch (err) {
       if (!newState) await tm.startMarketcsgoClient();
       if (newState) await tm.stopMarketcsgoClient();
+      throw err;
+    }
+  }
+
+  public async changeCSFloatState(
+    newState: boolean,
+    username: string
+  ): Promise<void> {
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
+    try {
+      if (newState) return tradeManager.startMarketcsgoClient();
+      return tradeManager.stopMarketcsgoClient();
+    } catch (err) {
+      if (!newState) return tradeManager.startMarketcsgoClient();
+      await tradeManager.stopMarketcsgoClient();
       throw err;
     }
   }

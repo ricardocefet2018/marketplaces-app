@@ -183,6 +183,27 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     }
   });
 
+  myHandler("changeCSFloatState", async (e, newState, username) => {
+    try {
+      await tradeManagerController.changeCSFloatState(newState, username);
+      return {
+        success: true,
+      };
+    } catch (err) {
+      let body = "Check out the logs.";
+      if (err instanceof FetchError)
+        body += " Most likely you or server is offline.";
+      else if (err instanceof Error && err.message.startsWith("{"))
+        body += " " + err.message;
+      else body += " Most likely your DB is corrupted.";
+      handleError(err);
+      return {
+        success: false,
+        msg: body,
+      };
+    }
+  });
+
   myHandler("logout", async (e, username) => {
     try {
       await tradeManagerController.logout(username);
