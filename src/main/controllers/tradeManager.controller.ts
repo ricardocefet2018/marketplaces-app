@@ -76,10 +76,10 @@ export class TradeManagerController {
   }
 
   public async logout(username: string) {
-    if (!this.tradeManagers.has(username)) throw new Error("User not found");
-    const tm = this.tradeManagers.get(username);
-    tm.removeAllListeners();
-    await tm.logout();
+    const tradeManager = this.getTradeManager(username);
+
+    tradeManager.removeAllListeners();
+    await tradeManager.logout();
     this.tradeManagers.delete(username);
     return;
   }
@@ -104,13 +104,13 @@ export class TradeManagerController {
     username: string,
     waxpeerApiKey: string
   ): Promise<boolean> {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+
     try {
-      await tm.updateWaxpeerApiKey(waxpeerApiKey);
+      await tradeManager.updateWaxpeerApiKey(waxpeerApiKey);
       return true;
     } catch (err) {
-      tm.handleError(err);
+      tradeManager.handleError(err);
       return false;
     }
   }
@@ -119,13 +119,13 @@ export class TradeManagerController {
     username: string,
     shadowpayApiKey: string
   ) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+
     try {
-      await tm.updateShadowpayApiKey(shadowpayApiKey);
+      await tradeManager.updateShadowpayApiKey(shadowpayApiKey);
       return true;
     } catch (err) {
-      tm.handleError(err);
+      tradeManager.handleError(err);
       return false;
     }
   }
@@ -134,55 +134,54 @@ export class TradeManagerController {
     username: string,
     marketcsgoApiKey: string
   ) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+
     try {
-      await tm.updateMarketcsgoApiKey(marketcsgoApiKey);
+      await tradeManager.updateMarketcsgoApiKey(marketcsgoApiKey);
       return true;
     } catch (err) {
-      tm.handleError(err);
+      tradeManager.handleError(err);
       return false;
     }
   }
 
   public async changeWaxpeerState(newState: boolean, username: string) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+
     try {
-      if (newState) await tm.startWaxpeerClient();
-      if (!newState) await tm.stopWaxpeerClient();
+      if (newState) await tradeManager.startWaxpeerClient();
+      if (!newState) await tradeManager.stopWaxpeerClient();
       return;
     } catch (err) {
-      if (!newState) await tm.startWaxpeerClient();
-      if (newState) await tm.stopWaxpeerClient();
+      if (!newState) await tradeManager.startWaxpeerClient();
+      if (newState) await tradeManager.stopWaxpeerClient();
       throw err;
     }
   }
 
   public async changeShadowpayState(newState: boolean, username: string) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+
     try {
-      if (newState) await tm.startShadowpayClient();
-      if (!newState) await tm.stopShadowpayClient();
+      if (newState) await tradeManager.startShadowpayClient();
+      if (!newState) await tradeManager.stopShadowpayClient();
       return;
     } catch (err) {
-      if (!newState) await tm.startShadowpayClient();
-      if (newState) await tm.stopShadowpayClient();
+      if (!newState) await tradeManager.startShadowpayClient();
+      if (newState) await tradeManager.stopShadowpayClient();
       throw err;
     }
   }
 
   public async changeMarketcsgoState(newState: boolean, username: string) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
     try {
-      if (newState) await tm.startMarketcsgoClient();
-      if (!newState) await tm.stopMarketcsgoClient();
+      if (newState) await tradeManager.startMarketcsgoClient();
+      if (!newState) await tradeManager.stopMarketcsgoClient();
       return;
     } catch (err) {
-      if (!newState) await tm.startMarketcsgoClient();
-      if (newState) await tm.stopMarketcsgoClient();
+      if (!newState) await tradeManager.startMarketcsgoClient();
+      if (newState) await tradeManager.stopMarketcsgoClient();
       throw err;
     }
   }
@@ -191,14 +190,14 @@ export class TradeManagerController {
     newState: boolean,
     username: string
   ): Promise<void> {
-    const tradeManager = this.tradeManagers.get(username);
-    if (!tradeManager) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
     try {
       if (newState) return tradeManager.startMarketcsgoClient();
       return tradeManager.stopMarketcsgoClient();
     } catch (err) {
-      if (!newState) return tradeManager.startMarketcsgoClient();
-      await tradeManager.stopMarketcsgoClient();
+      if (!newState) await tradeManager.startMarketcsgoClient();
+      else await tradeManager.stopMarketcsgoClient();
+
       throw err;
     }
   }
@@ -207,15 +206,25 @@ export class TradeManagerController {
     newSettings: IUserSettings,
     username: string
   ) {
-    const tm = this.tradeManagers.get(username);
-    if (!tm) throw new Error("User not found");
+    const tradeManager = this.getTradeManager(username);
+    if (!tradeManager) throw new Error("User not found");
     try {
-      await tm.updateSettings(newSettings);
+      await tradeManager.updateSettings(newSettings);
       return true;
     } catch (err) {
-      tm.handleError(err);
+      tradeManager.handleError(err);
       return false;
     }
+  }
+
+  public getTradeManager(username: string): TradeManager {
+    const tradeManager = this.tradeManagers.get(username);
+
+    if (!tradeManager) throw new Error("User not found");
+    if (!tradeManager.steamAcc.status)
+      throw new Error("Steam account is offline, please relogin");
+
+    return tradeManager;
   }
 }
 

@@ -775,24 +775,13 @@ export class TradeManager extends EventEmitter {
   }
 
   public async startCSFloatClient(): Promise<void> {
-    if (
-      this._csfloatClient ||
-      this._csfloatSocket ||
-      !this._steamClient.steamID
-    )
-      return;
+    if (this._csfloatClient || this._csfloatSocket) return;
 
     this._csfloatClient = CSFloatClient.getInstance(
       this._user.csfloat.apiKey,
       this._user.proxy
     );
-    let accessToken = this.getSteamLoginSecure();
 
-    while (!accessToken || accessToken == "") {
-      await sleepAsync(100);
-      accessToken = this.getSteamLoginSecure();
-    }
-    this._csfloatClient.setSteamToken(accessToken);
     this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
     this.registerCSFloatSocketHandlers();
     const success = await new Promise((resolve) => {
