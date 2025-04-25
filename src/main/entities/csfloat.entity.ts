@@ -12,5 +12,5 @@ export class CSFloat extends BaseMarket {
   @JoinColumn()
   user: User;
 
-  canSell: boolean;
+  canSell: boolean = false;
 }

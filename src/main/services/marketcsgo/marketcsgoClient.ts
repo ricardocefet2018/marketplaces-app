@@ -62,7 +62,7 @@ export default class MarketcsgoClient {
       // Sometimes it just fails without any reason, just try again so.
       if (!json.success && (!json.message || json.message == ""))
         return await this.sendSteamToken();
-      console.log("sendSteamToken response", json);
+
       return json.success && json.online && json.p2p && json.ping == "pong";
     } catch (err) {
       await sleepAsync(minutesToMS());

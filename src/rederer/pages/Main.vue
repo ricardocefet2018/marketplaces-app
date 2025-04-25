@@ -144,7 +144,7 @@ onMounted(async () => {
     steamacc.value = steamaccMap.value.get(route.params.username as string);
   else steamacc.value = steamaccList.value[0];
 
-  window.events.waxpeerStateChanged((state, username) => {    
+  window.events.waxpeerStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.waxpeer.state = state;
 
@@ -169,7 +169,7 @@ onMounted(async () => {
 
     updateSteamAccList();
   });
-  
+
   window.events.marketcsgoStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.marketcsgo.state = state;

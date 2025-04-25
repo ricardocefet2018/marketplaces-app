@@ -13,5 +13,5 @@ export class MarketCSGO extends BaseMarket {
   @JoinColumn()
   user: User;
 
-  canSell: boolean;
+  canSell: boolean = false;
 }
