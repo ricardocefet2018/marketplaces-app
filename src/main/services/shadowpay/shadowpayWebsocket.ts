@@ -107,7 +107,6 @@ export class ShadowpayWebsocket extends EventEmitter {
             );
 
             this.emit("stateChange", false);
-            return;
           }
 
           return;
