@@ -76,7 +76,8 @@ export class TradeManagerController {
   }
 
   public async logout(username: string) {
-    const tradeManager = this.getTradeManager(username);
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
 
     tradeManager.removeAllListeners();
     await tradeManager.logout();
@@ -104,7 +105,8 @@ export class TradeManagerController {
     username: string,
     waxpeerApiKey: string
   ): Promise<boolean> {
-    const tradeManager = this.getTradeManager(username);
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
 
     try {
       await tradeManager.updateWaxpeerApiKey(waxpeerApiKey);
@@ -119,7 +121,8 @@ export class TradeManagerController {
     username: string,
     shadowpayApiKey: string
   ) {
-    const tradeManager = this.getTradeManager(username);
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
 
     try {
       await tradeManager.updateShadowpayApiKey(shadowpayApiKey);
@@ -134,7 +137,8 @@ export class TradeManagerController {
     username: string,
     marketcsgoApiKey: string
   ) {
-    const tradeManager = this.getTradeManager(username);
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
 
     try {
       await tradeManager.updateMarketcsgoApiKey(marketcsgoApiKey);
@@ -206,8 +210,9 @@ export class TradeManagerController {
     newSettings: IUserSettings,
     username: string
   ) {
-    const tradeManager = this.getTradeManager(username);
+    const tradeManager = this.tradeManagers.get(username);
     if (!tradeManager) throw new Error("User not found");
+
     try {
       await tradeManager.updateSettings(newSettings);
       return true;
