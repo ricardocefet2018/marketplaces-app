@@ -16,7 +16,7 @@
     "migrations:generate": "typeorm-ts-node-commonjs migration:generate -d .\\src\\main\\services\\db\\dataSource.ts .\\src\\main\\migrations\\%npm_config_migration%",
     "migrations:run": "typeorm-ts-node-commonjs migration:run -d .\\src\\main\\services\\db\\dataSource.ts",
     "migrations:revert": "typeorm-ts-node-commonjs migration:revert -d .\\src\\main\\services\\db\\dataSource.ts",
-    "migrations:create-index": "cd ./src/main/migrations & ts-node generateMigrationIndex.ts"
+    "migrations:create-index": "ts-node ./src/main/migrations/generateMigrationsIndex.ts"
   },
   "build": {
     "files": [
@@ -60,6 +60,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
     "nodemon": "^3.1.9",
+    "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.3",
