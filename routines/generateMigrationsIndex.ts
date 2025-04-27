@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { format } from "prettier";
 
 (async () => {
-  const fileNames = await fsp.readdir(__dirname);
+  const migrationsDir = join(__dirname, "..", "src", "main", "migrations");
+  const fileNames = await fsp.readdir(migrationsDir);
   const indexContentLines = [];
   const classNames = [];
   for (const fileName of fileNames) {
@@ -11,7 +12,10 @@ import { format } from "prettier";
       console.log(fileName);
       continue;
     }
-    const fileContent = await fsp.readFile(join(__dirname, fileName), "utf-8");
+    const fileContent = await fsp.readFile(
+      join(migrationsDir, fileName),
+      "utf-8"
+    );
     const className = fileContent.split("class ")[1].split(" implements")[0];
     classNames.push(className);
     indexContentLines.push(
@@ -24,7 +28,7 @@ import { format } from "prettier";
     parser: "typescript",
   });
   await fsp.writeFile(
-    join(__dirname, "migrations.index.ts"),
+    join(migrationsDir, "migrations.index.ts"),
     indexContent,
     "utf-8"
   );
