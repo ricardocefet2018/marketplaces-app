@@ -5,7 +5,7 @@
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
-    "start": "npm run migrations:create-index && npm run migrations:run && electron-forge start",
+    "start": "npm run routines:create-indexes && npm run migrations:run && electron-forge start",
     "dev": "nodemon --watch src --ext js,ts,vue --exec \"electron-forge start\"",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -16,7 +16,7 @@
     "migrations:generate": "typeorm-ts-node-commonjs migration:generate -d .\\src\\main\\services\\db\\dataSource.ts .\\src\\main\\migrations\\%npm_config_migration%",
     "migrations:run": "typeorm-ts-node-commonjs migration:run -d .\\src\\main\\services\\db\\dataSource.ts",
     "migrations:revert": "typeorm-ts-node-commonjs migration:revert -d .\\src\\main\\services\\db\\dataSource.ts",
-    "migrations:create-index": "ts-node ./routines/generateMigrationsIndex.ts"
+    "routines:create-indexes": "ts-node ./routines/generateIndexes.ts"
   },
   "build": {
     "files": [

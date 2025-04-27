@@ -1,0 +1,2 @@
+import "./generateEntitiesIndex";
+import "./generateMigrationsIndex";
