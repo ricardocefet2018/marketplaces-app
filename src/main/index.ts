@@ -119,6 +119,30 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     }
   });
 
+  myHandler("updateCSFloatApiKey", async (e, username, csfloatApiKey) => {
+    try {
+      const success = await tradeManagerController.updateCSFloatApiKey(
+        username,
+        csfloatApiKey
+      );
+      if (!success)
+        return {
+          success,
+          msg: `Error updating CSFloat api key. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
+    } catch (err) {
+      handleError(err);
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
+    }
+  })
+
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeWaxpeerState(newState, username);

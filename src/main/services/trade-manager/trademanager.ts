@@ -782,7 +782,7 @@ export class TradeManager extends EventEmitter {
       this._user.proxy
     );
 
-    this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
+    this._csfloatSocket = new CSFloatSocket(this._csfloatClient, this._appController);
     this.registerCSFloatSocketHandlers();
     const success = await new Promise((resolve) => {
       this._csfloatSocket.once("stateChange", (online) => {

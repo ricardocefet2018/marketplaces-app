@@ -149,6 +149,23 @@ export class TradeManagerController {
     }
   }
 
+  public async updateCSFloatApiKey(
+    username: string,
+    CSFloatApiKey: string
+  ) {
+    const tradeManager = this.tradeManagers.get(username);
+    if (!tradeManager) throw new Error("User not found");
+
+    try {
+      await tradeManager.updateCSFloatApiKey(CSFloatApiKey);
+      return true;
+    } catch (err) {
+      tradeManager.handleError(err);
+      return false;
+    }
+  }
+
+
   public async changeWaxpeerState(newState: boolean, username: string) {
     const tradeManager = this.getTradeManager(username);
 
@@ -196,11 +213,11 @@ export class TradeManagerController {
   ): Promise<void> {
     const tradeManager = this.getTradeManager(username);
     try {
-      if (newState) return tradeManager.startMarketcsgoClient();
-      return tradeManager.stopMarketcsgoClient();
+      if (newState) return tradeManager.startCSFloatClient();
+      return tradeManager.stopCSFloatClient();
     } catch (err) {
-      if (!newState) await tradeManager.startMarketcsgoClient();
-      else await tradeManager.stopMarketcsgoClient();
+      if (!newState) await tradeManager.startCSFloatClient();
+      else await tradeManager.stopCSFloatClient();
 
       throw err;
     }
