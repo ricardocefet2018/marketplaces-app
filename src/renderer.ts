@@ -27,15 +27,15 @@
  */
 import "primeflex/primeflex.css";
 import "primeicons/primeicons.css";
-import "./rederer/assets/main.css";
+import "./renderer/assets/main.css";
 import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
 import ToastService from "primevue/toastservice";
 import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
-import App from "./rederer/App.vue";
-import router from "./rederer/router";
+import App from "./renderer/App.vue";
+import router from "./renderer/router";
 
 const app = createApp(App);
 const MyPreset = definePreset(Aura, {

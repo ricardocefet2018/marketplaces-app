@@ -2,14 +2,22 @@
   <div>
     <Card class="w-full" :dt="cardDT">
       <template #title>
-        <div class="flex">
-          <div class="flex-1">
-            {{ marketplace }}
-            <Badge
-              value=""
-              :severity="model.canSell ? 'primary' : 'danger'"
-            ></Badge>
+        <div class="flex align-items-center gap-2">
+          <div class="flex svg-container">
+            <SvgIcon :name="`${marketplace.toLowerCase()}-logo`" />
           </div>
+
+          <Badge
+            value=""
+            :severity="model.canSell ? 'primary' : 'danger'"
+          ></Badge>
+
+          <div
+            class="flex-1 flex align-items-center"
+          >
+            {{ marketplace }}
+          </div>
+
           <ToggleSwitch
             class="flex"
             v-model="model.state"
@@ -28,6 +36,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import Badge from "primevue/badge";
 import { Marketplace, MarketplaceSettings } from "../../../shared/types";
 import { ref } from "vue";
+import SvgIcon from "./SvgIcon.vue";
 
 const emit = defineEmits<{
   stateChanged: [state: boolean];
@@ -47,4 +56,11 @@ const cardDT = ref({
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.svg-container {
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: auto;
+}
+</style>
