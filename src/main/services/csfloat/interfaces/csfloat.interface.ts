@@ -1,5 +1,10 @@
 import { TradeWebsocketEvents } from "src/main/models/types";
-import { EContractStateCSFloat, EContractTypeCSFloat, EStatusTradeCSFLOAT, ETradeOfferStateCSFloat } from "../enums/cs-float.enum";
+import {
+  EContractStateCSFloat,
+  EContractTypeCSFloat,
+  EStatusTradeCSFLOAT,
+  ETradeOfferStateCSFloat,
+} from "../enums/cs-float.enum";
 
 export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: any) => void;
@@ -7,6 +12,12 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   acceptWithdraw: (tradeOfferId: string) => void;
   stateChange: (online: boolean) => void;
   error: (error: any) => void;
+  notifyWindows: (notifyData: INotifyData) => void;
+}
+
+export interface INotifyData {
+  title: string;
+  body: string;
 }
 export interface ITradeFloat {
   id: string;
@@ -17,7 +28,7 @@ export interface ITradeFloat {
   seller: User;
   contract_id: string;
   accepted_at: string | Date;
-  state:EStatusTradeCSFLOAT
+  state: EStatusTradeCSFLOAT;
   verification_mode: string;
   steam_offer: SteamOffer;
   manual_verification: boolean;
@@ -64,7 +75,7 @@ interface Contract {
   created_at: string | Date;
   type: EContractTypeCSFloat;
   price: number;
-  state: EContractStateCSFloat
+  state: EContractStateCSFloat;
   seller: User;
   reference: Reference;
   item: Item;

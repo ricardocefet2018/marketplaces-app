@@ -8,7 +8,8 @@ import {
   EStatusTradeCSFLOAT,
   ETradeOfferStateCSFloat,
 } from "./enums/cs-float.enum";
-import { AppController } from "src/main/controllers/app.controller";
+import { sleepAsync } from "@doctormckay/stdlib/promises";
+import { minutesToMS } from "../../../shared/helpers";
 export declare interface CSFloatSocket {
   emit<U extends keyof ICSFloatSocketEvents>(
     event: U,
@@ -29,11 +30,9 @@ export declare interface CSFloatSocket {
 export class CSFloatSocket extends EventEmitter {
   private connected: boolean;
   private _csFloatClient: CSFloatClient;
-  private _appController: AppController;
 
-  constructor(_CSFloatClient: CSFloatClient, _appController: AppController) {
+  constructor(_CSFloatClient: CSFloatClient) {
     super();
-    this._appController = _appController;
     this._csFloatClient = _CSFloatClient;
     this.connect();
   }
@@ -49,13 +48,23 @@ export class CSFloatSocket extends EventEmitter {
   }
 
   private async registerLoops(): Promise<void> {
-    const tradesInPending = await this.getTrades(EStatusTradeCSFLOAT.PENDING);
+    while (this.connected) {
+      try {
+        this.emit("stateChange", true);
+        const tradesInPending = await this._csFloatClient.getTrades(
+          EStatusTradeCSFLOAT.PENDING
+        );
 
-    await this.verificationsLoop(tradesInPending);
-    await this.extensionLoop();
+        await this.verificationsLoop(tradesInPending);
+        // await this.extensionLoop(tradesInPending);
+      } catch (err) {
+        this.emit("error", err);
+      }
+      await sleepAsync(minutesToMS(3));
+    }
   }
 
-  private async extensionLoop(): Promise<void> {}
+  // private async extensionLoop(tradesInPending: ITradeFloat[]): Promise<void> {}
 
   private async verificationsLoop(
     tradesInPending: ITradeFloat[]
@@ -67,15 +76,11 @@ export class CSFloatSocket extends EventEmitter {
         trade.steam_offer.state ===
         ETradeOfferStateCSFloat.CreatedNeedsConfirmation
       ) {
-        this._appController.notify({
+        this.emit("notifyWindows", {
           title: `CSFLOAT - ${trade.contract.item.item_name}`,
           body: `Trade offer is waiting for confirmation`,
         });
       }
     }
-  }
-
-  private async getTrades(state: EStatusTradeCSFLOAT): Promise<ITradeFloat[]> {
-    return this._csFloatClient.getTrades(state, {});
   }
 }

@@ -36,6 +36,7 @@ import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
+import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -43,6 +44,7 @@ interface TradeManagerEvents {
   marketcsgoStateChanged: (state: boolean, username: string) => void;
   csfloatStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
+  notifyWindowsEvent: (title: string, body: string) => void;
 }
 
 export declare interface TradeManager {
@@ -782,7 +784,7 @@ export class TradeManager extends EventEmitter {
       this._user.proxy
     );
 
-    this._csfloatSocket = new CSFloatSocket(this._csfloatClient, this._appController);
+    this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
     this.registerCSFloatSocketHandlers();
     const success = await new Promise((resolve) => {
       this._csfloatSocket.once("stateChange", (online) => {
@@ -832,6 +834,9 @@ export class TradeManager extends EventEmitter {
       // this.createTradeForMarketcsgo(data);
     });
     this._csfloatSocket.on("error", this.handleError);
+    this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
+      this.notifyWindows(notifyData);
+    });
   }
 
   /**
@@ -929,5 +934,12 @@ export class TradeManager extends EventEmitter {
       Number(offerID)
     );
     return;
+  }
+
+  public notifyWindows(notifyData: INotifyData): void {
+    return this._appController.notify({
+      title: notifyData.title,
+      body: notifyData.body,
+    });
   }
 }
