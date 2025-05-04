@@ -171,18 +171,15 @@ export class TradeManager extends EventEmitter {
         tm.setListeners();
 
         tm._steamClient.once("loggedOn", () => {
-          const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
-          tm.infoLogger(`Acc ${sid64} loged on`);
-          resolve();
-        });
+          console.log("Logged on successfully.");
 
-        tm._steamClient.once("error", (err) => {
-          tm.handleError(err);
+          const sid64 = tm._steamClient.steamID.getSteamID64();
+          tm.infoLogger(`Conta ${sid64} reconectada`);
           resolve();
         });
       });
     } catch (err) {
-      tm.handleError(err); // We deal with the any error here since it's related to accounts that was already logged before
+      tm.handleError(err);
     }
     return tm;
   }
@@ -204,9 +201,9 @@ export class TradeManager extends EventEmitter {
       this._steamTradeOfferManager.setCookies(cookies);
       const accessToken = this.getSteamLoginSecure();
       // doesn't throw errors, no need to wait it
-      this.updateAccessTokenWaxpeer(accessToken);
-      this.updateAccessTokenShadowpay(accessToken);
-      this.updateAccessTokenMarketcsgo(accessToken);
+      // this.updateAccessTokenWaxpeer(accessToken);
+      // this.updateAccessTokenShadowpay(accessToken);
+      // this.updateAccessTokenMarketcsgo(accessToken);
       // TODO add csfloat here
     });
 
@@ -223,6 +220,61 @@ export class TradeManager extends EventEmitter {
       if (isGift && this._user.userSettings.acceptGifts)
         this.acceptTradeOffer(offer.id);
     });
+
+    this._steamClient.on("error", (err) => {
+      console.log("Steam client error:", err);
+
+      this.handleError(err);
+      this.scheduleReconnect(); // Agendar reconexão após erro
+    });
+  }
+
+  private isReconnecting = false;
+
+  private scheduleReconnect() {
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+    setTimeout(() => {
+      this.reconnect().finally(() => {
+        this.isReconnecting = false;
+      });
+    }, 60000); // 1 minuto
+  }
+
+  private async reconnect() {
+    try {
+      this.infoLogger("Tentando reconectar ao Steam...");
+      this._steamClient.logOff(); // Desconectar antes de tentar novamente
+
+      const refreshToken = this._user.refreshToken;
+      if (!refreshToken) {
+        throw new Error("Nenhum refresh token disponível para reconexão.");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        this._steamClient.logOn({
+          refreshToken: refreshToken,
+        });
+
+        this._steamClient.once("loggedOn", () => {
+          this.infoLogger("Reconectado ao Steam com sucesso.");
+          resolve();
+        });
+
+        this._steamClient.once("error", (err) => {
+          this.handleError(err);
+          reject(err);
+        });
+      });
+
+      // // Reconecta automaticamente os clients ativos (Waxpeer, etc.)
+      // if (this._wpClient) await this.startWaxpeerClient();
+      // if (this._spClient) await this.startShadowpayClient();
+      // if (this._mcsgoClient) await this.startMarketcsgoClient();
+    } catch (err) {
+      this.handleError(err);
+      this.scheduleReconnect(); // Nova tentativa após outro minuto
+    }
   }
 
   private async updateAccessTokenWaxpeer(accessToken: string) {

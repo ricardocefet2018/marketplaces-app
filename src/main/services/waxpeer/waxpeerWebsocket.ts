@@ -36,16 +36,10 @@ export class WaxpeerWebsocket extends EventEmitter {
   private tradelink: string;
   private waxApi?: string;
   private accessToken?: string;
-  private w: {
-    ws: WebSocket | null;
-    tries: number;
-    int: any;
-  } = {
-      ws: null,
-      tries: 0,
-      int: null,
-    };
-  private allowReconnect = true;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private isManualDisconnect = false;
+  private ws: WebSocket | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
   private readonly readyStatesMap = {
     CONNECTING: 0,
     OPEN: 1,
@@ -53,139 +47,150 @@ export class WaxpeerWebsocket extends EventEmitter {
     CLOSED: 3,
   };
 
-  /**
-   * Represents a TradeSocket object.
-   * @constructor
-   * @throws {Error} If Steam API or Waxpeer API or access token is not provided.
-   */
   constructor(options: TradeWebSocketOptions) {
     super();
     this.steamid = options.steamid;
     this.tradelink = options.tradelink;
     this.waxApi = options.waxApi;
     this.accessToken = options.accessToken;
-    if (!this.waxApi && !this.accessToken)
+
+    if (!this.waxApi && !this.accessToken) {
       throw new Error("Waxpeer API or access token is required");
-    this.connectWss();
-  }
-  socketOpen() {
-    return this.w.ws?.readyState === this.readyStatesMap.OPEN;
-  }
-  async connectWss() {
-    this.allowReconnect = true;
-    if (
-      this.w &&
-      this.w.ws &&
-      this.w.ws.readyState !== this.readyStatesMap.CLOSED
-    )
-      this.w.ws.terminate();
-    this.w.ws = new WebSocket("wss://wssex.waxpeer.com");
-    this.w.ws.on("error", (e) => {
-      this.emit("error", e);
-    });
-    this.w.ws.on("close", async () => {
-      this.emit("stateChange", false);
-      await sleepAsync(5000);
-      if (
-        this.steamid &&
-        this.allowReconnect &&
-        this.w?.ws?.readyState !== this.readyStatesMap.OPEN
-      ) {
-        return this.connectWss();
-      }
-    });
-    this.w.ws.on("open", () => {
-      this.emit("stateChange", true);
+    }
 
-      if (this.steamid) {
-        clearInterval(this.w.int);
-        const authObject: {
-          name: string;
-          steamid: string;
-          tradeurl: string;
-          source: string;
-          info: { version: string };
-          apiKey?: string;
-          waxApi?: string;
-          accessToken?: string;
-        } = {
-          name: "auth",
-          steamid: this.steamid,
-          tradeurl: this.tradelink,
-          source: "npm_waxpeer",
-          info: { version: "1.6.2" },
-        };
-        if (this.waxApi) authObject.waxApi = this.waxApi;
-        if (this.accessToken) authObject.accessToken = this.accessToken;
-        this.w.ws.send(JSON.stringify(authObject));
-        this.w.int = setInterval(() => {
-          if (this.w?.ws && this.w.ws.readyState === this.readyStatesMap.OPEN)
-            this.w.ws.send(JSON.stringify({ name: "ping" }));
-        }, 25000);
-      } else {
-        this.w.ws.close();
-      }
-    });
-
-    this.w.ws.on("message", (event: any) => {
-      try {
-        const jMsg = JSON.parse(event);
-        let msg:
-          | TradeWebsocketCreateTradeData
-          | TradeWebsocketCancelTradeData
-          | TradeWebsocketAcceptWithdrawData
-          | UserOnlineChangePayload;
-        switch (jMsg.name) {
-          case "pong":
-            break;
-          case "send-trade":
-            msg = jMsg.data as TradeWebsocketCreateTradeData;
-            this.emit("sendTrade", msg);
-            break;
-          case "cancelTrade":
-            msg = jMsg.data as TradeWebsocketCancelTradeData;
-            this.emit("cancelTrade", msg.trade_id);
-            break;
-          case "accept_withdraw":
-            msg = jMsg.data as TradeWebsocketAcceptWithdrawData;
-            this.emit("acceptWithdraw", msg.tradeid);
-            break;
-          case "user_change":
-            msg = jMsg.data as UserOnlineChangePayload;
-            this.emit("stateChange", msg.can_p2p);
-            break;
-          case "disconnect":
-            this.emit("stateChange", false);
-            break;
-
-          default:
-            this.emit(
-              "error",
-              new Error("Unknow waxpeer websocket message: " + event)
-            );
-            break;
-        }
-      } catch (err) {
-        this.emit("error", err);
-      }
-    });
+    this.connect();
   }
-  disconnectWss() {
-    if (this.w && this.w.ws) {
-      clearInterval(this.w.int);
-      this.allowReconnect = false;
-      this.w.ws.close();
+
+  private async connect(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.isManualDisconnect = false;
+    console.log("Connecting to waxpeer websocket...");
+
+    this.ws = new WebSocket("wss://wssex.waxpeer.com");
+    this.registerEventHandlers();
+  }
+
+  private registerEventHandlers(): void {
+    if (!this.ws) return;
+
+    this.ws.on("error", (e) => this.handleError(e));
+    this.ws.on("close", () => this.handleClose());
+    this.ws.on("open", () => this.handleOpen());
+    this.ws.on("message", (data) => this.handleMessage(data));
+  }
+
+  private handleOpen(): void {
+    console.log("Connected to waxpeer websocket!");
+    this.emit("stateChange", true);
+
+    const authObject = {
+      name: "auth",
+      steamid: this.steamid,
+      tradeurl: this.tradelink,
+      source: "npm_waxpeer",
+      info: { version: "1.6.2" },
+      ...(this.waxApi && { waxApi: this.waxApi }),
+      ...(this.accessToken && { accessToken: this.accessToken }),
+    };
+
+    this.ws?.send(JSON.stringify(authObject));
+    this.startPingInterval();
+  }
+
+  private startPingInterval(): void {
+    this.pingInterval = setInterval(() => {
+      if (this.ws?.readyState === this.readyStatesMap.OPEN) {
+        this.ws.send(JSON.stringify({ name: "ping" }));
+      }
+    }, 25000);
+  }
+
+  private handleMessage(data: WebSocket.Data): void {
+    try {
+      const jMsg = JSON.parse(data.toString());
+
+      switch (jMsg.name) {
+        case "send-trade":
+          this.emit("sendTrade", jMsg.data);
+          break;
+        case "cancelTrade":
+          this.emit("cancelTrade", jMsg.data.trade_id);
+          break;
+        case "accept_withdraw":
+          this.emit("acceptWithdraw", jMsg.data.tradeid);
+          break;
+        case "user_change":
+          this.emit("stateChange", jMsg.data.can_p2p);
+          break;
+        case "disconnect":
+          this.emit("stateChange", false);
+          break;
+        default:
+          if (jMsg.name !== "pong") {
+            this.emit("error", new Error(`Unknown message type: ${jMsg.name}`));
+          }
+      }
+    } catch (err) {
+      this.emit("error", err);
     }
   }
-  isConnected() {
-    if (
-      this.w &&
-      this.w.ws &&
-      (this.w.ws.readyState == 0 || this.w.ws.readyState == 1)
-    )
-      return true;
 
-    return false;
+  private handleError(e: Error): void {
+    console.error("Waxpeer WebSocket error:", e.message);
+    this.emit("stateChange", false);
+    this.emit("error", e);
+    this.scheduleReconnect();
+  }
+
+  private handleClose(): void {
+    console.log("Waxpeer WebSocket connection closed");
+    this.emit("stateChange", false);
+    this.cleanup();
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.isManualDisconnect || this.reconnectTimer) return;
+
+    console.log("Waxpeer Scheduling reconnect in 1 minute...");
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, 60000);
+  }
+
+  private cleanup(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+
+    if (this.ws) {
+      this.ws.removeAllListeners();
+      this.ws = null;
+    }
+  }
+
+  public disconnectWss(): void {
+    this.isManualDisconnect = true;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.ws) {
+      this.ws.close();
+      this.cleanup();
+    }
+  }
+
+  public isConnected(): boolean {
+    return this.ws?.readyState === this.readyStatesMap.OPEN;
   }
 }
 

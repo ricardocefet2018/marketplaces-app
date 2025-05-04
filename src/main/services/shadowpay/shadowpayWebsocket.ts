@@ -43,6 +43,8 @@ export class ShadowpayWebsocket extends EventEmitter {
   private shadowpayClient: ShadowpayClient;
   private socket: WebSocket;
   private id: number;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private isManualDisconnect = false;
 
   constructor(spClient: ShadowpayClient) {
     super();
@@ -51,29 +53,65 @@ export class ShadowpayWebsocket extends EventEmitter {
   }
 
   private async connect(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    console.log("Connecting to shadowpay websocket...");
+
     let ws;
     try {
       ws = await this.shadowpayClient.getWSTokens();
     } catch (err) {
-      if (err instanceof FetchError) return await this.connect();
+      if (err instanceof FetchError) {
+        console.log("Error fetching shadowpay websocket tokens: ", err.message);
+        this.emit("stateChange", false);
+        this.scheduleReconnect();
+        return;
+      }
       throw err;
     }
+
     this.id = 0;
     this.socket = new WebSocket(ws.url);
     this.registerHandlers(ws.token);
   }
 
+  private scheduleReconnect() {
+    if (this.reconnectTimer || this.isManualDisconnect) return;
+
+    console.log("Scheduling reconnect in 1 minute...");
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, 60000);
+  }
+
   public disconnect() {
-    if (this.socket.readyState == WebSocket.OPEN) this.socket.close();
-    this.socket.removeAllListeners();
+    this.isManualDisconnect = true;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.close();
+    }
+    this.socket?.removeAllListeners();
     this.socket = undefined;
   }
 
   private registerHandlers(token: string) {
     this.socket.once("open", () => {
+      console.log("Shadowpay websocket connected.");
       this.sendMsg({
         token,
       });
+      this.emit("stateChange", true);
+      this.pingLoop();
     });
 
     this.socket.onmessage = (e) => {
@@ -91,11 +129,9 @@ export class ShadowpayWebsocket extends EventEmitter {
           );
           continue;
         }
-        // const object: SpWSMessageReceived =
-        //   this.getObejctFromMessageReceived(json);
+
         if (object.id == 1) {
-          this.emit("stateChange", true);
-          this.pingLoop();
+          console.log("Shadowpay websocket handshake complete.");
           return;
         }
 
@@ -105,12 +141,11 @@ export class ShadowpayWebsocket extends EventEmitter {
               "error",
               new Error("Ping error shadowpay websocket message: " + json)
             );
-
             this.emit("stateChange", false);
           }
-
           return;
         }
+
         if (!object.result?.data?.data?.type) {
           this.emit(
             "error",
@@ -118,57 +153,15 @@ export class ShadowpayWebsocket extends EventEmitter {
           );
           return;
         }
+
         const type = object.result.data.data.type;
-
-        if (type == "acceptOffer") {
-          const data: AcceptTradePayload = object.result.data.data.data;
-          this.emit("acceptWithdraw", data.tradeofferid);
-          continue;
-        }
-        if (type == "cancelOffer") {
-          const data: CancelTradePayload = object.result.data.data.data;
-          this.emit("cancelTrade", data.tradeofferid);
-          continue;
-        }
-        if (type == "declineOffer") {
-          const data: DeclineTradePayload = object.result.data.data.data;
-          this.emit("cancelTrade", data.tradeofferid);
-          continue;
-        }
-        if (type == "sendOffer") {
-          const partial_data: SendTradePartialPayload =
-            object.result.data.data.data;
-
-          const json_tradeoffer: JsonTradeoffer = JSON.parse(
-            partial_data.json_tradeoffer.replaceAll("<QUOTE>", '"')
-          );
-
-          const data: SendTradePayload = {
-            id: partial_data.id,
-            assetid: partial_data.assetid,
-            project: partial_data.project,
-            json_tradeoffer: json_tradeoffer,
-            tradelink: partial_data.tradelink,
-            tradeofferid: partial_data.tradeofferid,
-            from_steamid: partial_data.from_steamid,
-            to_steamid: partial_data.to_steamid,
-          };
-
-          this.emit("sendTrade", data);
-          continue;
-        }
-        this.emit(
-          "error",
-          new Error("Unknow shadowpay websocket message: " + json)
-        );
+        this.handleMessageType(type, object);
       }
     };
 
     this.socket.onclose = () => {
-      this.socket.removeAllListeners();
-      this.emit("stateChange", false);
-      this.disconnect();
-      this.connect();
+      console.log("Shadowpay websocket closed.");
+      this.handleClose();
     };
 
     this.socket.onerror = (e) => {
@@ -176,61 +169,77 @@ export class ShadowpayWebsocket extends EventEmitter {
     };
   }
 
+  private handleMessageType(type: string, object: any) {
+    switch (type) {
+      case "acceptOffer":
+        const acceptData: AcceptTradePayload = object.result.data.data.data;
+        this.emit("acceptWithdraw", acceptData.tradeofferid);
+        break;
+
+      case "cancelOffer":
+        const cancelData: CancelTradePayload = object.result.data.data.data;
+        this.emit("cancelTrade", cancelData.tradeofferid);
+        break;
+
+      case "declineOffer":
+        const declineData: DeclineTradePayload = object.result.data.data.data;
+        this.emit("cancelTrade", declineData.tradeofferid);
+        break;
+
+      case "sendOffer":
+        const partialData: SendTradePartialPayload =
+          object.result.data.data.data;
+        const jsonTradeoffer: JsonTradeoffer = JSON.parse(
+          partialData.json_tradeoffer.replaceAll("<QUOTE>", '"')
+        );
+        const sendData: SendTradePayload = {
+          ...partialData,
+          json_tradeoffer: jsonTradeoffer,
+        };
+        this.emit("sendTrade", sendData);
+        break;
+
+      default:
+        this.emit(
+          "error",
+          new Error("Unknow shadowpay websocket message type: " + type)
+        );
+    }
+  }
+
+  private handleClose() {
+    this.socket?.removeAllListeners();
+    this.emit("stateChange", false);
+
+    if (!this.isManualDisconnect) {
+      this.scheduleReconnect();
+    }
+
+    this.socket = undefined;
+    this.isManualDisconnect = false;
+  }
+
   private sendMsg(params: any, method?: number) {
-    if (this.socket && this.socket.readyState == 1) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
       const msgToSend: SpWSMessageSent = {
         id: ++this.id,
         params: params,
       };
-      if (!!method && !isNaN(method)) msgToSend.method = method;
+      if (method !== undefined) msgToSend.method = method;
       this.socket.send(JSON.stringify(msgToSend));
     }
   }
 
   private async pingLoop() {
-    const pingMsg = {
-      data: {},
-      method: this.id < 2 ? "is_user_online" : "send_first_stat",
-    };
-    while (this.socket.readyState == 1) {
-      this.sendMsg(pingMsg, 9);
+    while (this.socket?.readyState === WebSocket.OPEN) {
+      this.sendMsg(
+        {
+          data: {},
+          method: this.id < 2 ? "is_user_online" : "send_first_stat",
+        },
+        9
+      );
       await sleepAsync(5000);
-    }
-  }
-
-  private getObejctFromMessageReceived(data: string): SpWSMessageReceived {
-    if (!data.includes('"json_tradeoffer":')) return JSON.parse(data);
-
-    let index = data.indexOf('"json_tradeoffer":');
-    index += 18;
-    const openBraketIndex = data.indexOf("{", index);
-    const closeBraketIndex = getClosingBraketIndex(data, openBraketIndex);
-
-    if (openBraketIndex == -1 || closeBraketIndex == -1)
-      return JSON.parse(data);
-
-    let json = "";
-    for (let i = 0; i < data.length; i++) {
-      const element = data[i];
-      if (i == openBraketIndex - 1 || i == closeBraketIndex + 1) continue;
-      json += element;
-    }
-
-    const object = JSON.parse(json);
-    return object;
-
-    function getClosingBraketIndex(strObj: string, position = 0) {
-      strObj = strObj.slice(position);
-      if (!strObj.startsWith("{")) return -1;
-      let openBraketIndex = 0;
-      let closeBraketIndex = 0;
-      for (let i = 0; i < strObj.length; i++) {
-        const char = strObj[i];
-        if (char == "{") openBraketIndex++;
-        if (char == "}") closeBraketIndex++;
-        if (openBraketIndex - closeBraketIndex == 0) return i + position;
-      }
-      return -1;
     }
   }
 }
