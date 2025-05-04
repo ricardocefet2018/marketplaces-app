@@ -6,7 +6,11 @@ import { User } from "./user.entity";
 export class Shadowpay extends BaseMarket {
   @OneToOne(() => User, (user) => user.shadowpay, {
     nullable: false,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
   })
   @JoinColumn()
   user: User;
+
+  canSell: boolean = false;
 }
