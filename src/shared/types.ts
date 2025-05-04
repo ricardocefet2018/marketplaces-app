@@ -19,26 +19,31 @@ export interface SteamAcc {
 export interface MarketplaceSettings {
   apiKey: string;
   state: boolean;
+  canSell: boolean;
 }
 
 export interface Waxpeer extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
+  canSell: boolean;
 }
 
 export interface Shadowpay extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
+  canSell: boolean;
 }
 
 export interface MarketCSGO extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
+  canSell: boolean;
 }
 
 export interface CSFloat extends MarketplaceSettings {
   apiKey: string;
   state: boolean;
+  canSell: boolean;
 }
 
 export interface IUserSettings {

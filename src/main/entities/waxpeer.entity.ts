@@ -10,4 +10,6 @@ export class Waxpeer extends BaseMarket {
   })
   @JoinColumn()
   user: User;
+
+  canSell: boolean = false;
 }

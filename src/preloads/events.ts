@@ -1,8 +1,22 @@
 import { ipcRenderer } from "electron";
 
 export const events = {
+  waxpeerCanSellStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("waxpeerCanSellStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+
   waxpeerStateChanged: (callback: (state: boolean, username: string) => void) =>
     ipcRenderer.on("waxpeerStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+
+  shadowpayCanSellStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("shadowpayCanSellStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
 
@@ -17,6 +31,13 @@ export const events = {
     callback: (state: boolean, username: string) => void
   ) =>
     ipcRenderer.on("marketcsgoStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+
+  marketcsgoCanSellStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("marketcsgoCanSellStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
 

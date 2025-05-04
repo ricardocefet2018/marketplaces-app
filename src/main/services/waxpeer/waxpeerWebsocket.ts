@@ -41,10 +41,10 @@ export class WaxpeerWebsocket extends EventEmitter {
     tries: number;
     int: any;
   } = {
-    ws: null,
-    tries: 0,
-    int: null,
-  };
+      ws: null,
+      tries: 0,
+      int: null,
+    };
   private allowReconnect = true;
   private readonly readyStatesMap = {
     CONNECTING: 0,
@@ -79,15 +79,13 @@ export class WaxpeerWebsocket extends EventEmitter {
       this.w.ws.readyState !== this.readyStatesMap.CLOSED
     )
       this.w.ws.terminate();
-    const t = (this.w.tries + 1) * 1e3;
     this.w.ws = new WebSocket("wss://wssex.waxpeer.com");
     this.w.ws.on("error", (e) => {
       this.emit("error", e);
     });
     this.w.ws.on("close", async () => {
-      this.w.tries += 1;
       this.emit("stateChange", false);
-      await sleepAsync(t);
+      await sleepAsync(5000);
       if (
         this.steamid &&
         this.allowReconnect &&
@@ -97,6 +95,8 @@ export class WaxpeerWebsocket extends EventEmitter {
       }
     });
     this.w.ws.on("open", () => {
+      this.emit("stateChange", true);
+
       if (this.steamid) {
         clearInterval(this.w.int);
         const authObject: {
@@ -153,6 +153,9 @@ export class WaxpeerWebsocket extends EventEmitter {
           case "user_change":
             msg = jMsg.data as UserOnlineChangePayload;
             this.emit("stateChange", msg.can_p2p);
+            break;
+          case "disconnect":
+            this.emit("stateChange", false);
             break;
 
           default:

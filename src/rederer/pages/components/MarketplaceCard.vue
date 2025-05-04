@@ -3,7 +3,13 @@
     <Card class="w-full" :dt="cardDT">
       <template #title>
         <div class="flex">
-          <div class="flex-1">{{ marketplace }}</div>
+          <div class="flex-1">
+            {{ marketplace }}
+            <Badge
+              value=""
+              :severity="model.canSell ? 'primary' : 'danger'"
+            ></Badge>
+          </div>
           <ToggleSwitch
             class="flex"
             v-model="model.state"
@@ -19,6 +25,7 @@
 <script setup lang="ts">
 import Card from "primevue/card";
 import ToggleSwitch from "primevue/toggleswitch";
+import Badge from "primevue/badge";
 import { Marketplace, MarketplaceSettings } from "../../../shared/types";
 import { ref } from "vue";
 

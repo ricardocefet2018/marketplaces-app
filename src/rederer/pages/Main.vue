@@ -143,21 +143,42 @@ onMounted(async () => {
   if (route.params.username)
     steamacc.value = steamaccMap.value.get(route.params.username as string);
   else steamacc.value = steamaccList.value[0];
+
   window.events.waxpeerStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.waxpeer.state = state;
 
     updateSteamAccList();
   });
+  window.events.waxpeerCanSellStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.waxpeer.canSell = state;
+
+    updateSteamAccList();
+  });
+
   window.events.shadowpayStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.shadowpay.state = state;
 
     updateSteamAccList();
   });
+  window.events.shadowpayCanSellStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.shadowpay.canSell = state;
+
+    updateSteamAccList();
+  });
+
   window.events.marketcsgoStateChanged((state, username) => {
     if (steamacc.value.username == username)
       steamacc.value.marketcsgo.state = state;
+
+    updateSteamAccList();
+  });
+  window.events.marketcsgoCanSellStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.marketcsgo.canSell = state;
 
     updateSteamAccList();
   });

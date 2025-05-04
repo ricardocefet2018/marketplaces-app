@@ -95,6 +95,20 @@ export class ShadowpayWebsocket extends EventEmitter {
         //   this.getObejctFromMessageReceived(json);
         if (object.id == 1) {
           this.emit("stateChange", true);
+          this.pingLoop();
+          return;
+        }
+
+        if (typeof object.result?.data === "string") {
+          if (object.result.data !== "success") {
+            this.emit(
+              "error",
+              new Error("Ping error shadowpay websocket message: " + json)
+            );
+
+            this.emit("stateChange", false);
+          }
+
           return;
         }
         if (!object.result?.data?.data?.type) {
@@ -150,7 +164,7 @@ export class ShadowpayWebsocket extends EventEmitter {
       }
     };
 
-    this.socket.onclose = async () => {
+    this.socket.onclose = () => {
       this.socket.removeAllListeners();
       this.emit("stateChange", false);
       this.disconnect();
