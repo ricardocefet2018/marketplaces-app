@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import WebSocket from "ws";
-import { sleepAsync } from "@doctormckay/stdlib/promises.js";
+import { minutesToMS, secondsToMS } from "../../../shared/helpers";
 import {
   TradeWebsocketCreateTradeData,
   TradeWebsocketEvents,
@@ -106,7 +106,7 @@ export class WaxpeerWebsocket extends EventEmitter {
       if (this.ws?.readyState === this.readyStatesMap.OPEN) {
         this.ws.send(JSON.stringify({ name: "ping" }));
       }
-    }, 25000);
+    }, secondsToMS(25));
   }
 
   private handleMessage(data: WebSocket.Data): void {
@@ -114,6 +114,8 @@ export class WaxpeerWebsocket extends EventEmitter {
       const jMsg = JSON.parse(data.toString());
 
       switch (jMsg.name) {
+        case "pong":
+          break;
         case "send-trade":
           this.emit("sendTrade", jMsg.data);
           break;
@@ -127,12 +129,12 @@ export class WaxpeerWebsocket extends EventEmitter {
           this.emit("stateChange", jMsg.data.can_p2p);
           break;
         case "disconnect":
+          console.log("Waxpeer WebSocket disconnected");
+          
           this.emit("stateChange", false);
           break;
         default:
-          if (jMsg.name !== "pong") {
-            this.emit("error", new Error(`Unknown message type: ${jMsg.name}`));
-          }
+          this.emit("error", new Error(`Unknown message type: ${jMsg.name}`));
       }
     } catch (err) {
       this.emit("error", err);
@@ -160,7 +162,7 @@ export class WaxpeerWebsocket extends EventEmitter {
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-    }, 60000);
+    }, minutesToMS(1));
   }
 
   private cleanup(): void {
@@ -176,6 +178,8 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   public disconnectWss(): void {
+    console.log("Disconnecting from waxpeer websocket...");
+
     this.isManualDisconnect = true;
 
     if (this.reconnectTimer) {

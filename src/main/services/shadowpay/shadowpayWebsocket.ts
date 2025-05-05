@@ -4,6 +4,7 @@ import { WebSocket } from "ws";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
 import { FetchError } from "node-fetch";
 import { JsonTradeoffer, TradeWebsocketEvents } from "../../models/types";
+import { minutesToMS, secondsToMS } from "../../../shared/helpers";
 import {
   AcceptTradePayload,
   CancelTradePayload,
@@ -86,10 +87,12 @@ export class ShadowpayWebsocket extends EventEmitter {
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-    }, 60000);
+    }, minutesToMS(1));
   }
 
   public disconnect() {
+    console.log("Disconnecting from shadowpay websocket...");
+
     this.isManualDisconnect = true;
 
     if (this.reconnectTimer) {
@@ -239,7 +242,7 @@ export class ShadowpayWebsocket extends EventEmitter {
         },
         9
       );
-      await sleepAsync(5000);
+      await sleepAsync(secondsToMS(5));
     }
   }
 }

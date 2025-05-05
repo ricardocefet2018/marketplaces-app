@@ -197,13 +197,15 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamClient.on("webSession", (sessionID, cookies) => {
+      console.log("Web session started:", sessionID, cookies);
+      
       this._steamCookies = cookies;
       this._steamTradeOfferManager.setCookies(cookies);
       const accessToken = this.getSteamLoginSecure();
       // doesn't throw errors, no need to wait it
-      // this.updateAccessTokenWaxpeer(accessToken);
-      // this.updateAccessTokenShadowpay(accessToken);
-      // this.updateAccessTokenMarketcsgo(accessToken);
+      this.updateAccessTokenWaxpeer(accessToken);
+      this.updateAccessTokenShadowpay(accessToken);
+      this.updateAccessTokenMarketcsgo(accessToken);
       // TODO add csfloat here
     });
 
@@ -265,12 +267,7 @@ export class TradeManager extends EventEmitter {
           this.handleError(err);
           reject(err);
         });
-      });
-
-      // // Reconecta automaticamente os clients ativos (Waxpeer, etc.)
-      // if (this._wpClient) await this.startWaxpeerClient();
-      // if (this._spClient) await this.startShadowpayClient();
-      // if (this._mcsgoClient) await this.startMarketcsgoClient();
+      }); 
     } catch (err) {
       this.handleError(err);
       this.scheduleReconnect(); // Nova tentativa após outro minuto
@@ -283,6 +280,7 @@ export class TradeManager extends EventEmitter {
     this._wpWebsocket.disconnectWss();
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
+    this.registerWaxpeerSocketHandlers();
   }
 
   private async updateAccessTokenShadowpay(accessToken: string) {
@@ -290,6 +288,7 @@ export class TradeManager extends EventEmitter {
     await this._spClient.setSteamToken(accessToken);
     this._spWebsocket.disconnect();
     this._spWebsocket = new ShadowpayWebsocket(this._spClient);
+    this.registerShadowpaySocketHandlers();
   }
 
   private async updateAccessTokenMarketcsgo(accessToken: string) {
@@ -859,7 +858,6 @@ export class TradeManager extends EventEmitter {
   public async stopWaxpeerClient() {
     if (this._wpWebsocket) {
       this._wpWebsocket.disconnectWss();
-      this._wpWebsocket.removeAllListeners();
     }
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
@@ -879,7 +877,6 @@ export class TradeManager extends EventEmitter {
   public async stopShadowpayClient() {
     if (this._spWebsocket) {
       this._spWebsocket.disconnect();
-      this._spWebsocket.removeAllListeners();
     }
     this._spClient = undefined;
     this._spWebsocket = undefined;
