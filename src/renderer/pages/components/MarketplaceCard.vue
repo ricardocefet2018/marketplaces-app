@@ -3,7 +3,7 @@
     <Card class="w-full" :dt="cardDT">
       <template #title>
         <div class="flex align-items-center gap-2">
-          <div class="flex svg-container">
+          <div class="flex align-items-center justify-content-center h-full w-auto">
             <SvgIcon :name="`${marketplace.toLowerCase()}-logo`" />
           </div>
 
@@ -56,11 +56,4 @@ const cardDT = ref({
 });
 </script>
 
-<style scoped>
-.svg-container {
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: auto;
-}
-</style>
+<style scoped></style>
