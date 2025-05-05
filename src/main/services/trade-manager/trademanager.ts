@@ -1,7 +1,7 @@
 import path from "path";
 import { EventEmitter } from "events";
 import TradeOfferManager from "steam-tradeoffer-manager";
-import SteamUser from "steam-user";
+import SteamUser, { EFriendRelationship } from "steam-user";
 import {
   JsonTradeoffer,
   TradeWebsocketCreateTradeData,
@@ -798,7 +798,10 @@ export class TradeManager extends EventEmitter {
       this._user.proxy
     );
 
-    this._csfloatSocket = new CSFloatSocket(this._csfloatClient);
+    this._csfloatSocket = new CSFloatSocket(
+      this._csfloatClient,
+      this._steamClient.steamID.getSteamID64()
+    );
     this.registerCSFloatSocketHandlers();
     const success = await new Promise((resolve) => {
       this._csfloatSocket.once("stateChange", (online) => {
@@ -847,6 +850,9 @@ export class TradeManager extends EventEmitter {
     this._csfloatSocket.on("error", this.handleError);
     this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
       this.notifyWindows(notifyData);
+    });
+    this._csfloatSocket.on("getBlockerUsers", async (callback) => {
+      callback(this.getBlockerdOrIgnoredUsers());
     });
   }
 
@@ -970,5 +976,22 @@ export class TradeManager extends EventEmitter {
       title: notifyData.title,
       body: notifyData.body,
     });
+  }
+
+  public getBlockerdOrIgnoredUsers(): string[] {
+    const friendList = Object.entries(this._steamClient.myFriends);
+    const blockOrIgnoredUsersList: string[] = [];
+
+    for (const [steamID, friendRelationship] of friendList) {
+      if (
+        friendRelationship === EFriendRelationship.Blocked ||
+        friendRelationship === EFriendRelationship.Ignored ||
+        friendRelationship === EFriendRelationship.IgnoredFriend
+      ) {
+        blockOrIgnoredUsersList.push(steamID.toString());
+      }
+    }
+
+    return blockOrIgnoredUsersList;
   }
 }

@@ -13,11 +13,18 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   stateChange: (online: boolean) => void;
   error: (error: any) => void;
   notifyWindows: (notifyData: INotifyData) => void;
+  getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[]) => void) => void;
 }
 
 export interface INotifyData {
   title: string;
   body: string;
+}
+
+export interface UpdateErrors {
+  history_error?: string;
+  trade_offer_error?: string;
+  blocked_buyers_error?: string;
 }
 export interface ITradeFloat {
   id: string;

@@ -30,10 +30,12 @@ export declare interface CSFloatSocket {
 export class CSFloatSocket extends EventEmitter {
   private connected: boolean;
   private _csFloatClient: CSFloatClient;
+  private steamIDBase64: string;
 
-  constructor(_CSFloatClient: CSFloatClient) {
+  constructor(_CSFloatClient: CSFloatClient, steamIDBase64: string) {
     super();
     this._csFloatClient = _CSFloatClient;
+    this.steamIDBase64 = steamIDBase64;
     this.connect();
   }
 
@@ -54,9 +56,17 @@ export class CSFloatSocket extends EventEmitter {
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
         );
+        let blockedOrIgnoredUsers: string[];
+        this.emit("getBlockerUsers", (ignoredOrBlokedUsers: string[]) => {
+          blockedOrIgnoredUsers = ignoredOrBlokedUsers;
+        });
 
         await this.verificationsLoop(tradesInPending);
-        // await this.extensionLoop(tradesInPending);
+        await this.extensionLoop(
+          tradesInPending,
+          this.steamIDBase64,
+          blockedOrIgnoredUsers
+        );
       } catch (err) {
         this.emit("error", err);
       }
@@ -64,7 +74,17 @@ export class CSFloatSocket extends EventEmitter {
     }
   }
 
-  // private async extensionLoop(tradesInPending: ITradeFloat[]): Promise<void> {}
+  private async extensionLoop(
+    tradesInPending: ITradeFloat[],
+    steamID: string,
+    ignoredOrBlokedUsers: string[]
+  ): Promise<void> {
+    await this._csFloatClient.pingUpdates(
+      tradesInPending,
+      steamID,
+      ignoredOrBlokedUsers
+    );
+  }
 
   private async verificationsLoop(
     tradesInPending: ITradeFloat[]
@@ -78,7 +98,7 @@ export class CSFloatSocket extends EventEmitter {
       ) {
         this.emit("notifyWindows", {
           title: `CSFLOAT - ${trade.contract.item.item_name}`,
-          body: `Trade offer is waiting for confirmation`,
+          body: `Trade offer is waiting for confirmation, please confirm the trade!`,
         });
       }
     }
