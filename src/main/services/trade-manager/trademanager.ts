@@ -171,14 +171,15 @@ export class TradeManager extends EventEmitter {
         tm.setListeners();
 
         tm._steamClient.once("loggedOn", () => {
-          console.log("Logged on successfully.");
-
+          console.log("Steam client: logged on successfully.");
           const sid64 = tm._steamClient.steamID.getSteamID64();
           tm.infoLogger(`Conta ${sid64} reconectada`);
           resolve();
         });
       });
     } catch (err) {
+      console.log("Steam client: Error during relogin:", err.message);
+      
       tm.handleError(err);
     }
     return tm;
@@ -197,7 +198,7 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamClient.on("webSession", (sessionID, cookies) => {
-      console.log("Web session started:", sessionID, cookies);
+      console.log("Steam client: Web session started.");
       
       this._steamCookies = cookies;
       this._steamTradeOfferManager.setCookies(cookies);
@@ -224,8 +225,7 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamClient.on("error", (err) => {
-      console.log("Steam client error:", err);
-
+      console.log("Steam client: Error:", err.message);
       this.handleError(err);
       this.scheduleReconnect(); // Agendar reconexão após erro
     });
@@ -233,9 +233,12 @@ export class TradeManager extends EventEmitter {
 
   private isReconnecting = false;
 
-  private scheduleReconnect() {
+  private scheduleReconnect() {    
     if (this.isReconnecting) return;
     this.isReconnecting = true;
+
+    console.log("Steam client: Scheduling reconnect in 1 minute...");
+
     setTimeout(() => {
       this.reconnect().finally(() => {
         this.isReconnecting = false;
@@ -245,7 +248,7 @@ export class TradeManager extends EventEmitter {
 
   private async reconnect() {
     try {
-      this.infoLogger("Tentando reconectar ao Steam...");
+      console.log("Steam client: Tentando reconectar ao Steam...");
       this._steamClient.logOff(); // Desconectar antes de tentar novamente
 
       const refreshToken = this._user.refreshToken;
@@ -259,16 +262,18 @@ export class TradeManager extends EventEmitter {
         });
 
         this._steamClient.once("loggedOn", () => {
-          this.infoLogger("Reconectado ao Steam com sucesso.");
+          console.log("Steam client: Reconectado com sucesso.");
           resolve();
         });
 
         this._steamClient.once("error", (err) => {
+          console.log("Steam client: Erro ao reconectar:", err.message);
           this.handleError(err);
           reject(err);
         });
       }); 
     } catch (err) {
+      console.log("Steam client: (catch) Erro ao reconectar:", err.message);
       this.handleError(err);
       this.scheduleReconnect(); // Nova tentativa após outro minuto
     }

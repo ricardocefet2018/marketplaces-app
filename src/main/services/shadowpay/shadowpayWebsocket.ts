@@ -59,14 +59,14 @@ export class ShadowpayWebsocket extends EventEmitter {
       this.reconnectTimer = null;
     }
 
-    console.log("Connecting to shadowpay websocket...");
+    console.log("Shadowpay Websocket: Connecting to websocket...");
 
     let ws;
     try {
       ws = await this.shadowpayClient.getWSTokens();
     } catch (err) {
       if (err instanceof FetchError) {
-        console.log("Error fetching shadowpay websocket tokens: ", err.message);
+        console.log("Shadowpay Websocket: Error fetching websocket tokens: ", err.message);
         this.emit("stateChange", false);
         this.scheduleReconnect();
         return;
@@ -82,7 +82,7 @@ export class ShadowpayWebsocket extends EventEmitter {
   private scheduleReconnect() {
     if (this.reconnectTimer || this.isManualDisconnect) return;
 
-    console.log("Scheduling reconnect in 1 minute...");
+    console.log("Shadowpay Websocket: Scheduling reconnect in 1 minute...");
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -91,7 +91,7 @@ export class ShadowpayWebsocket extends EventEmitter {
   }
 
   public disconnect() {
-    console.log("Disconnecting from shadowpay websocket...");
+    console.log("Shadowpay Websocket: Disconnecting from websocket...");
 
     this.isManualDisconnect = true;
 
@@ -109,7 +109,7 @@ export class ShadowpayWebsocket extends EventEmitter {
 
   private registerHandlers(token: string) {
     this.socket.once("open", () => {
-      console.log("Shadowpay websocket connected.");
+      console.log("Shadowpay Websocket: Connected to websocket.");
       this.sendMsg({
         token,
       });
@@ -134,7 +134,7 @@ export class ShadowpayWebsocket extends EventEmitter {
         }
 
         if (object.id == 1) {
-          console.log("Shadowpay websocket handshake complete.");
+          console.log("Shadowpay Websocket: Handshake complete.");
           return;
         }
 
@@ -163,7 +163,7 @@ export class ShadowpayWebsocket extends EventEmitter {
     };
 
     this.socket.onclose = () => {
-      console.log("Shadowpay websocket closed.");
+      console.log("Shadowpay Websocket: Connection closed.");
       this.handleClose();
     };
 

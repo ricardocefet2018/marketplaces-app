@@ -44,6 +44,8 @@ export class MarketcsgoSocket extends EventEmitter {
 
   public async connect(): Promise<void> {
     this.connected = true;
+    console.log("Marketcsgo Socket: Connected");
+    
     this.registerLoops();
   }
 
@@ -56,12 +58,20 @@ export class MarketcsgoSocket extends EventEmitter {
   private async startPingLoop() {
     while (this.connected) {
       try {
+        console.log("Maketcsgo Socket: Sending ping");
+        
         const status = await this.marketcsgoClient.sendSteamToken();
         this.emit("stateChange", status);
+        console.log("Marketcsgo Socket: Ping response", status);
       } catch (err) {
+        console.log("MaketcsgoSocket: Error sending ping", err);
+
         if (!(err instanceof FetchError)) this.emit("error", err);
         this.emit("stateChange", false);
       }
+      
+      console.log("Maketcsgo Socket: Ping sent");
+
       await sleepAsync(minutesToMS(3));
     }
   }
@@ -100,8 +110,11 @@ export class MarketcsgoSocket extends EventEmitter {
     }
   }
 
-  public disconnect() {
+  public disconnect() {    
     this.connected = false;
+
+    console.log("Marketcsgo Socket: Disconnected");
+    
     return;
   }
 }

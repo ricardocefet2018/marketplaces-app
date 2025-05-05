@@ -68,7 +68,7 @@ export class WaxpeerWebsocket extends EventEmitter {
     }
 
     this.isManualDisconnect = false;
-    console.log("Connecting to waxpeer websocket...");
+    console.log("Waxpeer Websocket: Connecting to websocket...");
 
     this.ws = new WebSocket("wss://wssex.waxpeer.com");
     this.registerEventHandlers();
@@ -84,7 +84,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   private handleOpen(): void {
-    console.log("Connected to waxpeer websocket!");
+    console.log("Waxpeer WebSocket: Connected to websocket!");
     this.emit("stateChange", true);
 
     const authObject = {
@@ -129,8 +129,8 @@ export class WaxpeerWebsocket extends EventEmitter {
           this.emit("stateChange", jMsg.data.can_p2p);
           break;
         case "disconnect":
-          console.log("Waxpeer WebSocket disconnected");
-          
+          console.log("Waxpeer WebSocket: Disconnected");
+
           this.emit("stateChange", false);
           break;
         default:
@@ -142,14 +142,14 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   private handleError(e: Error): void {
-    console.error("Waxpeer WebSocket error:", e.message);
+    console.error("Waxpeer WebSocket: error:", e);
     this.emit("stateChange", false);
     this.emit("error", e);
     this.scheduleReconnect();
   }
 
   private handleClose(): void {
-    console.log("Waxpeer WebSocket connection closed");
+    console.log("Waxpeer WebSocket: Disconnected");
     this.emit("stateChange", false);
     this.cleanup();
     this.scheduleReconnect();
@@ -158,7 +158,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   private scheduleReconnect(): void {
     if (this.isManualDisconnect || this.reconnectTimer) return;
 
-    console.log("Waxpeer Scheduling reconnect in 1 minute...");
+    console.log("Waxpeer WebSocket: Scheduling reconnect in 1 minute...");
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
@@ -178,7 +178,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   public disconnectWss(): void {
-    console.log("Disconnecting from waxpeer websocket...");
+    console.log("Waxpeer WebSocket: Disconnecting from websocket...");
 
     this.isManualDisconnect = true;
 
