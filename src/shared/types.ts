@@ -73,7 +73,7 @@ export type FormErrors<FormType> = {
   }[];
 };
 
-export type Marketplace = "Waxpeer" | "Shadowpay" | "CSFloat" | "MarketCSGO";
+export type Marketplace = "Waxpeer" | "Shadowpay" | "MarketCSGO" | "CSFloat";
 
 export interface ApiResponse<T = null> {
   success: boolean;

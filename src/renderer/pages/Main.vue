@@ -189,6 +189,13 @@ onMounted(async () => {
 
     updateSteamAccList();
   });
+
+  window.events.csfloatCanSellStateChanged((state, username) => {
+    if (steamacc.value.username == username)
+      steamacc.value.csfloat.canSell = state;
+
+    updateSteamAccList();
+  });
 });
 
 async function changeWaxpeerState(newState: boolean) {

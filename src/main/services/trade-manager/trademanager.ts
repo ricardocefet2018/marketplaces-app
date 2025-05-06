@@ -45,8 +45,9 @@ interface TradeManagerEvents {
   shadowpayStateChanged: (state: boolean, username: string) => void;
   shadowpayCanSellStateChanged: (state: boolean, username: string) => void;
   marketcsgoStateChanged: (state: boolean, username: string) => void;
-  csfloatStateChanged: (state: boolean, username: string) => void;
   marketcsgoCanSellStateChanged: (state: boolean, username: string) => void;
+  csfloatStateChanged: (state: boolean, username: string) => void;
+  csfloatCanSellStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
   notifyWindowsEvent: (title: string, body: string) => void;
 }
@@ -803,6 +804,12 @@ export class TradeManager extends EventEmitter {
       this._user.csfloat.apiKey,
       this._user.proxy
     );
+    let accessToken = this.getSteamLoginSecure();
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
+    this._csfloatClient.setSteamToken(accessToken);
 
     this._csfloatSocket = new CSFloatSocket(
       this._csfloatClient,
@@ -838,11 +845,10 @@ export class TradeManager extends EventEmitter {
   }
 
   private registerCSFloatSocketHandlers() {
-    this._csfloatSocket.on("stateChange", async (online) => {
-      this.emit("csfloatStateChanged", online, this._user.username);
-      if (online == this._user.csfloat.state) return;
-      this._user.csfloat.state = online;
-      await this._user.save();
+    this._csfloatSocket.on("stateChange", async (data) => {
+      console.log("data==========.", data);
+      this.emit("csfloatCanSellStateChanged", data, this._user.username);
+      this._user.csfloat.canSell = data;
     });
     this._csfloatSocket.on("acceptWithdraw", (tradeOfferId) => {
       this.acceptTradeOffer(tradeOfferId);
@@ -918,6 +924,7 @@ export class TradeManager extends EventEmitter {
     this._mcsgoClient = undefined;
     this._mcsgoSocket = undefined;
     this._user.marketcsgo.state = false;
+    this._user.marketcsgo.canSell = false;
     this.emit("marketcsgoStateChanged", false, this._user.username);
     this.emit("marketcsgoCanSellStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
@@ -933,7 +940,9 @@ export class TradeManager extends EventEmitter {
     this._csfloatClient = undefined;
     this._csfloatSocket = undefined;
     this._user.csfloat.state = false;
+    this._user.csfloat.canSell = false;
     this.emit("csfloatStateChanged", false, this._user.username);
+    this.emit("csfloatCanSellStateChanged", false, this._user.username);
 
     await this._user.save();
     return;

@@ -48,5 +48,12 @@ export const events = {
       callback(state, username)
     ),
 
+  csfloatCanSellStateChanged: (
+    callback: (state: boolean, username: string) => void
+  ) =>
+    ipcRenderer.on("csfloatCanSellStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+
   apiReady: (callback: () => void) => ipcRenderer.on("apiReady", callback),
 };

@@ -38,6 +38,7 @@ export class CSFloatSocket extends EventEmitter {
   private connected: boolean;
   private _csFloatClient: CSFloatClient;
   private steamIDBase64: string;
+  private statusExtension: boolean = false;
 
   constructor(_CSFloatClient: CSFloatClient, steamIDBase64: string) {
     super();
@@ -59,7 +60,6 @@ export class CSFloatSocket extends EventEmitter {
   private async registerLoops(): Promise<void> {
     while (this.connected) {
       try {
-        this.emit("stateChange", true);
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
         );
@@ -73,10 +73,13 @@ export class CSFloatSocket extends EventEmitter {
           tradeOffers
         );
       } catch (err) {
+        this.emit("stateChange", false);
         this.emit("error", err);
       }
       await sleepAsync(minutesToMS(3));
     }
+
+    this.disconnect();
   }
 
   private async extensionLoop(
@@ -95,7 +98,10 @@ export class CSFloatSocket extends EventEmitter {
     }
 
     try {
-      await this._csFloatClient.pingExtensionStatus(errors);
+      this.statusExtension = await this._csFloatClient.pingExtensionStatus(
+        errors
+      );
+      this.emit("stateChange", this.statusExtension);
     } catch (error) {
       console.error("failed to ping extension status to csfloat", error);
     }
@@ -116,6 +122,13 @@ export class CSFloatSocket extends EventEmitter {
           body: `Trade offer is waiting for confirmation, please confirm the trade!`,
         });
       }
+    }
+
+    if (!this._csFloatClient.verifySteamToken()) {
+      this.emit("notifyWindows", {
+        title: `CSFLOAT - Steam token invalid`,
+        body: `Your steam token is invalid!`,
+      });
     }
   }
 

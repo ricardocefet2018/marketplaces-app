@@ -132,26 +132,28 @@ export default class CSFloatClient {
     });
   }
 
-  async pingExtensionStatus(updateErrors: IUpdateErrors): Promise<void> {
+  async pingExtensionStatus(updateErrors: IUpdateErrors): Promise<boolean> {
     const url = new URL(`${CSFloatClient.API_URL}/me/extension/status`);
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({
         steam_community_permission: true,
         steam_powered_permission: true,
         version: "5.5.0",
         access_token_steam_id: this.steamToken,
-        history_error: updateErrors.history_error || "",
-        trade_offer_error: updateErrors.trade_offer_error || "",
+        history_error: updateErrors?.history_error || "",
+        trade_offer_error: updateErrors?.trade_offer_error || "",
       }),
-    }).then((res) => {
-      console.log("@@@@@@@@@@@@@@@PING-EXTENSION@@@@@@@@@@@@@@");
-      console.log(res.ok);
-      console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     });
+
+    return response.ok;
   }
 
   public setSteamToken(steamToken: string) {
     this.steamToken = steamToken;
+  }
+
+  public verifySteamToken(): boolean {
+    return this.steamToken ? false : true;
   }
 }
