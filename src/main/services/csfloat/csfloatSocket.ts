@@ -62,7 +62,7 @@ export class CSFloatSocket extends EventEmitter {
           EStatusTradeCSFLOAT.PENDING
         );
         const { blockedOrIgnoredUsers, tradeOffers } =
-          await this.emitPrimaEvents();
+          await this.emitPrimaryEvents();
 
         await this.verificationsLoop(tradesInPending);
         await this.extensionLoop(
@@ -103,7 +103,7 @@ export class CSFloatSocket extends EventEmitter {
     }
   }
 
-  private async emitPrimaEvents(): Promise<IResponseEmitEvents> {
+  private async emitPrimaryEvents(): Promise<IResponseEmitEvents> {
     let blockedOrIgnoredUsers: string[];
     this.emit("getBlockerUsers", (ignoredOrBlokedUsers: string[]) => {
       blockedOrIgnoredUsers = ignoredOrBlokedUsers;
