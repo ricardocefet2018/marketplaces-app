@@ -12,6 +12,8 @@ import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 
 export default class CSFloatClient {
   private static API_URL = "https://csfloat.com/api/v1";
+  //when update version extension, change here!
+  private static EXTATION_VERSION = "5.5.0";
   private api_key: string;
   private proxy: string;
   private steamToken: string;
@@ -139,7 +141,7 @@ export default class CSFloatClient {
       body: JSON.stringify({
         steam_community_permission: true,
         steam_powered_permission: true,
-        version: "5.5.0",
+        version: CSFloatClient.EXTATION_VERSION,
         access_token_steam_id: this.steamToken,
         history_error: updateErrors?.history_error || "",
         trade_offer_error: updateErrors?.trade_offer_error || "",
