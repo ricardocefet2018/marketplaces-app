@@ -97,6 +97,7 @@ export class TradeManager extends EventEmitter {
       marketcsgo: this._user.marketcsgo,
       csfloat: this._user.csfloat,
       userSettings: this._user.userSettings,
+      avatar: this._user.avatarUrl,
     };
   }
 
@@ -151,6 +152,10 @@ export class TradeManager extends EventEmitter {
         resolve();
       });
 
+      tm._steamClient.once("user", (sid, user) => {
+        tm._user.avatarUrl = user.avatar_url_full;
+      });
+
       tm._steamClient.once("error", async (err) => {
         reject(err);
       });
@@ -186,6 +191,10 @@ export class TradeManager extends EventEmitter {
           const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
           tm.infoLogger(`Acc ${sid64} loged on`);
           resolve();
+        });
+
+        tm._steamClient.once("user", (sid, user) => {
+          tm._user.avatarUrl = user.avatar_url_full;
         });
 
         tm._steamClient.once("error", (err) => {

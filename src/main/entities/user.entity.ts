@@ -34,6 +34,9 @@ export class User extends BaseEntity {
   @Column("text")
   refreshToken: string;
 
+  @Column("text")
+  avatarUrl: string;
+
   @Column({ nullable: true, type: "text" })
   proxy?: string;
 
