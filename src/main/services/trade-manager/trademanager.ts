@@ -987,10 +987,9 @@ export class TradeManager extends EventEmitter {
     if (this._mcsgoSocket) this._mcsgoSocket.disconnect();
     this._mcsgoSocket = undefined;
 
-    // TODO add csfloat here
-    // this._csfloatClient = undefined;
-    // if (this._csfloatSocket) this._csfloatSocket.disconnect();
-    // this._csfloatSocket = undefined;
+    this._csfloatClient = undefined;
+    if (this._csfloatSocket) this._csfloatSocket.disconnect();
+    this._csfloatSocket = undefined;
 
     return;
   }
