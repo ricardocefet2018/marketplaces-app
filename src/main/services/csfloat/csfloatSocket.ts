@@ -1,3 +1,4 @@
+import { JsonTradeoffer } from "./../../models/types";
 import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
 import {
@@ -72,9 +73,9 @@ export class CSFloatSocket extends EventEmitter {
 
         const { blockedOrIgnoredUsers, tradeOffers } =
           await this.emitPrimaryEvents();
-
         await this.verificationsLoop(tradesInPending);
         await this.autoAcceptTrades(tradesInQueue, tradeOffers);
+        await this.sendOffer(tradesInPending, tradeOffers);
         await this.extensionLoop(
           tradesInPending,
           blockedOrIgnoredUsers,
@@ -487,6 +488,72 @@ export class CSFloatSocket extends EventEmitter {
             body: `Item: ${trade.contract.item.item_name}, Cannot be accepted!`,
           });
         });
+    }
+  }
+
+  private async sendOffer(
+    tradesInPending: ITradeFloat[],
+    tradeOffers: IGetTradeOffersResponde
+  ): Promise<void> {
+    if (tradesInPending.length < 1) return;
+    const tradeOffersToSent = tradeOffers.sent;
+
+    const tradesActives = tradeOffersToSent.filter(
+      (trade) => trade.state === ETradeOfferStateCSFloat.Active
+    );
+
+    for (const tradePending of tradesInPending) {
+      if (
+        tradesActives.some((trade) =>
+          trade.itemsToGive.some(
+            (item) =>
+              item.assetid.toString() ===
+              tradePending.contract.item.asset_id.toString()
+          )
+        )
+      )
+        return;
+
+      if (
+        tradesActives.some((trade) =>
+          trade.itemsToGive.some(
+            (item) =>
+              item.market_hash_name.toString() ===
+              tradePending.contract.item.market_hash_name.toString()
+          )
+        )
+      )
+        return;
+
+      const JSON_tradeOffer: JsonTradeoffer = {
+        newversion: true,
+        version: 2,
+        me: {
+          assets: [
+            {
+              appid: 730,
+              contextid: "2",
+              amount: 1,
+              assetid: tradePending.contract.item.asset_id,
+            },
+          ],
+          currency: [] as any[],
+          ready: true,
+        },
+        them: {
+          assets: [] as any[],
+          currency: [] as any[],
+          ready: true,
+        },
+      };
+
+      this.emit("sendTrade", {
+        tradeURL: tradePending.trade_url,
+        json_tradeoffer: JSON_tradeOffer,
+        id: tradePending.id,
+        marketplace: "CSFloat",
+        message: "",
+      });
     }
   }
 }

@@ -31,7 +31,10 @@ import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
 import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
-import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import {
+  ICreateTradeData,
+  TradeManagerOptions,
+} from "./interface/tradeManager.interface";
 import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
@@ -272,13 +275,13 @@ export class TradeManager extends EventEmitter {
     const id = data.wax_id;
     const marketplace: Marketplace = "Waxpeer";
     const message = data.tradeoffermessage;
-    const tradeOfferId = await this.createTrade(
+    const tradeOfferId = await this.createTrade({
       tradeURL,
       json_tradeoffer,
       id,
       marketplace,
-      message
-    );
+      message,
+    });
 
     if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
 
@@ -324,12 +327,12 @@ export class TradeManager extends EventEmitter {
     const json_tradeoffer = data.json_tradeoffer;
     const id = data.id;
     const marketplace: Marketplace = "Shadowpay";
-    const tradeOfferId = await this.createTrade(
+    const tradeOfferId = await this.createTrade({
       tradeURL,
       json_tradeoffer,
       id,
-      marketplace
-    );
+      marketplace,
+    });
     if (!tradeOfferId) return;
 
     try {
@@ -392,13 +395,13 @@ export class TradeManager extends EventEmitter {
         ready: false,
       },
     };
-    const tradeOfferId = await this.createTrade(
-      tradeUrl,
+    const tradeOfferId = await this.createTrade({
+      tradeURL: tradeUrl,
       json_tradeoffer,
       id,
       marketplace,
-      message
-    );
+      message,
+    });
     if (!tradeOfferId) return;
 
     try {
@@ -428,19 +431,31 @@ export class TradeManager extends EventEmitter {
     }
   }
 
+  public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
+    this._appController.notify({
+      title: `New CSFloat sale!`,
+      body: `Creating trade...`,
+    });
+
+    const tradeOfferId = await this.createTrade(createTradeData);
+
+    if (!tradeOfferId) return;
+    await this.registerPendingTradeToFile(tradeOfferId);
+  }
+
   private async createTrade(
-    tradeURL: string,
-    json_tradeoffer: JsonTradeoffer,
-    id: string | number,
-    marketplace: Marketplace,
-    message = ""
-  ) {
-    const offer = this._steamTradeOfferManager.createOffer(tradeURL);
+    createTradeData: ICreateTradeData
+  ): Promise<string> {
+    const offer = this._steamTradeOfferManager.createOffer(
+      createTradeData.tradeURL
+    );
     try {
-      const itemsToSend = await this.getItemsToSend(json_tradeoffer);
+      const itemsToSend = await this.getItemsToSend(
+        createTradeData.json_tradeoffer
+      );
       if (!itemsToSend.every((v) => typeof v != "undefined")) {
         this.infoLogger(
-          `One or more items of ${marketplace} sale #${id} wasn't in inventory`
+          `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} wasn't in inventory`
         );
         return; // Don't want to create trade if we don't have all items that we need
       }
@@ -448,12 +463,12 @@ export class TradeManager extends EventEmitter {
       const alreadyInTrade = await this.isItemsInTrade(itemsToSend);
       if (alreadyInTrade) {
         this.infoLogger(
-          `One or more items of ${marketplace} sale #${id} was already in trade`
+          `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} was already in trade`
         );
         return; // Don't want to create trade one (or more item) is already in trade
       }
       offer.addMyItems(itemsToSend);
-      offer.setMessage(message);
+      offer.setMessage(createTradeData.message);
       const offerStatus = await this.sendOffer(offer);
       this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
       return offer.id;
@@ -846,7 +861,6 @@ export class TradeManager extends EventEmitter {
 
   private registerCSFloatSocketHandlers() {
     this._csfloatSocket.on("stateChange", async (data) => {
-      console.log("data==========.", data);
       this.emit("csfloatCanSellStateChanged", data, this._user.username);
       this._user.csfloat.canSell = data;
     });
@@ -856,8 +870,8 @@ export class TradeManager extends EventEmitter {
     this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
       this.cancelTradeOffer(tradeOfferId, "CSFloat");
     });
-    this._csfloatSocket.on("sendTrade", (data) => {
-      // this.createTradeForMarketcsgo(data);
+    this._csfloatSocket.on("sendTrade", (createTradeData: ICreateTradeData) => {
+      this.createTradeForCSFloat(createTradeData);
     });
     this._csfloatSocket.on("error", this.handleError);
     this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
@@ -989,7 +1003,9 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
   }
 
-  private async registerPendingTradeToFile(offerID: string | number) {
+  private async registerPendingTradeToFile(
+    offerID: string | number
+  ): Promise<void> {
     if (
       this._user.userSettings.pendingTradesFilePath == "" ||
       !this._user.userSettings.pendingTradesFilePath
