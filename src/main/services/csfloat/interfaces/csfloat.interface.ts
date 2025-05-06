@@ -36,16 +36,6 @@ export interface IUpdateErrors {
   blocked_buyers_error?: string;
 }
 
-export interface IHistoryPingData {
-  other_party_url: string;
-  received_assets: {
-    asset_id: string;
-  }[];
-  given_assets: {
-    asset_id: string;
-  }[];
-}
-
 export interface ITradeFloat {
   id: string;
   created_at: string | Date;

@@ -1,8 +1,13 @@
 import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch, { RequestInit, Response } from "node-fetch";
 import { EStatusTradeCSFLOAT } from "./enums/cs-float.enum";
-import { PaginationRequest } from "./interfaces/fetch.interface";
-import { IHistoryPingData, ITradeFloat } from "./interfaces/csfloat.interface";
+import {
+  IAnnotateOfferBody,
+  IHistoryPingBody,
+  PaginationRequest,
+} from "./interfaces/fetch.interface";
+import { ITradeFloat } from "./interfaces/csfloat.interface";
+import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 
 export default class CSFloatClient {
   private static API_URL = "https://csfloat.com/api/v1";
@@ -76,14 +81,39 @@ export default class CSFloatClient {
     });
   }
 
-  async tradeHistoryStatus(history: IHistoryPingData[]): Promise<void> {
+  async tradeHistoryStatus(historyPingBody: IHistoryPingBody[]): Promise<void> {
     const url = new URL(
       `${CSFloatClient.API_URL}/trades/steam-status/trade-history`
     );
 
     await this.internalFetch(url.toString(), {
       method: "POST",
-      body: JSON.stringify({ history: history }),
+      body: JSON.stringify({ history: historyPingBody }),
+    });
+  }
+
+  async tradeOfferStatus(tradeOffer: TradeOffer[]): Promise<void> {
+    const url = new URL(`${CSFloatClient.API_URL}/trades/steam-status/offer`);
+
+    await this.internalFetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify({ sent_offers: tradeOffer }),
+    });
+  }
+
+  async annotateOffer(AnnotateOfferBody: IAnnotateOfferBody): Promise<void> {
+    const url = new URL(
+      `${CSFloatClient.API_URL}/trades/steam-status/new-offer`
+    );
+
+    await this.internalFetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify({
+        offer_id: AnnotateOfferBody.offer_id,
+        given_asset_ids: AnnotateOfferBody.given_asset_ids || [],
+        received_asset_ids: AnnotateOfferBody.received_asset_ids || [],
+        other_steam_id64: AnnotateOfferBody.other_steam_id64,
+      }),
     });
   }
 }

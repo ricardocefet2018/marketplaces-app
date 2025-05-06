@@ -2,7 +2,6 @@ import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
 import {
   ICSFloatSocketEvents,
-  IHistoryPingData,
   IResponseEmitEvents,
   ITradeFloat,
   IUpdateErrors,
@@ -13,7 +12,10 @@ import {
 } from "./enums/cs-float.enum";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
 import { minutesToMS } from "../../../shared/helpers";
-import { IGetTradeOffersResponde } from "./interfaces/fetch.interface";
+import {
+  IGetTradeOffersResponde,
+  IHistoryPingBody,
+} from "./interfaces/fetch.interface";
 import { AppId } from "./enums/steam.enum";
 export declare interface CSFloatSocket {
   emit<U extends keyof ICSFloatSocketEvents>(
@@ -156,6 +158,13 @@ export class CSFloatSocket extends EventEmitter {
       console.error("failed to ping trade history", e);
       errors.history_error = (e as any).toString();
     }
+
+    try {
+      await this.pingSentTradeOffers(tradesInPending, tradeOffers);
+    } catch (e) {
+      console.error("failed to ping sent trade offer state", e);
+      errors.trade_offer_error = (e as any).toString();
+    }
   }
 
   private async reportBlockedBuyers(
@@ -286,10 +295,57 @@ export class CSFloatSocket extends EventEmitter {
       return !![...received_ids, ...given_ids].find((e) => {
         return assetsToFind[e];
       });
-    }) as IHistoryPingData[];
+    }) as IHistoryPingBody[];
 
-    const response = await this._csFloatClient.tradeHistoryStatus(
-      historyForCSFloat
-    );
+    await this._csFloatClient.tradeHistoryStatus(historyForCSFloat);
+  }
+
+  private async pingSentTradeOffers(
+    tradesInPending: ITradeFloat[],
+    tradeOffers: IGetTradeOffersResponde
+  ): Promise<void> {
+    const tradeOffersSents = tradeOffers.sent;
+
+    const offersToFind = tradesInPending.reduce((acc, trade) => {
+      acc[trade.steam_offer.id] = true;
+      return acc;
+    }, {} as { [key: string]: boolean });
+
+    const offersForCSFloat = tradeOffersSents.filter((offer) => {
+      return !!offersToFind[offer.id];
+    });
+
+    if (offersForCSFloat.length > 0)
+      await this._csFloatClient.tradeOfferStatus(offersForCSFloat);
+
+    for (const offer of tradeOffersSents) {
+      const itemsToGive = offer.itemsToGive.map(
+        (item) => item.assetid
+      ) as string[];
+      const itemsToReceive = offer.itemsToReceive.map(
+        (item) => item.assetid
+      ) as string[];
+
+      if (offer.state !== ETradeOfferStateCSFloat.Active) continue;
+
+      const hasTradeWithNoOfferAnnotated = tradesInPending.find((trade) => {
+        if (trade.steam_offer.id) return false;
+
+        return (itemsToGive || []).includes(trade.contract.item.asset_id);
+      });
+
+      if (!hasTradeWithNoOfferAnnotated) continue;
+
+      try {
+        await this._csFloatClient.annotateOffer({
+          offer_id: offer.id,
+          given_asset_ids: itemsToGive || [],
+          received_asset_ids: itemsToReceive || [],
+          other_steam_id64: offer.partner.getSteamID64(),
+        });
+      } catch (error) {
+        console.error(`failed to annotate offer ${offer.id} post-hoc`, error);
+      }
+    }
   }
 }
