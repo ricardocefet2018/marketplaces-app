@@ -6,6 +6,7 @@ import {
   ETradeOfferStateCSFloat,
 } from "../enums/cs-float.enum";
 import { IGetTradeOffersResponde } from "./fetch.interface";
+import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: any) => void;
@@ -17,6 +18,9 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[]) => void) => void;
   getSentTradeOffers: (
     callback: (getTradeOffersResponde: IGetTradeOffersResponde) => void
+  ) => void;
+  getInventory: (
+    callback: (items: CEconItem[], error?: unknown) => void
   ) => void;
 }
 

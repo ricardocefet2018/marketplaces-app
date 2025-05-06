@@ -874,6 +874,14 @@ export class TradeManager extends EventEmitter {
         callback(err);
       }
     });
+    this._csfloatSocket.on("getInventory", async (callback) => {
+      try {
+        const items = await this.getInventoryContents(730, 2);
+        callback(items);
+      } catch (err) {
+        callback([], err);
+      }
+    });
   }
 
   /**

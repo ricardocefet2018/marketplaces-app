@@ -156,4 +156,12 @@ export default class CSFloatClient {
   public verifySteamToken(): boolean {
     return this.steamToken ? false : true;
   }
+
+  async acceptTradesInFloat(tradeId: string): Promise<void> {
+    const url = new URL(`${CSFloatClient.API_URL}/trades/bulk/accept`);
+    await this.internalFetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify({ trade_ids: [tradeId] }),
+    });
+  }
 }

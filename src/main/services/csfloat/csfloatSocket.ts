@@ -17,6 +17,8 @@ import {
   IHistoryPingBody,
 } from "./interfaces/fetch.interface";
 import { AppId } from "./enums/steam.enum";
+import CEconItem from "steamcommunity/classes/CEconItem.js";
+
 export declare interface CSFloatSocket {
   emit<U extends keyof ICSFloatSocketEvents>(
     event: U,
@@ -63,10 +65,16 @@ export class CSFloatSocket extends EventEmitter {
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
         );
+
+        const tradesInQueue = await this._csFloatClient.getTrades(
+          EStatusTradeCSFLOAT.QUEUED
+        );
+
         const { blockedOrIgnoredUsers, tradeOffers } =
           await this.emitPrimaryEvents();
 
         await this.verificationsLoop(tradesInPending);
+        await this.autoAcceptTrades(tradesInQueue, tradeOffers);
         await this.extensionLoop(
           tradesInPending,
           blockedOrIgnoredUsers,
@@ -428,6 +436,57 @@ export class CSFloatSocket extends EventEmitter {
           error
         );
       }
+    }
+  }
+
+  private async autoAcceptTrades(
+    tradesInQueue: ITradeFloat[],
+    tradeOffers: IGetTradeOffersResponde
+  ): Promise<void> {
+    if (tradesInQueue.length < 0) return;
+    const tradeOffersConcated = tradeOffers.sent.concat(tradeOffers.received);
+
+    const itemsTradables: CEconItem[] = await new Promise((resolve, reject) => {
+      this.emit("getInventory", (items: CEconItem[], error) => {
+        if (error) {
+          console.error("Error in 'itemsTradables' (CSFloat) :", error);
+          reject(error);
+        }
+        resolve(items);
+      });
+    });
+
+    if (!itemsTradables) return;
+
+    for (const trade of tradesInQueue) {
+      const hasMatchingItem = itemsTradables.some(
+        (item) => item.assetid === trade.contract.item.asset_id
+      );
+
+      if (!hasMatchingItem) continue;
+
+      for (const tradeOffer of tradeOffersConcated) {
+        {
+          for (const item of tradeOffer.itemsToGive) {
+            if (item.assetid === trade.contract.item.asset_id) continue;
+          }
+        }
+      }
+
+      await this._csFloatClient
+        .acceptTradesInFloat(trade.id)
+        .then(() => {
+          this.emit("notifyWindows", {
+            title: `CSFLOAT - Item: ${trade.contract.item.item_name}`,
+            body: `Accepted item!`,
+          });
+        })
+        .catch(() => {
+          this.emit("notifyWindows", {
+            title: `CSFLOAT!`,
+            body: `Item: ${trade.contract.item.item_name}, Cannot be accepted!`,
+          });
+        });
     }
   }
 }
