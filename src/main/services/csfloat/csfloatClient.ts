@@ -4,15 +4,17 @@ import { EStatusTradeCSFLOAT } from "./enums/cs-float.enum";
 import {
   IAnnotateOfferBody,
   IHistoryPingBody,
+  IPingCancelTradeBody,
   PaginationRequest,
 } from "./interfaces/fetch.interface";
-import { ITradeFloat } from "./interfaces/csfloat.interface";
+import { ITradeFloat, IUpdateErrors } from "./interfaces/csfloat.interface";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 
 export default class CSFloatClient {
   private static API_URL = "https://csfloat.com/api/v1";
   private api_key: string;
   private proxy: string;
+  private steamToken: string;
 
   private constructor(api_key: string, proxy?: string) {
     this.api_key = api_key;
@@ -115,5 +117,41 @@ export default class CSFloatClient {
         other_steam_id64: AnnotateOfferBody.other_steam_id64,
       }),
     });
+  }
+
+  async pingCancelTrade(
+    pingCancelTradeBody: IPingCancelTradeBody
+  ): Promise<void> {
+    const url = new URL(
+      `${CSFloatClient.API_URL}/trades/${pingCancelTradeBody.trade_id}/cancel-ping`
+    );
+
+    await this.internalFetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify({ steam_id: pingCancelTradeBody.steam_id }),
+    });
+  }
+
+  async pingExtensionStatus(updateErrors: IUpdateErrors): Promise<void> {
+    const url = new URL(`${CSFloatClient.API_URL}/me/extension/status`);
+    await this.internalFetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify({
+        steam_community_permission: true,
+        steam_powered_permission: true,
+        version: "5.5.0",
+        access_token_steam_id: this.steamToken,
+        history_error: updateErrors.history_error || "",
+        trade_offer_error: updateErrors.trade_offer_error || "",
+      }),
+    }).then((res) => {
+      console.log("@@@@@@@@@@@@@@@PING-EXTENSION@@@@@@@@@@@@@@");
+      console.log(res.ok);
+      console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    });
+  }
+
+  public setSteamToken(steamToken: string) {
+    this.steamToken = steamToken;
   }
 }

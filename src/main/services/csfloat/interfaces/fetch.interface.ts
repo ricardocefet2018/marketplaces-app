@@ -26,3 +26,8 @@ export interface IAnnotateOfferBody {
   received_asset_ids: string[];
   other_steam_id64: string;
 }
+
+export interface IPingCancelTradeBody {
+  trade_id: string;
+  steam_id: string | null | undefined;
+}

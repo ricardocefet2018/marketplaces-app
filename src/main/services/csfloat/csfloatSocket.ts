@@ -84,7 +84,21 @@ export class CSFloatSocket extends EventEmitter {
     ignoredOrBlokedUsers: string[],
     tradeOffers: IGetTradeOffersResponde
   ): Promise<void> {
-    await this.pingUpdates(tradesInPending, ignoredOrBlokedUsers, tradeOffers);
+    let errors: IUpdateErrors;
+
+    if (tradesInPending.length > 0) {
+      errors = await this.pingUpdates(
+        tradesInPending,
+        ignoredOrBlokedUsers,
+        tradeOffers
+      );
+    }
+
+    try {
+      await this._csFloatClient.pingExtensionStatus(errors);
+    } catch (error) {
+      console.error("failed to ping extension status to csfloat", error);
+    }
   }
 
   private async verificationsLoop(
@@ -136,7 +150,7 @@ export class CSFloatSocket extends EventEmitter {
     tradesInPending: ITradeFloat[],
     ignoredOrBlokedUsers: string[],
     tradeOffers: IGetTradeOffersResponde
-  ): Promise<void> {
+  ): Promise<IUpdateErrors> {
     const errors: IUpdateErrors = {};
 
     try {
@@ -154,17 +168,25 @@ export class CSFloatSocket extends EventEmitter {
 
     try {
       await this.pingTradeHistory(tradesInPending, tradeOffers);
-    } catch (e) {
-      console.error("failed to ping trade history", e);
-      errors.history_error = (e as any).toString();
+    } catch (error) {
+      console.error("failed to ping trade history", error);
+      errors.history_error = (error as any).toString();
     }
 
     try {
       await this.pingSentTradeOffers(tradesInPending, tradeOffers);
-    } catch (e) {
-      console.error("failed to ping sent trade offer state", e);
-      errors.trade_offer_error = (e as any).toString();
+    } catch (error) {
+      console.error("failed to ping sent trade offer state", error);
+      errors.trade_offer_error = (error as any).toString();
     }
+
+    try {
+      await this.pingCancelTrades(tradesInPending, tradeOffers);
+    } catch (e) {
+      console.error("failed to ping cancel ping trade offers", e);
+    }
+
+    return errors;
   }
 
   private async reportBlockedBuyers(
@@ -345,6 +367,53 @@ export class CSFloatSocket extends EventEmitter {
         });
       } catch (error) {
         console.error(`failed to annotate offer ${offer.id} post-hoc`, error);
+      }
+    }
+  }
+
+  private async pingCancelTrades(
+    tradesInPending: ITradeFloat[],
+    tradeOffers: IGetTradeOffersResponde
+  ): Promise<void> {
+    const hasWaitForCancelPing = tradesInPending.find(
+      (trade) =>
+        trade.state === EStatusTradeCSFLOAT.PENDING &&
+        trade.wait_for_cancel_ping
+    );
+
+    if (!hasWaitForCancelPing) return;
+
+    const allTradeOffers = [
+      ...(tradeOffers.sent || []),
+      ...(tradeOffers.received || []),
+    ];
+
+    for (const trade of tradesInPending) {
+      if (trade.state !== EStatusTradeCSFLOAT.PENDING) continue;
+
+      if (!trade.wait_for_cancel_ping) continue;
+
+      const tradeOffer = allTradeOffers.find(
+        (item) => item.id === trade.steam_offer.id
+      );
+
+      if (
+        tradeOffer &&
+        (tradeOffer.state === ETradeOfferStateCSFloat.Active ||
+          tradeOffer.state === ETradeOfferStateCSFloat.Accepted)
+      )
+        continue;
+
+      try {
+        await this._csFloatClient.pingCancelTrade({
+          trade_id: trade.id,
+          steam_id: this.steamIDBase64,
+        });
+      } catch (error) {
+        console.error(
+          `failed to send cancel ping for trade ${trade.id}`,
+          error
+        );
       }
     }
   }
