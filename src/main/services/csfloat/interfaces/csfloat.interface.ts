@@ -5,6 +5,7 @@ import {
   EStatusTradeCSFLOAT,
   ETradeOfferStateCSFloat,
 } from "../enums/cs-float.enum";
+import { IGetTradeOffersResponde } from "./fetch.interface";
 
 export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: any) => void;
@@ -14,6 +15,14 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   error: (error: any) => void;
   notifyWindows: (notifyData: INotifyData) => void;
   getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[]) => void) => void;
+  getSentTradeOffers: (
+    callback: (getTradeOffersResponde: IGetTradeOffersResponde) => void
+  ) => void;
+}
+
+export interface IResponseEmitEvents {
+  blockedOrIgnoredUsers: string[];
+  tradeOffers: IGetTradeOffersResponde;
 }
 
 export interface INotifyData {
@@ -21,11 +30,22 @@ export interface INotifyData {
   body: string;
 }
 
-export interface UpdateErrors {
+export interface IUpdateErrors {
   history_error?: string;
   trade_offer_error?: string;
   blocked_buyers_error?: string;
 }
+
+export interface IHistoryPingData {
+  other_party_url: string;
+  received_assets: {
+    asset_id: string;
+  }[];
+  given_assets: {
+    asset_id: string;
+  }[];
+}
+
 export interface ITradeFloat {
   id: string;
   created_at: string | Date;

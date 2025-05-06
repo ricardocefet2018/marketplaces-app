@@ -1,6 +1,6 @@
 import path from "path";
 import { EventEmitter } from "events";
-import TradeOfferManager from "steam-tradeoffer-manager";
+import TradeOfferManager, { EOfferFilter } from "steam-tradeoffer-manager";
 import SteamUser, { EFriendRelationship } from "steam-user";
 import {
   JsonTradeoffer,
@@ -37,6 +37,7 @@ import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
 import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
+import { IGetTradeOffersResponde } from "../csfloat/interfaces/fetch.interface";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -851,8 +852,16 @@ export class TradeManager extends EventEmitter {
     this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
       this.notifyWindows(notifyData);
     });
-    this._csfloatSocket.on("getBlockerUsers", async (callback) => {
+    this._csfloatSocket.on("getBlockerUsers", (callback) => {
       callback(this.getBlockerdOrIgnoredUsers());
+    });
+    this._csfloatSocket.on("getSentTradeOffers", async (callback) => {
+      try {
+        const sentTradeOffers = await this.getSentTradeOffers();
+        callback(sentTradeOffers);
+      } catch (err) {
+        callback(err);
+      }
     });
   }
 
@@ -993,5 +1002,28 @@ export class TradeManager extends EventEmitter {
     }
 
     return blockOrIgnoredUsersList;
+  }
+
+  public getSentTradeOffers(): Promise<IGetTradeOffersResponde> {
+    return new Promise((resolve, reject) => {
+      let response: IGetTradeOffersResponde = {
+        sent: [],
+        received: [],
+      };
+
+      this._steamTradeOfferManager.getOffers(
+        EOfferFilter.All,
+        (err, sent, received) => {
+          if (err) {
+            console.error("Erro in function `getSentTradeOffers`:", err);
+            reject(err);
+            return;
+          }
+          response.sent = sent;
+          response.received = received;
+          resolve(response);
+        }
+      );
+    });
   }
 }
