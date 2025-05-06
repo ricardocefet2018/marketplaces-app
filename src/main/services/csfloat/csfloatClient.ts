@@ -154,7 +154,7 @@ export default class CSFloatClient {
   }
 
   public verifySteamToken(): boolean {
-    return this.steamToken ? false : true;
+    return this.steamToken ? true : false;
   }
 
   async acceptTradesInFloat(tradeId: string): Promise<void> {

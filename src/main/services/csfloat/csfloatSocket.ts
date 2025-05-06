@@ -82,7 +82,6 @@ export class CSFloatSocket extends EventEmitter {
           tradeOffers
         );
       } catch (err) {
-        this.emit("stateChange", false);
         this.emit("error", err);
       }
       await sleepAsync(minutesToMS(3));
