@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import WebSocket from "ws";
-import { minutesToMS, secondsToMS } from "../../../shared/helpers";
+import { infoLogger, minutesToMS, secondsToMS } from "../../../shared/helpers";
 import {
   TradeWebsocketCreateTradeData,
   TradeWebsocketEvents,
@@ -68,7 +68,7 @@ export class WaxpeerWebsocket extends EventEmitter {
     }
 
     this.isManualDisconnect = false;
-    console.log("Waxpeer Websocket: Connecting to websocket...");
+    infoLogger("Waxpeer Websocket: Connecting to websocket...");
 
     this.ws = new WebSocket("wss://wssex.waxpeer.com");
     this.registerEventHandlers();
@@ -84,7 +84,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   private handleOpen(): void {
-    console.log("Waxpeer WebSocket: Connected to websocket!");
+    infoLogger("Waxpeer WebSocket: Connected to websocket!");
     this.emit("stateChange", true);
 
     const authObject = {
@@ -129,7 +129,7 @@ export class WaxpeerWebsocket extends EventEmitter {
           this.emit("stateChange", jMsg.data.can_p2p);
           break;
         case "disconnect":
-          console.log("Waxpeer WebSocket: Disconnected");
+          infoLogger("Waxpeer WebSocket: Disconnected");
 
           this.emit("stateChange", false);
           break;
@@ -149,7 +149,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   private handleClose(): void {
-    console.log("Waxpeer WebSocket: Disconnected");
+    infoLogger("Waxpeer WebSocket: Disconnected");
     this.emit("stateChange", false);
     this.cleanup();
     this.scheduleReconnect();
@@ -158,7 +158,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   private scheduleReconnect(): void {
     if (this.isManualDisconnect || this.reconnectTimer) return;
 
-    console.log("Waxpeer WebSocket: Scheduling reconnect in 1 minute...");
+    infoLogger("Waxpeer WebSocket: Scheduling reconnect in 1 minute...");
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
@@ -178,7 +178,7 @@ export class WaxpeerWebsocket extends EventEmitter {
   }
 
   public disconnectWss(): void {
-    console.log("Waxpeer WebSocket: Disconnecting from websocket...");
+    infoLogger("Waxpeer WebSocket: Disconnecting from websocket...");
 
     this.isManualDisconnect = true;
 

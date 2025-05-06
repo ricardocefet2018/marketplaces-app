@@ -2,7 +2,7 @@ import { TradeWebsocketEvents } from "../../models/types";
 import { EventEmitter } from "node:events";
 import MarketcsgoClient from "./marketcsgoClient";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS, secondsToMS } from "../../../shared/helpers";
+import { infoLogger, minutesToMS, secondsToMS } from "../../../shared/helpers";
 import { FetchError } from "node-fetch";
 import { MarketcsgoTradeOfferPayload } from "./interface/marketcsgo.interface";
 
@@ -44,7 +44,7 @@ export class MarketcsgoSocket extends EventEmitter {
 
   public async connect(): Promise<void> {
     this.connected = true;
-    console.log("Marketcsgo Socket: Connected");
+    infoLogger("Marketcsgo Socket: Connected");
     
     this.registerLoops();
   }
@@ -58,20 +58,15 @@ export class MarketcsgoSocket extends EventEmitter {
   private async startPingLoop() {
     while (this.connected) {
       try {
-        console.log("Maketcsgo Socket: Sending ping");
-        
         const status = await this.marketcsgoClient.sendSteamToken();
         this.emit("stateChange", status);
-        console.log("Marketcsgo Socket: Ping response", status);
+        infoLogger("Marketcsgo Socket: Ping response " + status);
       } catch (err) {
-        console.log("MaketcsgoSocket: Error sending ping", err);
+        infoLogger("MaketcsgoSocket: Error sending ping " + err.message);
 
         if (!(err instanceof FetchError)) this.emit("error", err);
         this.emit("stateChange", false);
       }
-      
-      console.log("Maketcsgo Socket: Ping sent");
-
       await sleepAsync(minutesToMS(3));
     }
   }
@@ -113,7 +108,7 @@ export class MarketcsgoSocket extends EventEmitter {
   public disconnect() {    
     this.connected = false;
 
-    console.log("Marketcsgo Socket: Disconnected");
+    infoLogger("Marketcsgo Socket: Disconnected");
     
     return;
   }
