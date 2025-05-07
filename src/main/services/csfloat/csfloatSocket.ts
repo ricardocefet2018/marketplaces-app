@@ -214,7 +214,7 @@ export class CSFloatSocket extends EventEmitter {
     tradesInPending: ITradeFloat[],
     ignoredOrBlokedUsers: string[]
   ): Promise<void> {
-    if (!tradesInPending || tradesInPending.length < 0) return;
+    if (!tradesInPending || tradesInPending.length < 1) return;
 
     const hasTrade = tradesInPending.some(
       (trade) =>
@@ -443,9 +443,9 @@ export class CSFloatSocket extends EventEmitter {
     tradesInQueue: ITradeFloat[],
     tradeOffers: IGetTradeOffersResponde
   ): Promise<void> {
-    if (tradesInQueue.length < 0) return;
-    const tradeOffersSent = tradeOffers.sent;
+    if (tradesInQueue.length < 1) return;
 
+    const tradeOffersSent = tradeOffers.sent;
     const itemsTradables: CEconItem[] = await new Promise((resolve, reject) => {
       this.emit("getInventory", (items: CEconItem[], error) => {
         if (error) {
@@ -465,27 +465,33 @@ export class CSFloatSocket extends EventEmitter {
 
       if (!hasMatchingItem) continue;
 
+      let alreadyHasOffer: boolean;
+
       for (const tradeOffer of tradeOffersSent) {
-        {
-          for (const item of tradeOffer.itemsToGive) {
-            if (item.assetid === trade.contract.item.asset_id) {
-              await this._csFloatClient
-                .acceptTradesInFloat(trade.id)
-                .then(() => {
-                  this.emit("notifyWindows", {
-                    title: `CSFLOAT - Item: ${trade.contract.item.item_name}`,
-                    body: `Accepted item!`,
-                  });
-                })
-                .catch(() => {
-                  this.emit("notifyWindows", {
-                    title: `CSFLOAT!`,
-                    body: `Item: ${trade.contract.item.item_name}, Cannot be accepted!`,
-                  });
-                });
-            }
+        for (const item of tradeOffer.itemsToGive) {
+          if (item.assetid === trade.contract.item.asset_id) {
+            alreadyHasOffer = true;
+          } else {
+            alreadyHasOffer = false;
           }
         }
+      }
+
+      if (!alreadyHasOffer) {
+        await this._csFloatClient
+          .acceptTradesInFloat(trade.id)
+          .then(() => {
+            this.emit("notifyWindows", {
+              title: `CSFLOAT - Item: ${trade.contract.item.item_name}`,
+              body: `Accepted item!`,
+            });
+          })
+          .catch(() => {
+            this.emit("notifyWindows", {
+              title: `CSFLOAT!`,
+              body: `Item: ${trade.contract.item.item_name}, Cannot be accepted!`,
+            });
+          });
       }
     }
   }
@@ -495,9 +501,9 @@ export class CSFloatSocket extends EventEmitter {
     tradeOffers: IGetTradeOffersResponde
   ): Promise<void> {
     if (tradesInPending.length < 1) return;
-    const tradeOffersToSent = tradeOffers.sent;
+    const tradeOffersAlreadySent = tradeOffers.sent;
 
-    const tradesActives = tradeOffersToSent.filter(
+    const tradesActives = tradeOffersAlreadySent.filter(
       (trade) => trade.state === ETradeOfferStateCSFloat.Active
     );
 
