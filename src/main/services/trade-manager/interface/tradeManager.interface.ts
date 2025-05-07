@@ -13,5 +13,5 @@ export interface ICreateTradeData {
   json_tradeoffer: JsonTradeoffer;
   id: string | number;
   marketplace: Marketplace;
-  message?: string;
+  message: string;
 }

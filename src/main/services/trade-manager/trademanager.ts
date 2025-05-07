@@ -341,6 +341,7 @@ export class TradeManager extends EventEmitter {
       json_tradeoffer,
       id,
       marketplace,
+      message: "",
     });
     if (!tradeOfferId) return;
 
