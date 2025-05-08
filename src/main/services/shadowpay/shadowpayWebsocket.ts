@@ -162,10 +162,10 @@ export class ShadowpayWebsocket extends EventEmitter {
       }
     };
 
-    this.socket.onclose = () => {
-      infoLogger("Shadowpay Websocket: Connection closed.");
+    this.socket.onclose = (e) => {
+      infoLogger("Shadowpay Websocket: Connection closed with code: " + e.code + " reason: " + e.reason);
       this.handleClose();
-    };
+    }
 
     this.socket.onerror = (e) => {
       this.emit("error", e);

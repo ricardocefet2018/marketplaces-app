@@ -78,7 +78,7 @@ export class WaxpeerWebsocket extends EventEmitter {
     if (!this.ws) return;
 
     this.ws.on("error", (e) => this.handleError(e));
-    this.ws.on("close", () => this.handleClose());
+    this.ws.on("close", (code, reason) => this.handleClose(code, reason));
     this.ws.on("open", () => this.handleOpen());
     this.ws.on("message", (data) => this.handleMessage(data));
   }
@@ -148,8 +148,9 @@ export class WaxpeerWebsocket extends EventEmitter {
     this.scheduleReconnect();
   }
 
-  private handleClose(): void {
-    infoLogger("Waxpeer WebSocket: Disconnected");
+  private handleClose(code: number, reason: Buffer): void {
+    infoLogger("Waxpeer WebSocket: Connection closed with code: " + code + " reason: " + reason.toString());
+
     this.emit("stateChange", false);
     this.cleanup();
     this.scheduleReconnect();
