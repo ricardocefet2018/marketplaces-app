@@ -34,7 +34,7 @@ export class User extends BaseEntity {
   @Column("text")
   refreshToken: string;
 
-  @Column("text")
+  @Column({ nullable: true, type: "text" })
   avatarUrl: string;
 
   @Column({ nullable: true, type: "text" })
