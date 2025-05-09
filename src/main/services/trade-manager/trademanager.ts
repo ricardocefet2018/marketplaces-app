@@ -228,7 +228,7 @@ export class TradeManager extends EventEmitter {
       this.updateAccessTokenWaxpeer(accessToken);
       this.updateAccessTokenShadowpay(accessToken);
       this.updateAccessTokenMarketcsgo(accessToken);
-      this.updateAccessTokenCSFloat(accessToken);
+      //float dont need access token
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
@@ -264,11 +264,6 @@ export class TradeManager extends EventEmitter {
   private async updateAccessTokenMarketcsgo(accessToken: string) {
     if (!this._mcsgoClient || !this._mcsgoSocket) return;
     this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
-  }
-
-  private async updateAccessTokenCSFloat(accessToken: string) {
-    if (!this._csfloatClient || !this._csfloatSocket) return;
-    this._csfloatClient.setSteamToken(accessToken);
   }
 
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
@@ -834,7 +829,6 @@ export class TradeManager extends EventEmitter {
       await sleepAsync(100);
       accessToken = this.getSteamLoginSecure();
     }
-    this._csfloatClient.setSteamToken(accessToken);
 
     this._csfloatSocket = new CSFloatSocket(
       this._csfloatClient,

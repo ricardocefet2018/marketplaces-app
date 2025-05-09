@@ -1,3 +1,4 @@
+import { SteamAcc } from './../../../shared/types';
 import { HttpsProxyAgent } from "https-proxy-agent";
 import fetch, { RequestInit, Response } from "node-fetch";
 import { EStatusTradeCSFLOAT } from "./enums/cs-float.enum";
@@ -16,7 +17,6 @@ export default class CSFloatClient {
   private static EXTATION_VERSION = "5.5.0";
   private api_key: string;
   private proxy: string;
-  private steamToken: string;
 
   private constructor(api_key: string, proxy?: string) {
     this.api_key = api_key;
@@ -134,7 +134,7 @@ export default class CSFloatClient {
     });
   }
 
-  async pingExtensionStatus(updateErrors: IUpdateErrors): Promise<boolean> {
+  async pingExtensionStatus(updateErrors: IUpdateErrors, steamID: string): Promise<boolean> {
     const url = new URL(`${CSFloatClient.API_URL}/me/extension/status`);
     const response = await this.internalFetch(url.toString(), {
       method: "POST",
@@ -142,7 +142,7 @@ export default class CSFloatClient {
         steam_community_permission: true,
         steam_powered_permission: true,
         version: CSFloatClient.EXTATION_VERSION,
-        access_token_steam_id: this.steamToken,
+        access_token_steam_id: steamID,
         history_error: updateErrors?.history_error || "",
         trade_offer_error: updateErrors?.trade_offer_error || "",
       }),
@@ -151,13 +151,6 @@ export default class CSFloatClient {
     return response.ok;
   }
 
-  public setSteamToken(steamToken: string) {
-    this.steamToken = steamToken;
-  }
-
-  public verifySteamToken(): boolean {
-    return this.steamToken ? true : false;
-  }
 
   async acceptTradesInFloat(tradeId: string): Promise<void> {
     const url = new URL(`${CSFloatClient.API_URL}/trades/bulk/accept`);

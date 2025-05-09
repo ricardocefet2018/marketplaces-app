@@ -14,9 +14,11 @@ export interface IHistoryPingBody {
   other_party_url: string;
   received_assets: {
     asset_id: string;
+    new_asset_id?: string;
   }[];
   given_assets: {
     asset_id: string;
+    new_asset_id?: string;
   }[];
 }
 

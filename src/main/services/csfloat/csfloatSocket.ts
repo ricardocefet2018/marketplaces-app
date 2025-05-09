@@ -84,7 +84,7 @@ export class CSFloatSocket extends EventEmitter {
       } catch (err) {
         this.emit("error", err);
       }
-      await sleepAsync(minutesToMS(5));
+      await sleepAsync(minutesToMS(3));
     }
 
     this.disconnect();
@@ -107,7 +107,8 @@ export class CSFloatSocket extends EventEmitter {
 
     try {
       this.statusExtension = await this._csFloatClient.pingExtensionStatus(
-        errors
+        errors,
+        this.steamIDBase64
       );
       this.emit("stateChange", this.statusExtension);
     } catch (error) {
@@ -118,12 +119,6 @@ export class CSFloatSocket extends EventEmitter {
   private async verificationsLoop(
     tradesInPending: ITradeFloat[]
   ): Promise<void> {
-    if (!this._csFloatClient.verifySteamToken()) {
-      this.emit("notifyWindows", {
-        title: `CSFLOAT - Steam token invalid`,
-        body: `Your steam token is invalid!`,
-      });
-    }
 
     if (!tradesInPending) return;
 
@@ -257,9 +252,9 @@ export class CSFloatSocket extends EventEmitter {
           .filter(
             (trade) =>
               trade.steam_offer.state ===
-                ETradeOfferStateCSFloat.CreatedNeedsConfirmation &&
+              ETradeOfferStateCSFloat.CreatedNeedsConfirmation &&
               new Date(trade.steam_offer.sent_at).getTime() <
-                Date.now() - 60 * 60 * 1000
+              Date.now() - 60 * 60 * 1000
           )
           .map((trade) => trade.steam_offer.id)
       ),
@@ -300,6 +295,7 @@ export class CSFloatSocket extends EventEmitter {
     tradesInPending: ITradeFloat[],
     tradeOffersHistory: IGetTradeOffersResponde
   ): Promise<void> {
+
     const tradeOffersHistoryConcated = tradeOffersHistory.sent
       .concat(tradeOffersHistory.received)
       .filter(
@@ -310,20 +306,23 @@ export class CSFloatSocket extends EventEmitter {
           tradeOffer.state === ETradeOfferStateCSFloat.Canceled ||
           tradeOffer.state === ETradeOfferStateCSFloat.Invalid
       )
-      .filter(
-        (tradeOffer) =>
-          !tradeOffer.escrowEnds ||
-          new Date(
-            parseInt(tradeOffer.escrowEnds.toString()) * 1000
-          ).getTime() < Date.now()
-      )
+      .filter((tradeOffer) => {
+        if (!tradeOffer.escrowEnds) return true;
+
+        let escrowTime: number;
+        if (typeof tradeOffer.escrowEnds === 'string') {
+          escrowTime = parseInt(tradeOffer.escrowEnds) * 1000;
+        } else {
+          return new Date(tradeOffer.escrowEnds).getTime() < Date.now();
+        }
+      })
       .map((tradeOffer) => {
         return {
           other_party_url: `https://steamcommunity.com/profiles/${tradeOffer.partner.getSteamID64()}`,
           received_assets: (tradeOffer.itemsToReceive || [])
             .filter((item_to_receive) => item_to_receive.appid === AppId.CSGO)
             .map((item_to_receive) => {
-              return { asset_id: item_to_receive.assetid };
+              return { asset_id: item_to_receive.assetid, };
             }),
           given_assets: (tradeOffer.itemsToGive || [])
             .filter((item_to_give) => item_to_give.appid === AppId.CSGO)
@@ -573,4 +572,5 @@ export class CSFloatSocket extends EventEmitter {
       });
     }
   }
+
 }
