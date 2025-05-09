@@ -1,7 +1,7 @@
 import path from "path";
 import { EventEmitter } from "events";
-import TradeOfferManager from "steam-tradeoffer-manager";
-import SteamUser from "steam-user";
+import TradeOfferManager, { EOfferFilter } from "steam-tradeoffer-manager";
+import SteamUser, { EFriendRelationship } from "steam-user";
 import {
   JsonTradeoffer,
   TradeWebsocketCreateTradeData,
@@ -31,9 +31,16 @@ import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
 import AppError from "../../models/AppError";
 import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
 import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
-import { TradeManagerOptions } from "./interface/tradeManager.interface";
+import {
+  ICreateTradeData,
+  TradeManagerOptions,
+} from "./interface/tradeManager.interface";
 import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
 import { AppController } from "../../controllers/app.controller";
+import CSFloatClient from "../csfloat/csfloatClient";
+import { CSFloatSocket } from "../csfloat/csfloatSocket";
+import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
+import { IGetTradeOffersResponde } from "../csfloat/interfaces/fetch.interface";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -42,7 +49,10 @@ interface TradeManagerEvents {
   shadowpayCanSellStateChanged: (state: boolean, username: string) => void;
   marketcsgoStateChanged: (state: boolean, username: string) => void;
   marketcsgoCanSellStateChanged: (state: boolean, username: string) => void;
+  csfloatStateChanged: (state: boolean, username: string) => void;
+  csfloatCanSellStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
+  notifyWindowsEvent: (title: string, body: string) => void;
 }
 
 export declare interface TradeManager {
@@ -74,6 +84,8 @@ export class TradeManager extends EventEmitter {
   private _spWebsocket?: ShadowpayWebsocket;
   private _mcsgoClient?: MarketcsgoClient;
   private _mcsgoSocket?: MarketcsgoSocket;
+  private _csfloatClient?: CSFloatClient;
+  private _csfloatSocket?: CSFloatSocket;
   private _appController: AppController;
 
   public get steamAcc(): SteamAcc {
@@ -85,6 +97,7 @@ export class TradeManager extends EventEmitter {
       marketcsgo: this._user.marketcsgo,
       csfloat: this._user.csfloat,
       userSettings: this._user.userSettings,
+      avatar: this._user.avatarUrl,
     };
   }
 
@@ -139,6 +152,10 @@ export class TradeManager extends EventEmitter {
         resolve();
       });
 
+      tm._steamClient.once("user", (sid, user) => {
+        tm._user.avatarUrl = user.avatar_url_full;
+      });
+
       tm._steamClient.once("error", async (err) => {
         reject(err);
       });
@@ -176,6 +193,10 @@ export class TradeManager extends EventEmitter {
           resolve();
         });
 
+        tm._steamClient.once("user", (sid, user) => {
+          tm._user.avatarUrl = user.avatar_url_full;
+        });
+
         tm._steamClient.once("error", (err) => {
           tm.handleError(err);
           resolve();
@@ -207,7 +228,7 @@ export class TradeManager extends EventEmitter {
       this.updateAccessTokenWaxpeer(accessToken);
       this.updateAccessTokenShadowpay(accessToken);
       this.updateAccessTokenMarketcsgo(accessToken);
-      // TODO add csfloat here
+      //float dont need access token
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
@@ -258,13 +279,13 @@ export class TradeManager extends EventEmitter {
     const id = data.wax_id;
     const marketplace: Marketplace = "Waxpeer";
     const message = data.tradeoffermessage;
-    const tradeOfferId = await this.createTrade(
+    const tradeOfferId = await this.createTrade({
       tradeURL,
       json_tradeoffer,
       id,
       marketplace,
-      message
-    );
+      message,
+    });
 
     if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
 
@@ -310,12 +331,13 @@ export class TradeManager extends EventEmitter {
     const json_tradeoffer = data.json_tradeoffer;
     const id = data.id;
     const marketplace: Marketplace = "Shadowpay";
-    const tradeOfferId = await this.createTrade(
+    const tradeOfferId = await this.createTrade({
       tradeURL,
       json_tradeoffer,
       id,
-      marketplace
-    );
+      marketplace,
+      message: "",
+    });
     if (!tradeOfferId) return;
 
     try {
@@ -378,13 +400,13 @@ export class TradeManager extends EventEmitter {
         ready: false,
       },
     };
-    const tradeOfferId = await this.createTrade(
-      tradeUrl,
+    const tradeOfferId = await this.createTrade({
+      tradeURL: tradeUrl,
       json_tradeoffer,
       id,
       marketplace,
-      message
-    );
+      message,
+    });
     if (!tradeOfferId) return;
 
     try {
@@ -414,19 +436,31 @@ export class TradeManager extends EventEmitter {
     }
   }
 
+  public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
+    this._appController.notify({
+      title: `New CSFloat sale!`,
+      body: `Creating trade...`,
+    });
+
+    const tradeOfferId = await this.createTrade(createTradeData);
+
+    if (!tradeOfferId) return;
+    await this.registerPendingTradeToFile(tradeOfferId);
+  }
+
   private async createTrade(
-    tradeURL: string,
-    json_tradeoffer: JsonTradeoffer,
-    id: string | number,
-    marketplace: Marketplace,
-    message = ""
-  ) {
-    const offer = this._steamTradeOfferManager.createOffer(tradeURL);
+    createTradeData: ICreateTradeData
+  ): Promise<string> {
+    const offer = this._steamTradeOfferManager.createOffer(
+      createTradeData.tradeURL
+    );
     try {
-      const itemsToSend = await this.getItemsToSend(json_tradeoffer);
+      const itemsToSend = await this.getItemsToSend(
+        createTradeData.json_tradeoffer
+      );
       if (!itemsToSend.every((v) => typeof v != "undefined")) {
         this.infoLogger(
-          `One or more items of ${marketplace} sale #${id} wasn't in inventory`
+          `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} wasn't in inventory`
         );
         return; // Don't want to create trade if we don't have all items that we need
       }
@@ -434,12 +468,12 @@ export class TradeManager extends EventEmitter {
       const alreadyInTrade = await this.isItemsInTrade(itemsToSend);
       if (alreadyInTrade) {
         this.infoLogger(
-          `One or more items of ${marketplace} sale #${id} was already in trade`
+          `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} was already in trade`
         );
         return; // Don't want to create trade one (or more item) is already in trade
       }
       offer.addMyItems(itemsToSend);
-      offer.setMessage(message);
+      offer.setMessage(createTradeData.message);
       const offerStatus = await this.sendOffer(offer);
       this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
       return offer.id;
@@ -783,6 +817,35 @@ export class TradeManager extends EventEmitter {
     }
   }
 
+  public async startCSFloatClient(): Promise<void> {
+    if (this._csfloatClient || this._csfloatSocket) return;
+
+    this._csfloatClient = CSFloatClient.getInstance(
+      this._user.csfloat.apiKey,
+      this._user.proxy
+    );
+    let accessToken = this.getSteamLoginSecure();
+    while (!accessToken || accessToken == "") {
+      await sleepAsync(100);
+      accessToken = this.getSteamLoginSecure();
+    }
+
+    this._csfloatSocket = new CSFloatSocket(
+      this._csfloatClient,
+      this._steamClient.steamID.getSteamID64()
+    );
+    this.registerCSFloatSocketHandlers();
+    const success = await new Promise((resolve) => {
+      this._csfloatSocket.once("stateChange", (online) => {
+        resolve(online);
+      });
+    });
+    if (!success) {
+      this.stopCSFloatClient();
+      throw new AppError("Try again later!");
+    }
+  }
+
   private registerMarketcsgoSocketHandlers() {
     this._mcsgoSocket.on("stateChange", async (online) => {
       this.emit("marketcsgoCanSellStateChanged", online, this._user.username);
@@ -798,6 +861,45 @@ export class TradeManager extends EventEmitter {
       this.createTradeForMarketcsgo(data);
     });
     this._mcsgoSocket.on("error", this.handleError);
+  }
+
+  private registerCSFloatSocketHandlers() {
+    this._csfloatSocket.on("stateChange", async (data) => {
+      this.emit("csfloatCanSellStateChanged", data, this._user.username);
+      this._user.csfloat.canSell = data;
+    });
+    this._csfloatSocket.on("acceptWithdraw", (tradeOfferId) => {
+      this.acceptTradeOffer(tradeOfferId);
+    });
+    this._csfloatSocket.on("cancelTrade", (tradeOfferId) => {
+      this.cancelTradeOffer(tradeOfferId, "CSFloat");
+    });
+    this._csfloatSocket.on("sendTrade", (createTradeData: ICreateTradeData) => {
+      this.createTradeForCSFloat(createTradeData);
+    });
+    this._csfloatSocket.on("error", this.handleError);
+    this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
+      this.notifyWindows(notifyData);
+    });
+    this._csfloatSocket.on("getBlockerUsers", (callback) => {
+      callback(this.getBlockerdOrIgnoredUsers());
+    });
+    this._csfloatSocket.on("getSentTradeOffers", async (callback) => {
+      try {
+        const sentTradeOffers = await this.getSentTradeOffers();
+        callback(sentTradeOffers);
+      } catch (err) {
+        callback(err);
+      }
+    });
+    this._csfloatSocket.on("getInventory", async (callback) => {
+      try {
+        const items = await this.getInventoryContents(730, 2);
+        callback(items);
+      } catch (err) {
+        callback([], err);
+      }
+    });
   }
 
   /**
@@ -848,9 +950,26 @@ export class TradeManager extends EventEmitter {
     this._mcsgoClient = undefined;
     this._mcsgoSocket = undefined;
     this._user.marketcsgo.state = false;
+    this._user.marketcsgo.canSell = false;
     this.emit("marketcsgoStateChanged", false, this._user.username);
     this.emit("marketcsgoCanSellStateChanged", false, this._user.username);
     // TODO a DB error should close the app?
+    await this._user.save();
+    return;
+  }
+
+  async stopCSFloatClient() {
+    if (this._csfloatSocket) {
+      this._csfloatSocket.disconnect();
+      this._csfloatSocket.removeAllListeners();
+    }
+    this._csfloatClient = undefined;
+    this._csfloatSocket = undefined;
+    this._user.csfloat.state = false;
+    this._user.csfloat.canSell = false;
+    this.emit("csfloatStateChanged", false, this._user.username);
+    this.emit("csfloatCanSellStateChanged", false, this._user.username);
+
     await this._user.save();
     return;
   }
@@ -872,10 +991,9 @@ export class TradeManager extends EventEmitter {
     if (this._mcsgoSocket) this._mcsgoSocket.disconnect();
     this._mcsgoSocket = undefined;
 
-    // TODO add csfloat here
-    // this._csfloatClient = undefined;
-    // if (this._csfloatSocket) this._csfloatSocket.disconnect();
-    // this._csfloatSocket = undefined;
+    this._csfloatClient = undefined;
+    if (this._csfloatSocket) this._csfloatSocket.disconnect();
+    this._csfloatSocket = undefined;
 
     return;
   }
@@ -888,7 +1006,9 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
   }
 
-  private async registerPendingTradeToFile(offerID: string | number) {
+  private async registerPendingTradeToFile(
+    offerID: string | number
+  ): Promise<void> {
     if (
       this._user.userSettings.pendingTradesFilePath == "" ||
       !this._user.userSettings.pendingTradesFilePath
@@ -899,5 +1019,52 @@ export class TradeManager extends EventEmitter {
       Number(offerID)
     );
     return;
+  }
+
+  public notifyWindows(notifyData: INotifyData): void {
+    return this._appController.notify({
+      title: notifyData.title,
+      body: notifyData.body,
+    });
+  }
+
+  public getBlockerdOrIgnoredUsers(): string[] {
+    const friendList = Object.entries(this._steamClient.myFriends);
+    const blockOrIgnoredUsersList: string[] = [];
+
+    for (const [steamID, friendRelationship] of friendList) {
+      if (
+        friendRelationship === EFriendRelationship.Blocked ||
+        friendRelationship === EFriendRelationship.Ignored ||
+        friendRelationship === EFriendRelationship.IgnoredFriend
+      ) {
+        blockOrIgnoredUsersList.push(steamID.toString());
+      }
+    }
+
+    return blockOrIgnoredUsersList;
+  }
+
+  public getSentTradeOffers(): Promise<IGetTradeOffersResponde> {
+    return new Promise((resolve, reject) => {
+      let response: IGetTradeOffersResponde = {
+        sent: [],
+        received: [],
+      };
+
+      this._steamTradeOfferManager.getOffers(
+        EOfferFilter.All,
+        (err, sent, received) => {
+          if (err) {
+            console.error("Erro in function `getSentTradeOffers`:", err);
+            reject(err);
+            return;
+          }
+          response.sent = sent;
+          response.received = received;
+          resolve(response);
+        }
+      );
+    });
   }
 }
