@@ -226,7 +226,7 @@ export class TradeManager extends EventEmitter {
     this._steamClient.on("error", (err) => {
       this.infoLogger("Steam client: Error: " + err.message);
       this.handleError(err);
-      this.scheduleReconnect(); // Agendar reconexão após erro
+      this.scheduleReconnect();
     });
   }
 
@@ -242,17 +242,17 @@ export class TradeManager extends EventEmitter {
       this.reconnect().finally(() => {
         this.isReconnecting = false;
       });
-    }, 60000); // 1 minuto
+    }, 60000);
   }
 
   private async reconnect() {
     try {
-      this.infoLogger("Steam client: Tentando reconectar ao Steam...");
-      this._steamClient.logOff(); // Desconectar antes de tentar novamente
+      this.infoLogger("Steam client: Reconnecting to Steam...");
+      this._steamClient.logOff();
 
       const refreshToken = this._user.refreshToken;
       if (!refreshToken) {
-        throw new Error("Nenhum refresh token disponível para reconexão.");
+        throw new Error("No refresh token available for reconnection.");
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -261,20 +261,20 @@ export class TradeManager extends EventEmitter {
         });
 
         this._steamClient.once("loggedOn", () => {
-          this.infoLogger("Steam client: Reconectado com sucesso.");
+          this.infoLogger("Steam client: Reconnected successfully.");
           resolve();
         });
 
         this._steamClient.once("error", (err) => {
-          this.infoLogger("Steam client: Erro ao reconectar: " + err.message);
+          this.infoLogger("Steam client: Error during reconnection: " + err.message);
           this.handleError(err);
           reject(err);
         });
       }); 
     } catch (err) {
-      this.infoLogger("Steam client: (catch) Erro ao reconectar:" + err.message);
+      this.infoLogger("Steam client: Error during reconnection: " + err.message);
       this.handleError(err);
-      this.scheduleReconnect(); // Nova tentativa após outro minuto
+      this.scheduleReconnect();
     }
   }
 
@@ -479,6 +479,11 @@ export class TradeManager extends EventEmitter {
     const offer = this._steamTradeOfferManager.createOffer(tradeURL);
     try {
       const itemsToSend = await this.getItemsToSend(json_tradeoffer);
+      if (!itemsToSend || itemsToSend?.length === 0) {
+        this.infoLogger(`No items to send for ${marketplace} sale #${id}`);
+        return;
+      }
+
       if (!itemsToSend.every((v) => typeof v != "undefined")) {
         this.infoLogger(
           `One or more items of ${marketplace} sale #${id} wasn't in inventory`
@@ -591,6 +596,9 @@ export class TradeManager extends EventEmitter {
   public async acceptTradeOffer(offerId: string) {
     try {
       const offer = await this.getTradeOffer(offerId);
+      if (!offer?.itemsToReceive) {
+        throw new Error("No matching offer found");
+      }
       await acceptOffer(offer);
       this._appController.notify({
         title: `Accepted gift for ${this._user.username}.`,
@@ -641,14 +649,21 @@ export class TradeManager extends EventEmitter {
   private async getItemsToSend(
     json_tradeoffer: JsonTradeoffer
   ): Promise<CEconItem[]> {
+    const assets = json_tradeoffer?.me?.assets;
+    if (!assets) {
+      this.handleError(new Error("No assets found in trade offer"));
+      return [];
+    }
+
     const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
     const inventories = await Promise.all(
       apps_contexts.map((app_context) =>
         this.getInventoryContents(app_context.appid, app_context.contextid)
       )
     );
+
     const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
-    const assets = json_tradeoffer.me.assets;
+
     const itemsToSend = assets.map((asset) =>
       unifiedInv.find(
         (econItem) =>
@@ -689,7 +704,10 @@ export class TradeManager extends EventEmitter {
         contextid,
         true,
         (err, inv) => {
-          if (err) rej(err);
+          if (err || !inv) {
+            rej(err || new Error("Inventário não encontrado"));
+            return;
+          }
           res(inv);
         }
       );
