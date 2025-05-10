@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import ShadowpayClient from "./shadowpayClient";
-import { WebSocket } from "ws";
+import { WebSocket, CloseEvent, ErrorEvent } from "ws";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
 import { FetchError } from "node-fetch";
 import { JsonTradeoffer, TradeWebsocketEvents } from "../../models/types";
@@ -66,7 +66,9 @@ export class ShadowpayWebsocket extends EventEmitter {
       ws = await this.shadowpayClient.getWSTokens();
     } catch (err) {
       if (err instanceof FetchError) {
-        infoLogger("Shadowpay Websocket: Error fetching websocket tokens: " + err.message);
+        infoLogger(
+          "Shadowpay Websocket: Error fetching websocket tokens: " + err.message
+        );
         this.emit("stateChange", false);
         this.scheduleReconnect();
         return;
@@ -126,6 +128,10 @@ export class ShadowpayWebsocket extends EventEmitter {
         try {
           object = JSON.parse(json);
         } catch (err) {
+          infoLogger(
+            "Shadowpay Websocket: Error parsing websocket JSON: " + json
+          );
+
           this.emit(
             "error",
             new Error("Error parsing shadowpay websocket JSON" + json)
@@ -140,6 +146,10 @@ export class ShadowpayWebsocket extends EventEmitter {
 
         if (typeof object.result?.data === "string") {
           if (object.result.data !== "success") {
+            infoLogger(
+              "Shadowpay Websocket: Ping error: " + object.result.data
+            );
+
             this.emit(
               "error",
               new Error("Ping error shadowpay websocket message: " + json)
@@ -150,6 +160,8 @@ export class ShadowpayWebsocket extends EventEmitter {
         }
 
         if (!object.result?.data?.data?.type) {
+          infoLogger("Shadowpay Websocket: Unknown message format: " + json);
+
           this.emit(
             "error",
             new Error("Unknow shadowpay websocket message: " + json)
@@ -162,14 +174,9 @@ export class ShadowpayWebsocket extends EventEmitter {
       }
     };
 
-    this.socket.onclose = (e) => {
-      infoLogger("Shadowpay Websocket: Connection closed with code: " + e.code + " reason: " + e.reason);
-      this.handleClose();
-    }
+    this.socket.onclose = (e: CloseEvent) => this.handleClose(e);
 
-    this.socket.onerror = (e) => {
-      this.emit("error", e);
-    };
+    this.socket.onerror = (e: ErrorEvent) => this.handleError(e);
   }
 
   private handleMessageType(type: string, object: any) {
@@ -210,7 +217,14 @@ export class ShadowpayWebsocket extends EventEmitter {
     }
   }
 
-  private handleClose() {
+  private handleClose(e: CloseEvent) {
+    infoLogger(
+      "Shadowpay Websocket: Connection closed with code: " +
+        e.code +
+        " reason: " +
+        e.reason
+    );
+
     this.socket?.removeAllListeners();
     this.emit("stateChange", false);
 
@@ -220,6 +234,12 @@ export class ShadowpayWebsocket extends EventEmitter {
 
     this.socket = undefined;
     this.isManualDisconnect = false;
+  }
+
+  private handleError(e: ErrorEvent) {
+    infoLogger("Shadowpay Websocket: Error: " + e.message);
+    this.emit("error", e);
+    this.emit("stateChange", false);
   }
 
   private sendMsg(params: any, method?: number) {

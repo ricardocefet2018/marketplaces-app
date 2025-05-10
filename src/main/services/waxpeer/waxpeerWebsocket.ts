@@ -81,6 +81,9 @@ export class WaxpeerWebsocket extends EventEmitter {
     this.ws.on("close", (code, reason) => this.handleClose(code, reason));
     this.ws.on("open", () => this.handleOpen());
     this.ws.on("message", (data) => this.handleMessage(data));
+    this.ws.on("unexpected-response", (req, res) =>
+      this.handleUnexpectedResponse(req, res)
+    );
   }
 
   private handleOpen(): void {
@@ -130,27 +133,39 @@ export class WaxpeerWebsocket extends EventEmitter {
           break;
         case "disconnect":
           infoLogger("Waxpeer WebSocket: Disconnected");
-
           this.emit("stateChange", false);
           break;
         default:
+          infoLogger("Waxpeer WebSocket: Unknown message type: " + jMsg.name);
           this.emit("error", new Error(`Unknown message type: ${jMsg.name}`));
       }
     } catch (err) {
+      infoLogger("Waxpeer WebSocket: Error parsing message: " + err);
       this.emit("error", err);
     }
   }
 
   private handleError(e: Error): void {
-    console.error("Waxpeer WebSocket: error:", e);
+    infoLogger("Waxpeer WebSocket: error: " + e.message);
     this.emit("stateChange", false);
     this.emit("error", e);
     this.scheduleReconnect();
   }
 
   private handleClose(code: number, reason: Buffer): void {
-    infoLogger("Waxpeer WebSocket: Connection closed with code: " + code + " reason: " + reason.toString());
+    infoLogger(
+      "Waxpeer WebSocket: Connection closed with code: " +
+        code +
+        " reason: " +
+        reason.toString()
+    );
+    this.emit("stateChange", false);
+    this.cleanup();
+    this.scheduleReconnect();
+  }
 
+  private handleUnexpectedResponse(req: any, res: any): void {
+    infoLogger("Waxpeer WebSocket: Unexpected response: " + res.statusCode);
     this.emit("stateChange", false);
     this.cleanup();
     this.scheduleReconnect();
