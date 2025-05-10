@@ -171,18 +171,15 @@ export class TradeManager extends EventEmitter {
         tm.setListeners();
 
         tm._steamClient.once("loggedOn", () => {
-          const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
-          tm.infoLogger(`Acc ${sid64} loged on`);
-          resolve();
-        });
-
-        tm._steamClient.once("error", (err) => {
-          tm.handleError(err);
+          const sid64 = tm._steamClient.steamID.getSteamID64();
+          tm.infoLogger(`Steam client: Acc ${sid64} logged on`);
           resolve();
         });
       });
     } catch (err) {
-      tm.handleError(err); // We deal with the any error here since it's related to accounts that was already logged before
+      tm.infoLogger("Steam client: Error during relogin: " + err.message);
+      
+      tm.handleError(err);
     }
     return tm;
   }
@@ -200,6 +197,8 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamClient.on("webSession", (sessionID, cookies) => {
+      this.infoLogger("Steam client: Web session started.");
+      
       this._steamCookies = cookies;
       this._steamTradeOfferManager.setCookies(cookies);
       const accessToken = this.getSteamLoginSecure();
@@ -223,6 +222,60 @@ export class TradeManager extends EventEmitter {
       if (isGift && this._user.userSettings.acceptGifts)
         this.acceptTradeOffer(offer.id);
     });
+
+    this._steamClient.on("error", (err) => {
+      this.infoLogger("Steam client: Error: " + err.message);
+      this.handleError(err);
+      this.scheduleReconnect();
+    });
+  }
+
+  private isReconnecting = false;
+
+  private scheduleReconnect() {    
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
+    this.infoLogger("Steam client: Scheduling reconnect in 1 minute...");
+
+    setTimeout(() => {
+      this.reconnect().finally(() => {
+        this.isReconnecting = false;
+      });
+    }, 60000);
+  }
+
+  private async reconnect() {
+    try {
+      this.infoLogger("Steam client: Reconnecting to Steam...");
+      this._steamClient.logOff();
+
+      const refreshToken = this._user.refreshToken;
+      if (!refreshToken) {
+        throw new Error("No refresh token available for reconnection.");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        this._steamClient.logOn({
+          refreshToken: refreshToken,
+        });
+
+        this._steamClient.once("loggedOn", () => {
+          this.infoLogger("Steam client: Reconnected successfully.");
+          resolve();
+        });
+
+        this._steamClient.once("error", (err) => {
+          this.infoLogger("Steam client: Error during reconnection: " + err.message);
+          this.handleError(err);
+          reject(err);
+        });
+      }); 
+    } catch (err) {
+      this.infoLogger("Steam client: Error during reconnection: " + err.message);
+      this.handleError(err);
+      this.scheduleReconnect();
+    }
   }
 
   private async updateAccessTokenWaxpeer(accessToken: string) {
@@ -231,6 +284,7 @@ export class TradeManager extends EventEmitter {
     this._wpWebsocket.disconnectWss();
     const twsOptions = this._wpClient.getTWSInitObject();
     this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
+    this.registerWaxpeerSocketHandlers();
   }
 
   private async updateAccessTokenShadowpay(accessToken: string) {
@@ -238,6 +292,7 @@ export class TradeManager extends EventEmitter {
     await this._spClient.setSteamToken(accessToken);
     this._spWebsocket.disconnect();
     this._spWebsocket = new ShadowpayWebsocket(this._spClient);
+    this.registerShadowpaySocketHandlers();
   }
 
   private async updateAccessTokenMarketcsgo(accessToken: string) {
@@ -424,6 +479,11 @@ export class TradeManager extends EventEmitter {
     const offer = this._steamTradeOfferManager.createOffer(tradeURL);
     try {
       const itemsToSend = await this.getItemsToSend(json_tradeoffer);
+      if (!itemsToSend || itemsToSend?.length === 0) {
+        this.infoLogger(`No items to send for ${marketplace} sale #${id}`);
+        return;
+      }
+
       if (!itemsToSend.every((v) => typeof v != "undefined")) {
         this.infoLogger(
           `One or more items of ${marketplace} sale #${id} wasn't in inventory`
@@ -536,6 +596,9 @@ export class TradeManager extends EventEmitter {
   public async acceptTradeOffer(offerId: string) {
     try {
       const offer = await this.getTradeOffer(offerId);
+      if (!offer?.itemsToReceive) {
+        throw new Error("No matching offer found");
+      }
       await acceptOffer(offer);
       this._appController.notify({
         title: `Accepted gift for ${this._user.username}.`,
@@ -586,14 +649,21 @@ export class TradeManager extends EventEmitter {
   private async getItemsToSend(
     json_tradeoffer: JsonTradeoffer
   ): Promise<CEconItem[]> {
+    const assets = json_tradeoffer?.me?.assets;
+    if (!assets) {
+      this.handleError(new Error("No assets found in trade offer"));
+      return [];
+    }
+
     const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
     const inventories = await Promise.all(
       apps_contexts.map((app_context) =>
         this.getInventoryContents(app_context.appid, app_context.contextid)
       )
     );
+
     const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
-    const assets = json_tradeoffer.me.assets;
+
     const itemsToSend = assets.map((asset) =>
       unifiedInv.find(
         (econItem) =>
@@ -634,7 +704,10 @@ export class TradeManager extends EventEmitter {
         contextid,
         true,
         (err, inv) => {
-          if (err) rej(err);
+          if (err || !inv) {
+            rej(err || new Error("Inventário não encontrado"));
+            return;
+          }
           res(inv);
         }
       );
@@ -807,7 +880,6 @@ export class TradeManager extends EventEmitter {
   public async stopWaxpeerClient() {
     if (this._wpWebsocket) {
       this._wpWebsocket.disconnectWss();
-      this._wpWebsocket.removeAllListeners();
     }
     this._wpClient = undefined;
     this._wpWebsocket = undefined;
@@ -827,7 +899,6 @@ export class TradeManager extends EventEmitter {
   public async stopShadowpayClient() {
     if (this._spWebsocket) {
       this._spWebsocket.disconnect();
-      this._spWebsocket.removeAllListeners();
     }
     this._spClient = undefined;
     this._spWebsocket = undefined;

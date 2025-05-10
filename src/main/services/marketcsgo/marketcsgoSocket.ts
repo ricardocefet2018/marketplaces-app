@@ -2,7 +2,7 @@ import { TradeWebsocketEvents } from "../../models/types";
 import { EventEmitter } from "node:events";
 import MarketcsgoClient from "./marketcsgoClient";
 import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS, secondsToMS } from "../../../shared/helpers";
+import { infoLogger, minutesToMS, secondsToMS } from "../../../shared/helpers";
 import { FetchError } from "node-fetch";
 import { MarketcsgoTradeOfferPayload } from "./interface/marketcsgo.interface";
 
@@ -44,6 +44,8 @@ export class MarketcsgoSocket extends EventEmitter {
 
   public async connect(): Promise<void> {
     this.connected = true;
+    infoLogger("Marketcsgo Socket: Connected");
+    
     this.registerLoops();
   }
 
@@ -58,7 +60,10 @@ export class MarketcsgoSocket extends EventEmitter {
       try {
         const status = await this.marketcsgoClient.sendSteamToken();
         this.emit("stateChange", status);
+        infoLogger("Marketcsgo Socket: Ping response " + status);
       } catch (err) {
+        infoLogger("MaketcsgoSocket: Error sending ping " + err.message);
+
         if (!(err instanceof FetchError)) this.emit("error", err);
         this.emit("stateChange", false);
       }
@@ -100,8 +105,11 @@ export class MarketcsgoSocket extends EventEmitter {
     }
   }
 
-  public disconnect() {
+  public disconnect() {    
     this.connected = false;
+
+    infoLogger("Marketcsgo Socket: Disconnected");
+    
     return;
   }
 }
