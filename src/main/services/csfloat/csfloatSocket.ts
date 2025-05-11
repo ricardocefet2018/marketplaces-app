@@ -75,9 +75,6 @@ export class CSFloatSocket extends EventEmitter {
             );
           }
         );
-        console.log("=====================EVENTO EMITIDO=====================")
-
-
         const tradesInQueue = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.QUEUED
         );
@@ -87,7 +84,6 @@ export class CSFloatSocket extends EventEmitter {
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
         );
-        console.log("=====================EVENTO EMITIDO=====================")
 
         await this.verificationsLoop(tradesInPending);
         await this.sendOffer(tradesInPending, tradeOffers);
