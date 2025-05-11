@@ -819,6 +819,10 @@ export class TradeManager extends EventEmitter {
 
   public async startCSFloatClient(): Promise<void> {
     if (this._csfloatClient || this._csfloatSocket) return;
+    this.emit("csfloatStateChanged", true, this._user.username);
+    this._user.csfloat.state = true;
+    await this._user.save();
+
 
     this._csfloatClient = CSFloatClient.getInstance(
       this._user.csfloat.apiKey,
@@ -828,6 +832,7 @@ export class TradeManager extends EventEmitter {
       this._csfloatClient,
       this._steamClient.steamID.getSteamID64()
     );
+
     this.registerCSFloatSocketHandlers();
     const success = await new Promise((resolve) => {
       this._csfloatSocket.once("stateChange", (online) => {
