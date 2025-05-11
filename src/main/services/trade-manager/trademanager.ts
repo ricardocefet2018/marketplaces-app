@@ -824,12 +824,6 @@ export class TradeManager extends EventEmitter {
       this._user.csfloat.apiKey,
       this._user.proxy
     );
-    let accessToken = this.getSteamLoginSecure();
-    while (!accessToken || accessToken == "") {
-      await sleepAsync(100);
-      accessToken = this.getSteamLoginSecure();
-    }
-
     this._csfloatSocket = new CSFloatSocket(
       this._csfloatClient,
       this._steamClient.steamID.getSteamID64()
@@ -863,7 +857,7 @@ export class TradeManager extends EventEmitter {
     this._mcsgoSocket.on("error", this.handleError);
   }
 
-  private registerCSFloatSocketHandlers() {
+  private async registerCSFloatSocketHandlers() {
     this._csfloatSocket.on("stateChange", async (data) => {
       this.emit("csfloatCanSellStateChanged", data, this._user.username);
       this._user.csfloat.canSell = data;
@@ -881,9 +875,6 @@ export class TradeManager extends EventEmitter {
     this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
       this.notifyWindows(notifyData);
     });
-    this._csfloatSocket.on("getBlockerUsers", (callback) => {
-      callback(this.getBlockerdOrIgnoredUsers());
-    });
     this._csfloatSocket.on("getSentTradeOffers", async (callback) => {
       try {
         const sentTradeOffers = await this.getSentTradeOffers();
@@ -891,6 +882,9 @@ export class TradeManager extends EventEmitter {
       } catch (err) {
         callback(err);
       }
+    });
+    this._csfloatSocket.on("getBlockerUsers", (callback) => {
+      callback(this.getBlockerdOrIgnoredUsers());
     });
     this._csfloatSocket.on("getInventory", async (callback) => {
       try {
@@ -900,6 +894,8 @@ export class TradeManager extends EventEmitter {
         callback([], err);
       }
     });
+
+    await this._csfloatSocket.connect();
   }
 
   /**

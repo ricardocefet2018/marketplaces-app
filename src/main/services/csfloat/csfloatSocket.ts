@@ -47,36 +47,36 @@ export class CSFloatSocket extends EventEmitter {
     super();
     this._csFloatClient = _CSFloatClient;
     this.steamIDBase64 = steamIDBase64;
-    this.connect();
   }
 
   public disconnect() {
     this.connected = false;
+    this.emit("stateChange", false);
     return;
   }
 
   public async connect(): Promise<void> {
     this.connected = true;
-    this.registerLoops();
+    await this.registerLoops();
   }
 
   private async registerLoops(): Promise<void> {
     while (this.connected) {
       try {
+        this.emit("stateChange", true);
         const tradeOffers: IGetTradeOffersResponde = await new Promise(
           (resolve, reject) => {
             this.emit(
               "getSentTradeOffers",
               async (getTradeOffersResponse: IGetTradeOffersResponde) => {
-                if (!getTradeOffersResponse) {
-                  reject(new Error("Failed to get trade offers"));
-                  return;
-                }
+                if (!getTradeOffersResponse) { reject(new Error("Failed to get trade offers")); return; }
                 resolve(getTradeOffersResponse);
               }
             );
           }
         );
+        console.log("=====================EVENTO EMITIDO=====================")
+
 
         const tradesInQueue = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.QUEUED
@@ -87,6 +87,7 @@ export class CSFloatSocket extends EventEmitter {
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
         );
+        console.log("=====================EVENTO EMITIDO=====================")
 
         await this.verificationsLoop(tradesInPending);
         await this.sendOffer(tradesInPending, tradeOffers);
