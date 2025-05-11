@@ -26,7 +26,6 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
 }
 
 export interface IResponseEmitEvents {
-  blockedOrIgnoredUsers: string[];
   tradeOffers: IGetTradeOffersResponde;
 }
 

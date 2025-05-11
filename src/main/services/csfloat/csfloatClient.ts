@@ -24,6 +24,7 @@ export default class CSFloatClient {
   }
 
   static getInstance(api_key: string, proxy?: string): CSFloatClient {
+    if (!api_key) throw new Error("API KEY not defined")
     return new CSFloatClient(api_key, proxy);
   }
 
@@ -96,7 +97,7 @@ export default class CSFloatClient {
     });
   }
 
-  async tradeOfferStatus(tradeOffer: TradeOffer[]): Promise<void> {
+  async tradeOffers(tradeOffer: TradeOffer[]): Promise<void> {
     const url = new URL(`${CSFloatClient.API_URL}/trades/steam-status/offer`);
 
     await this.internalFetch(url.toString(), {
