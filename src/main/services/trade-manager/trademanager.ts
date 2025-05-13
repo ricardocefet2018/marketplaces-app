@@ -210,17 +210,21 @@ export class TradeManager extends EventEmitter {
     });
 
     this._steamTradeOfferManager.on("newOffer", (offer) => {
-      const isGift =
-        offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
+      try {
+        const isGift =
+          offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
 
-      if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
-        this._appController.notify({
-          title: `New offer for ${this._user.username}`,
-          body: ``,
-        });
+        if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
+          this._appController.notify({
+            title: `New offer for ${this._user.username}`,
+            body: ``,
+          });
 
-      if (isGift && this._user.userSettings.acceptGifts)
-        this.acceptTradeOffer(offer.id);
+        if (isGift && this._user.userSettings.acceptGifts)
+          this.acceptTradeOffer(offer.id);
+      } catch (err) {
+        this.handleError(err);
+      }
     });
 
     this._steamClient.on("error", (err) => {
