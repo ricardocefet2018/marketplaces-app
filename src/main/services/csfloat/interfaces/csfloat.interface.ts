@@ -1,11 +1,11 @@
-import { TradeWebsocketEvents } from "src/main/models/types";
+import { TradeWebsocketEvents } from "../../../models/types";
 import {
   EContractStateCSFloat,
   EContractTypeCSFloat,
   EStatusTradeCSFLOAT,
   ETradeOfferStateCSFloat,
 } from "../enums/cs-float.enum";
-import { IGetTradeOffersResponde } from "./fetch.interface";
+import { IGetTradeOffersResponse } from "./fetch.interface";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import { ICreateTradeData } from "../../trade-manager/interface/tradeManager.interface";
 
@@ -18,7 +18,7 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   notifyWindows: (notifyData: INotifyData) => void;
   getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[]) => void) => void;
   getSentTradeOffers: (
-    callback: (getTradeOffersResponde: IGetTradeOffersResponde) => void
+    callback: (getTradeOffersResponde: IGetTradeOffersResponse, error?: unknown) => void
   ) => void;
   getInventory: (
     callback: (items: CEconItem[], error?: unknown) => void
@@ -26,7 +26,7 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
 }
 
 export interface IResponseEmitEvents {
-  tradeOffers: IGetTradeOffersResponde;
+  tradeOffers: IGetTradeOffersResponse;
 }
 
 export interface INotifyData {
@@ -61,6 +61,13 @@ export interface ITradeFloat {
   wait_for_cancel_ping: boolean;
 }
 
+export interface IMEResponse {
+  user: User
+  pending_offers: number;
+  actionable_trades: number;
+  has_unread_notifications: boolean;
+}
+
 interface User {
   avatar: string;
   away: boolean;
@@ -71,6 +78,7 @@ interface User {
   statistics: UserStatistics;
   steam_id: string;
   username: string;
+  balance: number
 }
 
 interface UserStatistics {

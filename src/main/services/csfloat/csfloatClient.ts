@@ -8,7 +8,7 @@ import {
   IPingCancelTradeBody,
   PaginationRequest,
 } from "./interfaces/fetch.interface";
-import { ITradeFloat, IUpdateErrors } from "./interfaces/csfloat.interface";
+import { IMEResponse, ITradeFloat, IUpdateErrors } from "./interfaces/csfloat.interface";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 
 export default class CSFloatClient {
@@ -17,15 +17,21 @@ export default class CSFloatClient {
   private static EXTATION_VERSION = "5.5.0";
   private api_key: string;
   private proxy: string;
+  private user_balance: string
+
+  public get balance() {
+    return this.user_balance;
+  }
 
   private constructor(api_key: string, proxy?: string) {
     this.api_key = api_key;
     this.proxy = proxy;
   }
 
-  static getInstance(api_key: string, proxy?: string): CSFloatClient {
-    if (!api_key) throw new Error("API KEY not defined")
-    return new CSFloatClient(api_key, proxy);
+  static async getInstance(api_key: string, proxy?: string): Promise<CSFloatClient> {
+    const instance = new CSFloatClient(api_key, proxy)
+    await instance.updateBalance()
+    return instance;
   }
 
   private internalFetch(
@@ -153,11 +159,24 @@ export default class CSFloatClient {
   }
 
 
-  async acceptTradesInFloat(tradeId: string): Promise<void> {
+  async acceptTradesInFloat(tradeId: string): Promise<boolean> {
     const url = new URL(`${CSFloatClient.API_URL}/trades/bulk/accept`);
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({ trade_ids: [tradeId] }),
     });
+    return response.ok
+  }
+
+  public async updateBalance(): Promise<void> {
+    const url = new URL(`${CSFloatClient.API_URL}/me`);
+    const req = await this.internalFetch(url.toString(), {
+      method: "GET",
+    })
+    const response: IMEResponse = await req.json()
+    if (!req.ok) throw new Error(JSON.stringify(response));
+
+
+    this.user_balance = response.user.balance.toString()
   }
 }

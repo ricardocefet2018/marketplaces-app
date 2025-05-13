@@ -40,7 +40,7 @@ import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
 import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
-import { IGetTradeOffersResponde } from "../csfloat/interfaces/fetch.interface";
+import { IGetTradeOffersResponse } from "../csfloat/interfaces/fetch.interface";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -437,6 +437,8 @@ export class TradeManager extends EventEmitter {
   }
 
   public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
+    if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString())) return;
+
     this._appController.notify({
       title: `New CSFloat sale!`,
       body: `Creating trade...`,
@@ -445,6 +447,9 @@ export class TradeManager extends EventEmitter {
     const tradeOfferId = await this.createTrade(createTradeData);
 
     if (!tradeOfferId) return;
+
+    this._user.csfloat.sentTrades.push(createTradeData.id.toString());
+    await this._user.save();
     await this.registerPendingTradeToFile(tradeOfferId);
   }
 
@@ -824,7 +829,7 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
 
 
-    this._csfloatClient = CSFloatClient.getInstance(
+    this._csfloatClient = await CSFloatClient.getInstance(
       this._user.csfloat.apiKey,
       this._user.proxy
     );
@@ -1046,9 +1051,9 @@ export class TradeManager extends EventEmitter {
     return blockOrIgnoredUsersList;
   }
 
-  public getSentTradeOffers(): Promise<IGetTradeOffersResponde> {
+  public getSentTradeOffers(): Promise<IGetTradeOffersResponse> {
     return new Promise((resolve, reject) => {
-      let response: IGetTradeOffersResponde = {
+      let response: IGetTradeOffersResponse = {
         sent: [],
         received: [],
       };

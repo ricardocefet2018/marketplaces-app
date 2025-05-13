@@ -5,7 +5,7 @@ export interface PaginationRequest {
   page?: number;
 }
 
-export interface IGetTradeOffersResponde {
+export interface IGetTradeOffersResponse {
   sent: TradeOffer[];
   received: TradeOffer[];
 }
