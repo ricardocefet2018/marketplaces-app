@@ -547,7 +547,7 @@ export class CSFloatSocket extends EventEmitter {
       this.emit(
         "getBlockerUsers",
         async (ignoredOrBlokedUsersResponse: string[], error) => {
-          if (!error) {
+          if (error) {
             reject(new Error("Failed to get ignored and blocked users.", error));
             return;
           }
