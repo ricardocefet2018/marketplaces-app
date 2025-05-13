@@ -885,9 +885,9 @@ export class TradeManager extends EventEmitter {
     this._csfloatSocket.on("notifyWindows", (notifyData: INotifyData) => {
       this.notifyWindows(notifyData);
     });
-    this._csfloatSocket.on("getSentTradeOffers", async (callback) => {
+    this._csfloatSocket.on("getTradeOffers", async (callback) => {
       try {
-        const sentTradeOffers = await this.getSentTradeOffers();
+        const sentTradeOffers = await this.getTradeOffers();
         callback(sentTradeOffers);
       } catch (err) {
         callback(err);
@@ -1051,9 +1051,9 @@ export class TradeManager extends EventEmitter {
     return blockOrIgnoredUsersList;
   }
 
-  public getSentTradeOffers(): Promise<IGetTradeOffersResponse> {
+  public getTradeOffers(): Promise<IGetTradeOffersResponse> {
     return new Promise((resolve, reject) => {
-      let response: IGetTradeOffersResponse = {
+      const response: IGetTradeOffersResponse = {
         sent: [],
         received: [],
       };
@@ -1062,7 +1062,7 @@ export class TradeManager extends EventEmitter {
         EOfferFilter.All,
         (err, sent, received) => {
           if (err) {
-            console.error("Erro in function `getSentTradeOffers`:", err);
+            console.error("Erro in function `getTradeOffers`:", err);
             reject(err);
             return;
           }

@@ -3,9 +3,9 @@ import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
 import {
   ICSFloatSocketEvents,
-  IResponseEmitEvents,
   ITradeFloat,
   IUpdateErrors,
+  TradeOffersAPIOffer,
 } from "./interfaces/csfloat.interface";
 import {
   EStatusTradeCSFLOAT,
@@ -64,12 +64,14 @@ export class CSFloatSocket extends EventEmitter {
     while (this.connected) {
       try {
         this.emit("stateChange", true);
-        const tradesOffers = await this.getTradesOffers()
+
+        const tradesOffers = await this.getTradesOffers();
         const tradesInQueue = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.QUEUED
         );
 
         await this.autoAcceptTrades(tradesInQueue, tradesOffers);
+
 
         const tradesInPending = await this._csFloatClient.getTrades(
           EStatusTradeCSFLOAT.PENDING
@@ -97,18 +99,7 @@ export class CSFloatSocket extends EventEmitter {
     let errors: IUpdateErrors;
 
     if (tradesInPending.length > 0) {
-      const ignoredOrBlokedUsers: string[] = await new Promise((resolve, reject) => {
-        this.emit(
-          "getBlockerUsers",
-          async (ignoredOrBlokedUsersResponse: string[]) => {
-            if (!ignoredOrBlokedUsersResponse) {
-              reject(new Error("Failed to get ignored and blocked users."));
-              return;
-            }
-            resolve(ignoredOrBlokedUsersResponse);
-          }
-        );
-      })
+      const ignoredOrBlokedUsers = await this.getBlockedUsers()
 
       errors = await this.pingUpdates(
         tradesInPending,
@@ -124,7 +115,8 @@ export class CSFloatSocket extends EventEmitter {
       );
       this.emit("stateChange", this.statusExtension);
     } catch (error) {
-      console.error("failed to ping extension status to csfloat", error);
+      this.emit("stateChange", false);
+      throw error;
     }
   }
 
@@ -237,7 +229,7 @@ export class CSFloatSocket extends EventEmitter {
     if (offersIDsStillNeedsConfirmation.length === 0) return;
 
     for (const offerID of offersIDsStillNeedsConfirmation) {
-      await this.emit("cancelTrade", offerID);
+      this.emit("cancelTrade", offerID);
     }
   }
 
@@ -259,9 +251,8 @@ export class CSFloatSocket extends EventEmitter {
       .filter((tradeOffer) => {
         if (!tradeOffer.escrowEnds) return true;
 
-        let escrowTime: number;
         if (typeof tradeOffer.escrowEnds === 'string') {
-          escrowTime = parseInt(tradeOffer.escrowEnds) * 1000;
+          return parseInt(tradeOffer.escrowEnds) * 1000;
         } else {
           return new Date(tradeOffer.escrowEnds).getTime() < Date.now();
         }
@@ -301,6 +292,8 @@ export class CSFloatSocket extends EventEmitter {
       });
     }) as IHistoryPingBody[];
 
+    if (historyForCSFloat.length === 0) return;
+
     await this._csFloatClient.tradeHistoryStatus(historyForCSFloat);
   }
 
@@ -309,7 +302,6 @@ export class CSFloatSocket extends EventEmitter {
     tradeOffers: IGetTradeOffersResponse
   ): Promise<void> {
     const tradeOffersSents = tradeOffers.sent;
-
     const offersToFind = tradesInPending.reduce((acc, trade) => {
       acc[trade.steam_offer.id] = true;
       return acc;
@@ -319,8 +311,51 @@ export class CSFloatSocket extends EventEmitter {
       return !!offersToFind[offer.id];
     });
 
-    if (offersForCSFloat.length > 0)
-      await this._csFloatClient.tradeOffers(offersForCSFloat);
+    if (offersForCSFloat.length > 0) {
+      const offersForCSFloatMapped = offersForCSFloat.map((offer) => {
+        const itemsTogive = offer?.itemsToGive.map((item) => {
+          return {
+            assetid: item.assetid.toString(),
+            appid: item.appid,
+            contextid: item.contextid.toString(),
+            classid: item.classid.toString(),
+            instanceid: item.instanceid.toString(),
+            amount: item.amount.toString(),
+            missing: !tradesInPending.some(trade =>
+              trade.contract.item.asset_id === item.assetid
+            ),
+            est_usd: item.amount.toString()
+          };
+        })
+
+        const itemsToReceive = offer?.itemsToReceive.map((item) => {
+          return {
+            assetid: item.assetid.toString(),
+            appid: item.appid,
+            contextid: item.contextid.toString(),
+            classid: item.classid.toString(),
+            instanceid: item.instanceid.toString(),
+            amount: item.amount.toString(),
+            missing: !tradesInPending.some(trade =>
+              trade.contract.item.asset_id === item.assetid
+            ),
+            est_usd: item.amount.toString()
+          };
+        })
+
+        return {
+          tradeofferid: offer.tradeID || '',
+          accountid_other: Number(offer.partner.getSteamID64()),
+          trade_offer_state: offer.state,
+          items_to_give: itemsTogive || [],
+          items_to_receive: itemsToReceive || [],
+          time_created: Number(offer.created),
+          time_updated: Number(offer.updated)
+        } as unknown as TradeOffersAPIOffer
+      })
+
+      await this._csFloatClient.tradeOffers(offersForCSFloatMapped);
+    }
 
     for (const offer of tradeOffersSents) {
       const itemsToGive = offer.itemsToGive.map(
@@ -330,10 +365,14 @@ export class CSFloatSocket extends EventEmitter {
         (item) => item.assetid
       ) as string[];
 
+
       if (offer.state !== ETradeOfferStateCSFloat.Active) continue;
 
       const hasTradeWithNoOfferAnnotated = tradesInPending.find((trade) => {
-        if (trade.steam_offer.id) return false;
+        console.log('(trade.steam_offer.id', trade.steam_offer.id)
+        if (trade.steam_offer.id) {
+          return false;
+        }
 
         return (itemsToGive || []).includes(trade.contract.item.asset_id);
       });
@@ -376,7 +415,7 @@ export class CSFloatSocket extends EventEmitter {
       if (!trade.wait_for_cancel_ping) continue;
 
       const tradeOffer = allTradeOffers.find(
-        (item) => item.id === trade.steam_offer.id
+        (steamTradeOffer) => steamTradeOffer.id === trade.steam_offer.id
       );
 
       if (
@@ -483,23 +522,39 @@ export class CSFloatSocket extends EventEmitter {
   }
 
   async getTradesOffers(): Promise<IGetTradeOffersResponse> {
-    return new Promise(
-      (resolve, reject) => {
-        this.emit("getSentTradeOffers", (getTradeOffersResponse, err) => {
-          if (!err) reject(err);
-          resolve(getTradeOffersResponse);
-        });
-      }
-    );
+    return new Promise<IGetTradeOffersResponse>((resolve, reject) => {
+      this.emit("getTradeOffers", (resp, err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(resp as IGetTradeOffersResponse);
+      });
+    });
   }
+
 
   async getItemsTradables(): Promise<CEconItem[]> {
     return new Promise((resolve, reject) => {
       this.emit("getInventory", (items, error) => {
-        if (error) reject(error);
+        if (error) return reject(error);
         resolve(items);
       });
     });
+  }
+
+  async getBlockedUsers(): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      this.emit(
+        "getBlockerUsers",
+        async (ignoredOrBlokedUsersResponse: string[], error) => {
+          if (!error) {
+            reject(new Error("Failed to get ignored and blocked users.", error));
+            return;
+          }
+          resolve(ignoredOrBlokedUsersResponse);
+        }
+      );
+    })
   }
 
 }

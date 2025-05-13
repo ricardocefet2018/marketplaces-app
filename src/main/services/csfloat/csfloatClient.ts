@@ -8,7 +8,7 @@ import {
   IPingCancelTradeBody,
   PaginationRequest,
 } from "./interfaces/fetch.interface";
-import { IMEResponse, ITradeFloat, IUpdateErrors } from "./interfaces/csfloat.interface";
+import { IMEResponse, ITradeFloat, IUpdateErrors, TradeOffersAPIOffer } from "./interfaces/csfloat.interface";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer";
 
 export default class CSFloatClient {
@@ -97,19 +97,27 @@ export default class CSFloatClient {
       `${CSFloatClient.API_URL}/trades/steam-status/trade-history`
     );
 
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({ history: historyPingBody }),
     });
+
+    if (response.status !== 200) {
+      throw new Error('invalid status');
+    }
   }
 
-  async tradeOffers(tradeOffer: TradeOffer[]): Promise<void> {
+  async tradeOffers(tradeOffer: TradeOffersAPIOffer[]): Promise<void> {
     const url = new URL(`${CSFloatClient.API_URL}/trades/steam-status/offer`);
 
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({ sent_offers: tradeOffer }),
     });
+
+    if (response.status !== 200) {
+      throw new Error('invalid status');
+    }
   }
 
   async annotateOffer(AnnotateOfferBody: IAnnotateOfferBody): Promise<void> {
@@ -117,7 +125,7 @@ export default class CSFloatClient {
       `${CSFloatClient.API_URL}/trades/steam-status/new-offer`
     );
 
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({
         offer_id: AnnotateOfferBody.offer_id,
@@ -126,6 +134,10 @@ export default class CSFloatClient {
         other_steam_id64: AnnotateOfferBody.other_steam_id64,
       }),
     });
+
+    if (response.status !== 200) {
+      throw new Error('invalid status');
+    }
   }
 
   async pingCancelTrade(
@@ -135,10 +147,14 @@ export default class CSFloatClient {
       `${CSFloatClient.API_URL}/trades/${pingCancelTradeBody.trade_id}/cancel-ping`
     );
 
-    await this.internalFetch(url.toString(), {
+    const response = await this.internalFetch(url.toString(), {
       method: "POST",
       body: JSON.stringify({ steam_id: pingCancelTradeBody.steam_id }),
     });
+
+    if (response.status !== 200) {
+      throw new Error('invalid status');
+    }
   }
 
   async pingExtensionStatus(updateErrors: IUpdateErrors, steamID: string): Promise<boolean> {
@@ -155,7 +171,7 @@ export default class CSFloatClient {
       }),
     });
 
-    return response.ok;
+    return response.status === 200;
   }
 
 
@@ -165,7 +181,7 @@ export default class CSFloatClient {
       method: "POST",
       body: JSON.stringify({ trade_ids: [tradeId] }),
     });
-    return response.ok
+    return response.status === 200;
   }
 
   public async updateBalance(): Promise<void> {

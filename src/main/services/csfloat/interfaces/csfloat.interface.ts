@@ -16,13 +16,23 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   stateChange: (online: boolean) => void;
   error: (error: any) => void;
   notifyWindows: (notifyData: INotifyData) => void;
-  getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[]) => void) => void;
-  getSentTradeOffers: (
+  getBlockerUsers: (callback: (ignoredOrBlokedUsers: string[], error?: unknown) => void) => void;
+  getTradeOffers: (
     callback: (getTradeOffersResponde: IGetTradeOffersResponse, error?: unknown) => void
   ) => void;
   getInventory: (
     callback: (items: CEconItem[], error?: unknown) => void
   ) => void;
+}
+
+export interface TradeOffersAPIOffer {
+  tradeofferid: string;
+  accountid_other: number;
+  trade_offer_state: ETradeOfferStateCSFloat;
+  items_to_give?: TradeOfferItem[];
+  items_to_receive?: TradeOfferItem[];
+  time_created: number;
+  time_updated: number;
 }
 
 export interface IResponseEmitEvents {
@@ -66,6 +76,17 @@ export interface IMEResponse {
   pending_offers: number;
   actionable_trades: number;
   has_unread_notifications: boolean;
+}
+
+export interface TradeOfferItem {
+  assetid: string;
+  appid: number;
+  contextid: string;
+  classid: string;
+  instanceid: string;
+  amount: string;
+  missing: boolean;
+  est_usd: string;
 }
 
 interface User {
