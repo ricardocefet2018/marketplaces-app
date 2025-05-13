@@ -69,7 +69,7 @@ export class CSFloatSocket extends EventEmitter {
             this.emit(
               "getSentTradeOffers",
               async (getTradeOffersResponse: IGetTradeOffersResponde) => {
-                if (!getTradeOffersResponse) { reject(new Error("Failed to get trade offers")); return; }
+                if (!getTradeOffersResponse) { reject(new Error("Failed to get trade offers")); }
                 resolve(getTradeOffersResponse);
               }
             );
@@ -426,37 +426,39 @@ export class CSFloatSocket extends EventEmitter {
 
     if (!itemsTradables) return;
 
-    for (const trade of tradesInQueue) {
+    for (const tradeInQueue of tradesInQueue) {
       const hasMatchingItem = itemsTradables.some(
-        (item) => item.assetid === trade.contract.item.asset_id
+        (item) => item.assetid === tradeInQueue.contract.item.asset_id
       );
 
       if (!hasMatchingItem) continue;
-
       let alreadyHasOffer: boolean;
 
       for (const tradeOffer of tradeOffersSent) {
         for (const item of tradeOffer.itemsToGive) {
-          if (item.assetid === trade.contract.item.asset_id) {
-            await this._csFloatClient
-              .acceptTradesInFloat(trade.id)
-              .then(() => {
-                this.emit("notifyWindows", {
-                  title: `CSFLOAT - Item: ${trade.contract.item.item_name}`,
-                  body: `Accepted item!`,
-                });
-              })
-              .catch(() => {
-                this.emit("notifyWindows", {
-                  title: `CSFLOAT!`,
-                  body: `Item: ${trade.contract.item.item_name}, Cannot be accepted!`,
-                });
-              });
-          }
+          if (item.assetid === tradeInQueue.contract.item.asset_id) alreadyHasOffer = true
         }
+      }
+
+      if (!alreadyHasOffer) {
+        await this._csFloatClient
+          .acceptTradesInFloat(tradeInQueue.id)
+          .then(() => {
+            this.emit("notifyWindows", {
+              title: `CSFLOAT - Item: ${tradeInQueue.contract.item.item_name}`,
+              body: `Accepted item!`,
+            });
+          })
+          .catch(() => {
+            this.emit("notifyWindows", {
+              title: `CSFLOAT!`,
+              body: `Item: ${tradeInQueue.contract.item.item_name}, Cannot be accepted!`,
+            });
+          });
       }
     }
   }
+
 
   private async sendOffer(
     tradesInPending: ITradeFloat[],
