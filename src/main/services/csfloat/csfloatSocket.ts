@@ -487,8 +487,9 @@ export class CSFloatSocket extends EventEmitter {
   private async sendOffer(
     tradesInPending: ITradeFloat[],
   ): Promise<void> {
-    if (tradesInPending.length < 1) return;
+    if (tradesInPending.length === 0) return;
     for (const tradePending of tradesInPending) {
+      if (tradePending.buyer.steam_id === this.steamIDBase64) return;
       const JSON_tradeOffer: JsonTradeoffer = {
         newversion: true,
         version: 2,
