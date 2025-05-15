@@ -494,6 +494,7 @@ export class CSFloatSocket extends EventEmitter {
     if (tradesInPending.length === 0) return;
     for (const tradePending of tradesInPending) {
       if (tradePending.buyer.steam_id === this.steamIDBase64) return;
+      if (tradePending.steam_offer.state === ETradeOfferStateCSFloat.Accepted || tradePending.steam_offer.state === ETradeOfferStateCSFloat.Active) return;
       const JSON_tradeOffer: JsonTradeoffer = {
         newversion: true,
         version: 2,
