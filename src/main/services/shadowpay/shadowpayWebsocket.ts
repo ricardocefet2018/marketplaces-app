@@ -61,24 +61,25 @@ export class ShadowpayWebsocket extends EventEmitter {
 
     infoLogger("Shadowpay Websocket: Connecting to websocket...");
 
-    let ws;
     try {
-      ws = await this.shadowpayClient.getWSTokens();
+      let ws = await this.shadowpayClient.getWSTokens();
+
+      this.id = 0;
+      this.socket = new WebSocket(ws.url);
+      this.registerHandlers(ws.token);
     } catch (err) {
+      infoLogger(
+        "Shadowpay Websocket: Error connecting to websocket: " + err.message
+      );
+
       if (err instanceof FetchError) {
-        infoLogger(
-          "Shadowpay Websocket: Error fetching websocket tokens: " + err.message
-        );
         this.emit("stateChange", false);
         this.scheduleReconnect();
         return;
       }
+
       throw err;
     }
-
-    this.id = 0;
-    this.socket = new WebSocket(ws.url);
-    this.registerHandlers(ws.token);
   }
 
   private scheduleReconnect() {
