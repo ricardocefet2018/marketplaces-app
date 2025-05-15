@@ -457,10 +457,14 @@ export class CSFloatSocket extends EventEmitter {
 
       if (!hasMatchingItem) continue;
       let alreadyHasOffer = false
+      let state: ETradeOfferStateCSFloat;
 
       for (const tradeOffer of tradeOffersSent) {
+        state = tradeOffer.state
         for (const item of tradeOffer.itemsToGive) {
-          if (item.assetid === tradeInQueue.contract.item.asset_id) alreadyHasOffer = true
+          if (item.assetid === tradeInQueue.contract.item.asset_id && state != ETradeOfferStateCSFloat.Declined && state != ETradeOfferStateCSFloat.Canceled) {
+            alreadyHasOffer = true
+          }
         }
       }
 
