@@ -35,6 +35,9 @@ export class User extends BaseEntity {
   refreshToken: string;
 
   @Column({ nullable: true, type: "text" })
+  avatarUrl: string;
+
+  @Column({ nullable: true, type: "text" })
   proxy?: string;
 
   @CreateDateColumn()
