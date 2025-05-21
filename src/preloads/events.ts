@@ -52,6 +52,12 @@ export const events = {
     ipcRenderer.on("csfloatCanSellStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
+  getAmountOfListableItems: (
+    callback: (amount: number, username: string) => void
+  ) =>
+    ipcRenderer.on("getAmountOfListableItems", (_e, amount, username) =>
+      callback(amount, username)
+    ),
 
   apiReady: (callback: () => void) => ipcRenderer.on("apiReady", callback),
 };

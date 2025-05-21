@@ -47,6 +47,19 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     return tradeManagerController.getAccountByUsername(username);
   });
 
+  myHandler("getAmountOfListableItems", async (e, username) => {
+    try {
+      return tradeManagerController.getAmountOfListableItems(username);
+    } catch (err) {
+      handleError(err);
+      new Notification({
+        title: "Error in 'getAmountOfListableItems'",
+        body: "Error getting amount of listable items.",
+      }).show();
+      return 0;
+    }
+  })
+
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
     try {
       const success = await tradeManagerController.updateWaxpeerApiKey(

@@ -41,6 +41,7 @@ import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
 import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
 import { IGetTradeOffersResponse } from "../csfloat/interfaces/fetch.interface";
+import { ListItems } from "../../entities/listItems.entity";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -53,6 +54,7 @@ interface TradeManagerEvents {
   csfloatCanSellStateChanged: (state: boolean, username: string) => void;
   loggedOn: (tm: TradeManager) => void;
   notifyWindowsEvent: (title: string, body: string) => void;
+  setItensTredables: (itemsTredables: number) => void;
 }
 
 export declare interface TradeManager {
@@ -703,6 +705,34 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
     return;
   }
+
+  public async amountOfListableItems(): Promise<number> {
+    const listItems = await ListItems.findOne({
+      where: { user: { id: this._user.id } },
+    });
+
+    if (!listItems) {
+      const itemsTredables = await this.getInventoryContents(730, 2);
+      await ListItems.create({
+        user: this._user,
+        itemsTredables: itemsTredables.length,
+        lastUpdate: new Date(),
+      }).save();
+      return itemsTredables.length;
+    }
+
+
+    if (listItems.lastUpdate.getTime() + minutesToMS(10) < Date.now()) {
+      const itemsTredables = await this.getInventoryContents(730, 2);
+      listItems.itemsTredables = itemsTredables.length;
+      listItems.lastUpdate = new Date();
+      await listItems.save();
+    }
+
+
+    return listItems.itemsTredables;
+  }
+
 
   /**
    * @throw DB or Fetch error.
