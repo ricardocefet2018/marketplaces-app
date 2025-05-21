@@ -68,7 +68,11 @@
         class="overflow-auto border-noround m-0 p-2 border-none col"
         style="height: calc(100vh - 75.19px - 67.56px); max-width: 100%"
       >
-        <ListItemsCard class="mb-2"></ListItemsCard>
+        <ListItemsCard :steamacc class="mb-2"></ListItemsCard>
+
+        <Divider align="center">
+          <b>Extensions</b>
+        </Divider>
 
         <MarketplaceCard
           class="mb-2"
@@ -120,6 +124,7 @@ import ListItemsCard from "./components/ListItemsCard.vue";
 import { SteamAcc } from "../../shared/types";
 import { useRoute, useRouter } from "vue-router";
 import { useMyToast } from "../services/toast";
+import Divider from "primevue/divider";
 
 const router = useRouter();
 const route = useRoute();

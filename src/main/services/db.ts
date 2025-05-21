@@ -10,6 +10,7 @@ import {
   UserSettings,
   Waxpeer,
 } from "../entities/index.intities";
+import { ListItems } from "../entities/listItems.entity";
 
 const entities = [
   CSFloat,
@@ -19,6 +20,7 @@ const entities = [
   User,
   UserSettings,
   Waxpeer,
+  ListItems
 ];
 
 export const AppDataSource = new DataSource({

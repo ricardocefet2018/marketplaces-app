@@ -69,6 +69,11 @@ export class TradeManagerController {
     return;
   }
 
+  public async getAmountOfListableItems(username: string): Promise<number> {
+    const tradeManager = this.getTradeManager(username);
+    return tradeManager.amountOfListableItems();
+  }
+
   public async login(loginOptions: LoginData) {
     const tm = await TradeManager.login(loginOptions);
     tm.on("waxpeerStateChanged", (state, username) => {

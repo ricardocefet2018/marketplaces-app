@@ -24,7 +24,7 @@ async function main() {
     hideWindow(mainWindow);
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      mainWindow.webContents.openDevTools();
+      // mainWindow.webContents.openDevTools();
       await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       await mainWindow.loadFile(

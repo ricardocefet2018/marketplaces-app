@@ -1,14 +1,36 @@
 <template>
   <Card :dt="cardDT">
     <template #title>
-      <div class="cardTitle">
-        <div class="itemsTradablesClass">
-          <p class="itemsTradablesClassText">Tradables:</p>
-          <Tag severity="success" value="140" />
+      <div class="card-title">
+        <div class="informations">
+          <div class="inventory-amount">
+            <Button
+              type="button"
+              severity="secondary"
+              v-tooltip.bottom="'Value of your inventory'"
+            >
+              <i class="material-icons">payments</i>
+              <span class="value">${{ inventoryValue }}</span>
+            </Button>
+          </div>
+
+          <div class="tradable-items">
+            <Button
+              type="button"
+              severity="secondary"
+              v-tooltip.bottom="'Amount of tradable items'"
+            >
+              <i class="material-icons">sync</i>
+              <span class="value">
+                {{ tradableItems }}
+                <span class="label">items</span>
+              </span>
+            </Button>
+          </div>
         </div>
 
-        <div class="groupButton">
-          <Button icon="pi pi-bars" @click="openModal()"></Button>
+        <div class="actions">
+          <Button icon="pi pi-bars" @click="handleOpenModal" />
         </div>
       </div>
     </template>
@@ -16,20 +38,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import Card from "primevue/card";
-import Tag from "primevue/tag";
 import Button from "primevue/button";
-import router from "../../../renderer/router";
+import { SteamAcc } from "src/shared/types";
+
+const props = defineProps<{ steamacc: SteamAcc }>();
 
 const cardDT = ref({
-  body: {
-    gap: 0,
-  },
+  body: { gap: 0 },
 });
 
-function openModal() {
-  window.open("/list-item").before(() => {});
+const tradableItems = ref(0);
+const inventoryValue = ref(0);
+
+onMounted(() => {
+  initializeApiCheck();
+});
+
+function initializeApiCheck() {
+  const checkInterval = setInterval(async () => {
+    if (window.api) {
+      clearInterval(checkInterval);
+      await updateTradableItems();
+      startPolling();
+    }
+  }, 1000);
+}
+
+async function updateTradableItems(): Promise<void> {
+  try {
+    const count = await window.api.getAmountOfListableItems(
+      props.steamacc.username
+    );
+    tradableItems.value = Number(count);
+  } catch (error) {
+    window.alert(error);
+  }
+}
+
+function startPolling() {
+  setInterval(async () => {
+    await updateTradableItems();
+  }, 100000);
+}
+
+function handleOpenModal() {
+  window.open("/list-item");
 }
 </script>
 
@@ -43,27 +98,38 @@ function openModal() {
   padding-bottom: 2px !important;
 }
 
-.cardTitle {
+.card-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: 32px;
 }
 
-.itemsTradablesClass {
+.informations {
   display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventory-amount,
+.tradable-items {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  margin: 8px 0;
+}
+
+.actions {
+  display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.itemsTradablesClassText {
+.value {
   font-size: 15px;
 }
-.groupButton {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
+
+.label {
+  font-size: 10px;
 }
 </style>
