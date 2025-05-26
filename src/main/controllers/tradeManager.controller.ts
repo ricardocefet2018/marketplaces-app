@@ -69,9 +69,13 @@ export class TradeManagerController {
     return;
   }
 
-  public async getAmountOfListableItems(username: string): Promise<number> {
+  public async getInventoryInfo(username: string): Promise<{
+    tradableItems: number,
+    inventoryBalanceFloat: number,
+    inventoryBalanceBuff: number
+  }> {
     const tradeManager = this.getTradeManager(username);
-    return tradeManager.amountOfListableItems();
+    return tradeManager.inventoryInfo();
   }
 
   public async login(loginOptions: LoginData) {

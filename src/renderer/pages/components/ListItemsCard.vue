@@ -60,18 +60,19 @@ function initializeApiCheck() {
   const checkInterval = setInterval(async () => {
     if (window.api) {
       clearInterval(checkInterval);
-      await updateTradableItems();
+      await updateInfoItems();
       startPolling();
     }
   }, 1000);
 }
 
-async function updateTradableItems(): Promise<void> {
+async function updateInfoItems(): Promise<void> {
   try {
-    const count = await window.api.getAmountOfListableItems(
+    const inventoryInfo = await window.api.getInventoryInfo(
       props.steamacc.username
     );
-    tradableItems.value = Number(count);
+    tradableItems.value = Number(inventoryInfo.tradableItems);
+    inventoryValue.value = Number(inventoryInfo.inventoryBalanceBuff);
   } catch (error) {
     window.alert(error);
   }
@@ -79,7 +80,7 @@ async function updateTradableItems(): Promise<void> {
 
 function startPolling() {
   setInterval(async () => {
-    await updateTradableItems();
+    await updateInfoItems();
   }, 100000);
 }
 

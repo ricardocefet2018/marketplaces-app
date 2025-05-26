@@ -42,6 +42,8 @@ import { CSFloatSocket } from "../csfloat/csfloatSocket";
 import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
 import { IGetTradeOffersResponse } from "../csfloat/interfaces/fetch.interface";
 import { ListItems } from "../../entities/listItems.entity";
+import { WalletBalance } from "../../entities/walletBalance.entity";
+import InventoryPriceClient from "../inventory-price/inventoryPriceClient";
 
 interface TradeManagerEvents {
   waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -88,6 +90,7 @@ export class TradeManager extends EventEmitter {
   private _mcsgoSocket?: MarketcsgoSocket;
   private _csfloatClient?: CSFloatClient;
   private _csfloatSocket?: CSFloatSocket;
+  private _inventoryPriceClient?: InventoryPriceClient;
   private _appController: AppController;
 
   public get steamAcc(): SteamAcc {
@@ -115,6 +118,7 @@ export class TradeManager extends EventEmitter {
       language: "en",
       savePollData: true,
     });
+    this._inventoryPriceClient = new InventoryPriceClient(this._user, options.proxy);
 
     this.logsPath = path.join(
       options.storagePathBase,
@@ -667,13 +671,14 @@ export class TradeManager extends EventEmitter {
    */
   private getInventoryContents(
     appid: number,
-    contextid: number
+    contextid: number,
+    tradableOnly = true
   ): Promise<CEconItem[]> {
     return new Promise<CEconItem[]>((res, rej) => {
       this._steamTradeOfferManager.getInventoryContents(
         appid,
         contextid,
-        true,
+        tradableOnly,
         (err, inv) => {
           if (err) rej(err);
           res(inv);
@@ -706,31 +711,63 @@ export class TradeManager extends EventEmitter {
     return;
   }
 
-  public async amountOfListableItems(): Promise<number> {
+  public async inventoryInfo(): Promise<{ tradableItems: number; inventoryBalanceFloat: number; inventoryBalanceBuff: number }> {
     const listItems = await ListItems.findOne({
       where: { user: { id: this._user.id } },
     });
 
     if (!listItems) {
-      const itemsTredables = await this.getInventoryContents(730, 2);
+      const items = await this.getInventoryContents(730, 2, false);
+      const itemsTredables = items.filter(item => item.tradable)
+      const { inventoryBalanceFloat, inventoryBalanceBuff } = await this.inventoryPrice(items)
+
       await ListItems.create({
         user: this._user,
         itemsTredables: itemsTredables.length,
         lastUpdate: new Date(),
       }).save();
-      return itemsTredables.length;
+      return {
+        tradableItems: itemsTredables.length,
+        inventoryBalanceFloat,
+        inventoryBalanceBuff
+      }
     }
 
+    let inventoryBalanceFloat
+    let inventoryBalanceBuff
 
     if (listItems.lastUpdate.getTime() + minutesToMS(10) < Date.now()) {
-      const itemsTredables = await this.getInventoryContents(730, 2);
+      const items = await this.getInventoryContents(730, 2, false);
+      const itemsTredables = items.filter(item => item.tradable)
+
+      await this.inventoryPrice(items)
+
       listItems.itemsTredables = itemsTredables.length;
       listItems.lastUpdate = new Date();
       await listItems.save();
     }
+    const walletBalance = await WalletBalance.findOne({
+      where: { user: { id: this._user.id } },
+    })
 
+    inventoryBalanceFloat = Number(walletBalance.inventoryBalanceFloat.toFixed(2))
+    inventoryBalanceBuff = Number(walletBalance.inventoryBalanceBuff.toFixed(2))
 
-    return listItems.itemsTredables;
+    return {
+      tradableItems: listItems.itemsTredables,
+      inventoryBalanceFloat,
+      inventoryBalanceBuff
+    }
+  }
+
+  public async inventoryPrice(items: CEconItem[]): Promise<{ inventoryBalanceFloat: number; inventoryBalanceBuff: number }> {
+    await this._inventoryPriceClient.updateDBPrices(this._user);
+    const walletBalance = await this._inventoryPriceClient.updateUserPrices(this._user, items);
+
+    return {
+      inventoryBalanceFloat: walletBalance.inventoryBalanceFloat,
+      inventoryBalanceBuff: walletBalance.inventoryBalanceBuff
+    }
   }
 
 

@@ -12,7 +12,7 @@ export class ListItems extends BaseEntity {
     @Column({ type: 'datetime' })
     lastUpdate: Date;
 
-    @OneToOne(() => User, (user) => user.csfloat, {
+    @OneToOne(() => User, (user) => user.listItems, {
         nullable: false,
         onDelete: "CASCADE",
         onUpdate: "CASCADE",

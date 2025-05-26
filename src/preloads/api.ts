@@ -25,8 +25,12 @@ export const api = {
   hasAccounts: (): Promise<boolean> => ipcRenderer.invoke("hasAccounts"),
 
 
-  getAmountOfListableItems: (username: string): Promise<number> =>
-    ipcRenderer.invoke("getAmountOfListableItems", username),
+  getInventoryInfo: (username: string): Promise<{
+    tradableItems: number,
+    inventoryBalanceFloat: number,
+    inventoryBalanceBuff: number
+  }> =>
+    ipcRenderer.invoke("getInventoryInfo", username),
 
   // Update API Keys
   updateWaxpeerApiKey: (

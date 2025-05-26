@@ -47,16 +47,20 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     return tradeManagerController.getAccountByUsername(username);
   });
 
-  myHandler("getAmountOfListableItems", async (e, username) => {
+  myHandler("getInventoryInfo", async (e, username) => {
     try {
-      return tradeManagerController.getAmountOfListableItems(username);
+      return tradeManagerController.getInventoryInfo(username);
     } catch (err) {
       handleError(err);
       new Notification({
-        title: "Error in 'getAmountOfListableItems'",
+        title: "Error in 'getInventoryInfo'",
         body: "Error getting amount of listable items.",
       }).show();
-      return 0;
+      return {
+        tradableItems: 0,
+        inventoryBalanceFloat: 0,
+        inventoryBalanceBuff: 0
+      };
     }
   })
 
