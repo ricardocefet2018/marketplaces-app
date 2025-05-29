@@ -919,13 +919,12 @@ export class TradeManager extends EventEmitter {
             const app_contextFromAssets = json_tradeoffer.me.assets.map(
                 (a) => a.appid.toString() + "_" + a.contextid
             );
-            const app_context = app_contextFromAssets
+            return app_contextFromAssets
                 .filter((value, index, self) => self.indexOf(value) == index)
                 .map((v) => ({
                     appid: Number(v.split("_")[0]),
                     contextid: Number(v.split("_")[1]),
                 }));
-            return app_context;
         }
     }
 

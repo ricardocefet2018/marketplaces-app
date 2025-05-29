@@ -13,8 +13,8 @@ export default class CSFloatClient {
     private static API_URL = "https://csfloat.com/api/v1";
     //when update version extension, change here!
     private static EXTENSION_VERSION = "5.5.0";
-    private api_key: string;
-    private proxy: string;
+    private readonly api_key: string;
+    private readonly proxy: string;
     private user_balance: string
 
     private constructor(api_key: string, proxy?: string) {
@@ -60,14 +60,14 @@ export default class CSFloatClient {
         return result.trades as ITradeFloat[];
     }
 
-    async pingBlockedUsers(ignoredOrBlokedUsers: string[]): Promise<void> {
+    async pingBlockedUsers(ignoredOrBlockedUsers: string[]): Promise<void> {
         const url = new URL(
             `${CSFloatClient.API_URL}/trades/steam-status/blocked-users`
         );
 
         await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({blocked_steam_ids: ignoredOrBlokedUsers}),
+            body: JSON.stringify({blocked_steam_ids: ignoredOrBlockedUsers}),
         });
     }
 
