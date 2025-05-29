@@ -41,7 +41,7 @@ export default class CSFloatClient {
         const url = new URL(`${CSFloatClient.API_URL}/me/trades`);
         url.searchParams.append('state', status);
         url.searchParams.append('limit', limit.toString());
-        url.searchParams.append('state', page.toString());
+        url.searchParams.append('page', page.toString());
 
         const response = await this.internalFetch(url.toString());
 
