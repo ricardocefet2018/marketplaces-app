@@ -1,16 +1,16 @@
-import { BaseEntity, Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { User } from "./user.entity";
+import {BaseEntity, Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn} from "typeorm";
+import {User} from "./user.entity";
 
 @Entity()
 export class ListItems extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'int' })
-    itemsTredables: number;
+    @Column({type: 'int'})
+    itemsExchangeable: number;
 
-    @Column({ type: 'datetime' })
-    lastUpdate: Date;
+    @Column({type: 'datetime'})
+    lastUpdatedAt: Date;
 
     @OneToOne(() => User, (user) => user.listItems, {
         nullable: false,

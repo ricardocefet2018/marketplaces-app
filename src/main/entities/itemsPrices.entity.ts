@@ -1,19 +1,22 @@
-import { Entity, PrimaryGeneratedColumn, BaseEntity, Column, BeforeInsert, BeforeUpdate } from "typeorm";
+import {BaseEntity, Column, Entity, PrimaryGeneratedColumn} from "typeorm";
 
 @Entity()
 export class ItemsPrices extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({
-        type: "text",
-        default: "",
-    })
-    market_hash_name: string;
+    @Column({type: "text", nullable: false})
+    marketHashName: string;
 
-    @Column({ type: "float", default: 0 })
-    csfloatPrice: number;
+    @Column({type: "float", nullable: true})
+    priceCSFloat: number | null;
 
-    @Column({ type: "float", default: 0 })
-    buff163Price: number;
+    @Column({type: "float", nullable: true})
+    priceBuff163: number | null;
+
+    @Column({type: "datetime", nullable: false})
+    lastUpdatedAtCSFloat: Date
+
+    @Column({type: "datetime", nullable: false})
+    lastUpdatedAtBuff163: Date
 }

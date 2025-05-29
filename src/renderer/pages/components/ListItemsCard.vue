@@ -1,13 +1,13 @@
 <template>
-  <Card :dt="cardDT">
+  <Card>
     <template #title>
       <div class="card-title">
         <div class="informations">
           <div class="inventory-amount">
             <Button
-              type="button"
-              severity="secondary"
-              v-tooltip.bottom="'Value of your inventory'"
+                v-tooltip.bottom="'Value of your inventory'"
+                severity="secondary"
+                type="button"
             >
               <i class="material-icons">payments</i>
               <span class="value">${{ inventoryValue }}</span>
@@ -16,9 +16,9 @@
 
           <div class="tradable-items">
             <Button
-              type="button"
-              severity="secondary"
-              v-tooltip.bottom="'Amount of tradable items'"
+                v-tooltip.bottom="'Amount of tradable items'"
+                severity="secondary"
+                type="button"
             >
               <i class="material-icons">sync</i>
               <span class="value">
@@ -30,7 +30,7 @@
         </div>
 
         <div class="actions">
-          <Button icon="pi pi-bars" @click="handleOpenModal" />
+          <Button icon="pi pi-bars" @click="handleOpenModal"/>
         </div>
       </div>
     </template>
@@ -38,17 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import {onMounted, ref} from "vue";
 import Card from "primevue/card";
 import Button from "primevue/button";
-import { SteamAcc } from "src/shared/types";
+import {SteamAcc} from "src/shared/types";
 
 const props = defineProps<{ steamacc: SteamAcc }>();
-
-const cardDT = ref({
-  body: { gap: 0 },
-});
-
 const tradableItems = ref(0);
 const inventoryValue = ref(0);
 
@@ -69,10 +64,10 @@ function initializeApiCheck() {
 async function updateInfoItems(): Promise<void> {
   try {
     const inventoryInfo = await window.api.getInventoryInfo(
-      props.steamacc.username
+        props.steamacc.username
     );
     tradableItems.value = Number(inventoryInfo.tradableItems);
-    inventoryValue.value = Number(inventoryInfo.inventoryBalanceBuff);
+    inventoryValue.value = Number(inventoryInfo.buffInventoryValue);
   } catch (error) {
     window.alert(error);
   }
