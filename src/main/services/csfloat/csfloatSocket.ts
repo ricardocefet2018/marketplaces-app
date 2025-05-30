@@ -31,11 +31,23 @@ export class CSFloatSocket extends EventEmitter {
     private _csFloatClient: CSFloatClient;
     private readonly steamIDBase64: string;
     private statusExtension = false;
+    private lastRequestTime = 0;
+    private readonly minInterval: number = 1200;
 
     constructor(_CSFloatClient: CSFloatClient, steamIDBase64: string) {
         super();
         this._csFloatClient = _CSFloatClient;
         this.steamIDBase64 = steamIDBase64;
+    }
+
+    async getInventory(): Promise<any> {
+        await this.rateLimit();
+        return new Promise((resolve, reject) => {
+            this.emit("getInventory", (items, error) => {
+                if (error) reject(error);
+                resolve(items);
+            });
+        });
     }
 
     public disconnect() {
@@ -60,16 +72,8 @@ export class CSFloatSocket extends EventEmitter {
         });
     }
 
-    async getItemsTradables(): Promise<CEconItem[]> {
-        return new Promise((resolve, reject) => {
-            this.emit("getInventory", (items, error) => {
-                if (error) reject(error);
-                resolve(items);
-            });
-        });
-    }
-
     async getBlockedUsers(): Promise<string[]> {
+        await this.rateLimit();
         return new Promise((resolve, reject) => {
             this.emit(
                 "getBlockerUsers",
@@ -81,6 +85,15 @@ export class CSFloatSocket extends EventEmitter {
                 }
             );
         })
+    }
+
+    private async rateLimit() {
+        const now = Date.now();
+        const wait = this.lastRequestTime + this.minInterval - now;
+        if (wait > 0) {
+            await new Promise(res => setTimeout(res, wait));
+        }
+        this.lastRequestTime = Date.now();
     }
 
     private async registerLoops(): Promise<void> {
@@ -149,7 +162,8 @@ export class CSFloatSocket extends EventEmitter {
         for (const trade of tradesInPending) {
             if (
                 trade.steam_offer.state ===
-                ETradeOfferStateCSFloat.CreatedNeedsConfirmation
+                ETradeOfferStateCSFloat.CreatedNeedsConfirmation &&
+                trade.contract.is_seller
             ) {
                 this.emit("notifyWindows", {
                     title: `CSFLOAT - ${trade.contract.item.item_name}`,
@@ -436,13 +450,13 @@ export class CSFloatSocket extends EventEmitter {
         if (tradesInQueue.length < 1) return;
 
         const tradeOffersSent = tradeOffers.sent;
-        const itemsTradables = await this.getItemsTradables()
+        const itemsTradables = await this.getInventory()
 
         if (itemsTradables.length === 0) return;
 
         for (const tradeInQueue of tradesInQueue) {
             const hasMatchingItem = itemsTradables.some(
-                (item) => item.assetid === tradeInQueue.contract.item.asset_id
+                (item: CEconItem) => item.assetid === tradeInQueue.contract.item.asset_id
             );
 
             if (!hasMatchingItem) continue;
