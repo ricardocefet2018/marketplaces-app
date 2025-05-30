@@ -154,6 +154,11 @@ export default class CSFloatClient {
             }),
         });
 
+        if (response.status !== 200) {
+            const txt = await response.text();
+            throw new Error(`invalid status - ${txt}`);
+        }
+
         return response.status === 200;
     }
 
@@ -163,6 +168,12 @@ export default class CSFloatClient {
             method: "POST",
             body: JSON.stringify({trade_ids: [tradeId]}),
         });
+
+        if (response.status !== 200) {
+            const txt = await response.text();
+            throw new Error(`invalid status - ${txt}`);
+        }
+
         return response.status === 200;
     }
 
