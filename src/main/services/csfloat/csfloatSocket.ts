@@ -1,12 +1,12 @@
-import { JsonTradeoffer } from "../../models/types";
-import { EventEmitter } from "node:events";
+import {JsonTradeoffer} from "../../models/types";
+import {EventEmitter} from "node:events";
 import CSFloatClient from "./csfloatClient";
-import { ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
-import { EStatusTradeCSFLOAT, ETradeOfferStateCSFloat, } from "./enums/cs-float.enum";
-import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../../shared/helpers";
-import { IGetTradeOffersResponse, IHistoryPingBody, } from "./interfaces/fetch.interface";
-import { AppId } from "./enums/steam.enum";
+import {ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, OfferStatus} from "./interfaces/csfloat.interface";
+import {EStatusTradeCSFLOAT, ETradeOfferStateCSFloat,} from "./enums/cs-float.enum";
+import {sleepAsync} from "@doctormckay/stdlib/promises";
+import {minutesToMS} from "../../../shared/helpers";
+import {IGetTradeOffersResponse, IHistoryPingBody,} from "./interfaces/fetch.interface";
+import {AppId} from "./enums/steam.enum";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export declare interface CSFloatSocket {
@@ -513,6 +513,8 @@ export class CSFloatSocket extends EventEmitter {
                 marketplace: "CSFloat",
                 message: "",
             });
+
+            await sleepAsync(10000);
         }
     }
 
