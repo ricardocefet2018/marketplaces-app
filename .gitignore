@@ -23,8 +23,9 @@ lib-cov
 coverage
 *.lcov
 
-#WebStorm
-./idea
+#Config IDE
+/.idea
+/.vscode
 
 # nyc test coverage
 .nyc_output
