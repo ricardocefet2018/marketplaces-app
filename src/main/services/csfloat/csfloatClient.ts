@@ -7,7 +7,7 @@ import {
     IPingCancelTradeBody,
     PaginationRequest,
 } from "./interfaces/fetch.interface";
-import { IMEResponse, ITradeFloat, IUpdateErrors, TradeOffersAPIOffer } from "./interfaces/csfloat.interface";
+import { IMEResponse, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
 
 export default class CSFloatClient {
     private static API_URL = "https://csfloat.com/api/v1";
@@ -92,12 +92,12 @@ export default class CSFloatClient {
         }
     }
 
-    async tradeOffers(tradeOffer: TradeOffersAPIOffer[]): Promise<void> {
+    async tradeOffers(tradeOffer: OfferStatus[]): Promise<void> {
         const url = new URL(`${CSFloatClient.API_URL}/trades/steam-status/offer`);
 
         const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({ sent_offers: tradeOffer }),
+            body: JSON.stringify({ sent_offers: tradeOffer, type: 1 }),
         });
 
         if (response.status !== 200) {

@@ -1,12 +1,12 @@
-import {JsonTradeoffer} from "../../models/types";
-import {EventEmitter} from "node:events";
+import { JsonTradeoffer } from "../../models/types";
+import { EventEmitter } from "node:events";
 import CSFloatClient from "./csfloatClient";
-import {ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, TradeOffersAPIOffer,} from "./interfaces/csfloat.interface";
-import {EStatusTradeCSFLOAT, ETradeOfferStateCSFloat,} from "./enums/cs-float.enum";
-import {sleepAsync} from "@doctormckay/stdlib/promises";
-import {minutesToMS} from "../../../shared/helpers";
-import {IGetTradeOffersResponse, IHistoryPingBody,} from "./interfaces/fetch.interface";
-import {AppId} from "./enums/steam.enum";
+import { ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
+import { EStatusTradeCSFLOAT, ETradeOfferStateCSFloat, } from "./enums/cs-float.enum";
+import { sleepAsync } from "@doctormckay/stdlib/promises";
+import { minutesToMS } from "../../../shared/helpers";
+import { IGetTradeOffersResponse, IHistoryPingBody, } from "./interfaces/fetch.interface";
+import { AppId } from "./enums/steam.enum";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export declare interface CSFloatSocket {
@@ -187,7 +187,7 @@ export class CSFloatSocket extends EventEmitter {
         }
 
         try {
-            await this.pingSentTradeOffers(tradesInPending, tradeOffers);
+            await this.pingSentTradeOffers();
         } catch (error) {
             console.error("failed to ping sent trade offer state", error);
             errors.trade_offer_error = (error as any).toString();
@@ -283,12 +283,12 @@ export class CSFloatSocket extends EventEmitter {
                     received_assets: (tradeOffer.itemsToReceive || [])
                         .filter((item_to_receive) => item_to_receive.appid === AppId.CSGO)
                         .map((item_to_receive) => {
-                            return {asset_id: item_to_receive.assetid,};
+                            return { asset_id: item_to_receive.assetid, };
                         }),
                     given_assets: (tradeOffer.itemsToGive || [])
                         .filter((item_to_give) => item_to_give.appid === AppId.CSGO)
                         .map((item_to_give) => {
-                            return {asset_id: item_to_give.assetid};
+                            return { asset_id: item_to_give.assetid };
                         }),
                 };
             });
@@ -318,10 +318,12 @@ export class CSFloatSocket extends EventEmitter {
     }
 
     private async pingSentTradeOffers(
-        tradesInPending: ITradeFloat[],
-        tradeOffers: IGetTradeOffersResponse
     ): Promise<void> {
-        const tradeOffersSents = tradeOffers.sent;
+        const tradeOffersSents = (await this.getTradesOffers()).sent
+        const tradesInPending = await this._csFloatClient.getTrades(
+            EStatusTradeCSFLOAT.PENDING
+        );
+
         const offersToFind = tradesInPending.reduce((acc, trade) => {
             acc[trade.steam_offer.id] = true;
             return acc;
@@ -333,45 +335,16 @@ export class CSFloatSocket extends EventEmitter {
 
         if (offersForCSFloat.length > 0) {
             const offersForCSFloatMapped = offersForCSFloat.map((offer) => {
-                const itemsTogive = offer?.itemsToGive.map((item) => {
-                    return {
-                        assetid: item.assetid.toString(),
-                        appid: item.appid,
-                        contextid: item.contextid.toString(),
-                        classid: item.classid.toString(),
-                        instanceid: item.instanceid.toString(),
-                        amount: item.amount.toString(),
-                        missing: !tradesInPending.some(trade =>
-                            trade.contract.item.asset_id === item.assetid
-                        ),
-                        est_usd: item.amount.toString()
-                    };
-                })
-
-                const itemsToReceive = offer?.itemsToReceive.map((item) => {
-                    return {
-                        assetid: item.assetid.toString(),
-                        appid: item.appid,
-                        contextid: item.contextid.toString(),
-                        classid: item.classid.toString(),
-                        instanceid: item.instanceid.toString(),
-                        amount: item.amount.toString(),
-                        missing: !tradesInPending.some(trade =>
-                            trade.contract.item.asset_id === item.assetid
-                        ),
-                        est_usd: item.amount.toString()
-                    };
-                })
 
                 return {
-                    tradeofferid: offer.tradeID || '',
-                    accountid_other: Number(offer.partner.getSteamID64()),
-                    trade_offer_state: offer.state,
-                    items_to_give: itemsTogive || [],
-                    items_to_receive: itemsToReceive || [],
-                    time_created: Number(offer.created),
-                    time_updated: Number(offer.updated)
-                } as unknown as TradeOffersAPIOffer
+                    offer_id: offer.id,
+                    state: offer.state,
+                    given_asset_ids: offer?.itemsToGive.map(item => item.assetid) || [],
+                    received_asset_ids: offer?.itemsToReceive?.map(item => item.assetid) || [],
+                    time_created: offer.created ? Number(offer.created) : Number(new Date()),
+                    time_updated: offer.updated ? Number(offer.updated) : Number(new Date()),
+                    other_steam_id64: offer.partner.getSteamID64(),
+                } as OfferStatus
             })
 
             await this._csFloatClient.tradeOffers(offersForCSFloatMapped);
@@ -389,7 +362,6 @@ export class CSFloatSocket extends EventEmitter {
             if (offer.state !== ETradeOfferStateCSFloat.Active) continue;
 
             const hasTradeWithNoOfferAnnotated = tradesInPending.find((trade) => {
-                console.log('(trade.steam_offer.id', trade.steam_offer.id)
                 if (trade.steam_offer.id) {
                     return false;
                 }

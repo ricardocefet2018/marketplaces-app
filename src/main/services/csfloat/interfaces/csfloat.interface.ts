@@ -1,13 +1,13 @@
-import {TradeWebsocketEvents} from "../../../models/types";
+import { TradeWebsocketEvents } from "../../../models/types";
 import {
     EContractStateCSFloat,
     EContractTypeCSFloat,
     EStatusTradeCSFLOAT,
     ETradeOfferStateCSFloat,
 } from "../enums/cs-float.enum";
-import {IGetTradeOffersResponse} from "./fetch.interface";
+import { IGetTradeOffersResponse } from "./fetch.interface";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
-import {ICreateTradeData} from "../../trade-manager/interface/tradeManager.interface";
+import { ICreateTradeData } from "../../trade-manager/interface/tradeManager.interface";
 
 export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
     sendTrade: (data: ICreateTradeData) => void;
@@ -25,16 +25,24 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
     ) => void;
 }
 
-export interface TradeOffersAPIOffer {
-    tradeofferid: string;
-    accountid_other: number;
-    trade_offer_state: ETradeOfferStateCSFloat;
-    items_to_give?: TradeOfferItem[];
-    items_to_receive?: TradeOfferItem[];
-    time_created: number;
-    time_updated: number;
+export interface TradeOfferStatusRequest {
+    sent_offers: OfferStatus[];
+    type?: TradeOffersType;
+}
+export enum TradeOffersType {
+    API = 1,
+    HTML = 2,
 }
 
+export interface OfferStatus {
+    offer_id: string;
+    state: ETradeOfferStateCSFloat;
+    given_asset_ids?: string[];
+    received_asset_ids?: string[];
+    time_created?: number;
+    time_updated?: number;
+    other_steam_id64?: string;
+}
 export interface IResponseEmitEvents {
     tradeOffers: IGetTradeOffersResponse;
 }
