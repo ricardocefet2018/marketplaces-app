@@ -335,14 +335,12 @@ export class CSFloatSocket extends EventEmitter {
 
         if (offersForCSFloat.length > 0) {
             const offersForCSFloatMapped = offersForCSFloat.map((offer) => {
-
                 return {
                     offer_id: offer.id,
                     state: offer.state,
                     given_asset_ids: offer?.itemsToGive.map(item => item.assetid) || [],
                     received_asset_ids: offer?.itemsToReceive?.map(item => item.assetid) || [],
                     time_created: offer.created ? Number(offer.created) : Number(new Date()),
-                    time_updated: offer.updated ? Number(offer.updated) : Number(new Date()),
                     other_steam_id64: offer.partner.getSteamID64(),
                 } as OfferStatus
             })
