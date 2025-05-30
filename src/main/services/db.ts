@@ -10,6 +10,9 @@ import {
   UserSettings,
   Waxpeer,
 } from "../entities/index.intities";
+import { ListItems } from "../entities/listItems.entity";
+import { WalletBalance } from "../entities/walletBalance.entity";
+import { ItemsPrices } from "../entities/itemsPrices.entity";
 
 const entities = [
   CSFloat,
@@ -19,6 +22,9 @@ const entities = [
   User,
   UserSettings,
   Waxpeer,
+  ListItems,
+  WalletBalance,
+  ItemsPrices
 ];
 
 export const AppDataSource = new DataSource({

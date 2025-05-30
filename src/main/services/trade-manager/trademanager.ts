@@ -25,6 +25,10 @@ import CSFloatClient from "../csfloat/csfloatClient";
 import {CSFloatSocket} from "../csfloat/csfloatSocket";
 import {INotifyData} from "../csfloat/interfaces/csfloat.interface";
 import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
+import InventoryPriceClient from "../inventory-price/inventoryPriceClient";
+import {getInventoryInfoData} from "../../interfaces/trade-manage.interfaces";
+import {ListItems} from "../../entities/listItems.entity";
+import {WalletBalance} from "../../entities/walletBalance.entity";
 
 interface TradeManagerEvents {
     waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -37,6 +41,7 @@ interface TradeManagerEvents {
     csfloatCanSellStateChanged: (state: boolean, username: string) => void;
     loggedOn: (tm: TradeManager) => void;
     notifyWindowsEvent: (title: string, body: string) => void;
+    setItensTredables: (itemsTredables: number) => void;
 }
 
 export declare interface TradeManager {
@@ -57,11 +62,11 @@ export declare interface TradeManager {
 }
 
 export class TradeManager extends EventEmitter {
-    private _steamClient: SteamUser;
+    private readonly _steamClient: SteamUser;
     private _steamTradeOfferManager: TradeOfferManager;
     private _steamCookies: string[] = [];
     private _user: User;
-    private logsPath: string;
+    private readonly logsPath: string;
     private _wpClient?: WaxpeerClient;
     private _wpWebsocket?: WaxpeerWebsocket;
     private _spClient?: ShadowpayClient;
@@ -70,6 +75,7 @@ export class TradeManager extends EventEmitter {
     private _mcsgoSocket?: MarketcsgoSocket;
     private _csfloatClient?: CSFloatClient;
     private _csfloatSocket?: CSFloatSocket;
+    private _inventoryPriceClient?: InventoryPriceClient;
     private _appController: AppController;
 
     private constructor(options: TradeManagerOptions) {
@@ -84,6 +90,7 @@ export class TradeManager extends EventEmitter {
             language: "en",
             savePollData: true,
         });
+        this._inventoryPriceClient = new InventoryPriceClient(options.proxy);
 
         this.logsPath = path.join(
             options.storagePathBase,
@@ -513,6 +520,78 @@ export class TradeManager extends EventEmitter {
         return;
     }
 
+    public async inventoryInfo(): Promise<getInventoryInfoData> {
+        try {
+            const listItems = await ListItems.findOne({
+                where: {user: {id: this._user.id}},
+            });
+
+            if (!listItems) {
+                const items = await this.getInventoryContents(730, 2, false);
+                const tradableItems = items.filter(item => item.tradable);
+                const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
+
+                await ListItems.create({
+                    user: this._user,
+                    itemsExchangeable: tradableItems.length,
+                    lastUpdatedAt: new Date(),
+                }).save();
+
+                return {
+                    tradableItems: tradableItems.length,
+                    csFloatInventoryValue: inventoryBalanceFloat,
+                    buffInventoryValue: inventoryBalanceBuff
+                };
+            }
+
+            if (listItems.lastUpdatedAt.getTime() + minutesToMS(10) < Date.now()) {
+                const items = await this.getInventoryContents(730, 2, false);
+                const tradableItems = items.filter(item => item.tradable);
+                const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
+
+                listItems.itemsExchangeable = tradableItems.length;
+                listItems.lastUpdatedAt = new Date();
+                await listItems.save();
+
+                return {
+                    tradableItems: listItems.itemsExchangeable,
+                    csFloatInventoryValue: inventoryBalanceFloat,
+                    buffInventoryValue: inventoryBalanceBuff
+                };
+            }
+
+            const walletBalance = await WalletBalance.findOne({
+                where: {user: {id: this._user.id}},
+            });
+
+            return {
+                tradableItems: listItems.itemsExchangeable,
+                csFloatInventoryValue: walletBalance.csFloatInventoryValue,
+                buffInventoryValue: walletBalance.buffInventoryValue
+            };
+        } catch (error) {
+            throw new Error(`Error in inventoryInfo: ${error.message}`);
+        }
+    }
+
+    public async inventoryPrice(items: CEconItem[]): Promise<{
+        inventoryBalanceFloat: number;
+        inventoryBalanceBuff: number
+    }> {
+        try {
+            await this._inventoryPriceClient.updateDBPrices(this._user);
+            const walletBalance = await this._inventoryPriceClient.updateUserPrices(this._user, items);
+
+            return {
+                inventoryBalanceFloat: walletBalance.csFloatInventoryValue,
+                inventoryBalanceBuff: walletBalance.buffInventoryValue
+            }
+        } catch (error) {
+            throw new Error(`Error in (inventoryPrice):${error}`)
+        }
+
+    }
+
     /**
      * @throw DB or Fetch error.
      */
@@ -764,6 +843,7 @@ export class TradeManager extends EventEmitter {
                 EOfferFilter.All,
                 (err, sent, received) => {
                     if (err) {
+                        console.error("Erro in function `getTradeOffers`:", err);
                         reject(err);
                         return;
                     }
@@ -925,6 +1005,7 @@ export class TradeManager extends EventEmitter {
                     appid: Number(v.split("_")[0]),
                     contextid: Number(v.split("_")[1]),
                 }));
+
         }
     }
 
@@ -934,13 +1015,14 @@ export class TradeManager extends EventEmitter {
      */
     private getInventoryContents(
         appid: number,
-        contextid: number
+        contextid: number,
+        tradableOnly = true
     ): Promise<CEconItem[]> {
         return new Promise<CEconItem[]>((res, rej) => {
             this._steamTradeOfferManager.getInventoryContents(
                 appid,
                 contextid,
-                true,
+                tradableOnly,
                 (err, inv) => {
                     if (err) rej(err);
                     res(inv);
@@ -1023,10 +1105,7 @@ export class TradeManager extends EventEmitter {
                 const sentTradeOffers = await this.getTradeOffers();
                 callback(sentTradeOffers);
             } catch (err) {
-                callback({
-                    sent: [],
-                    received: [],
-                }, err);
+                callback(err);
             }
         });
         this._csfloatSocket.on("getBlockerUsers", (callback) => {

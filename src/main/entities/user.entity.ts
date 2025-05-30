@@ -14,6 +14,8 @@ import { MarketCSGO } from "../entities/marketcsgo.entity";
 import { CSFloat } from "../entities/csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
+import { ListItems } from "./listItems.entity";
+import { WalletBalance } from "./walletBalance.entity";
 
 const baseRelationOptions: RelationOptions = {
   cascade: true,
@@ -68,6 +70,20 @@ export class User extends BaseEntity {
     baseRelationOptions
   )
   userSettings: UserSettings;
+
+  @OneToOne(
+    () => ListItems,
+    (listItems) => listItems.user,
+    baseRelationOptions
+  )
+  listItems: ListItems;
+
+  @OneToOne(
+    () => WalletBalance,
+    (walletBalance) => walletBalance.user,
+    baseRelationOptions
+  )
+  walletBalance: WalletBalance;
 
   public constructor(username?: string, proxy?: string) {
     super();
