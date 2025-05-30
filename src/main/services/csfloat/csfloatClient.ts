@@ -1,13 +1,13 @@
-import {HttpsProxyAgent} from "https-proxy-agent";
-import fetch, {RequestInit, Response} from "node-fetch";
-import {EStatusTradeCSFLOAT} from "./enums/cs-float.enum";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import fetch, { RequestInit, Response } from "node-fetch";
+import { EStatusTradeCSFLOAT } from "./enums/cs-float.enum";
 import {
     IAnnotateOfferBody,
     IHistoryPingBody,
     IPingCancelTradeBody,
     PaginationRequest,
 } from "./interfaces/fetch.interface";
-import {IMEResponse, ITradeFloat, IUpdateErrors, TradeOffersAPIOffer} from "./interfaces/csfloat.interface";
+import { IMEResponse, ITradeFloat, IUpdateErrors, TradeOffersAPIOffer } from "./interfaces/csfloat.interface";
 
 export default class CSFloatClient {
     private static API_URL = "https://csfloat.com/api/v1";
@@ -65,10 +65,15 @@ export default class CSFloatClient {
             `${CSFloatClient.API_URL}/trades/steam-status/blocked-users`
         );
 
-        await this.internalFetch(url.toString(), {
+        const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({blocked_steam_ids: ignoredOrBlockedUsers}),
+            body: JSON.stringify({ blocked_steam_ids: ignoredOrBlockedUsers }),
         });
+
+        if (response.status !== 200) {
+            const txt = await response.text();
+            throw new Error(`invalid status - ${txt}`);
+        }
     }
 
     async tradeHistoryStatus(historyPingBody: IHistoryPingBody[]): Promise<void> {
@@ -78,7 +83,7 @@ export default class CSFloatClient {
 
         const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({history: historyPingBody}),
+            body: JSON.stringify({ history: historyPingBody }),
         });
 
         if (response.status !== 200) {
@@ -92,7 +97,7 @@ export default class CSFloatClient {
 
         const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({sent_offers: tradeOffer}),
+            body: JSON.stringify({ sent_offers: tradeOffer }),
         });
 
         if (response.status !== 200) {
@@ -131,7 +136,7 @@ export default class CSFloatClient {
 
         const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({steam_id: pingCancelTradeBody.steam_id}),
+            body: JSON.stringify({ steam_id: pingCancelTradeBody.steam_id }),
         });
 
         if (response.status !== 200) {
@@ -166,7 +171,7 @@ export default class CSFloatClient {
         const url = new URL(`${CSFloatClient.API_URL}/trades/bulk/accept`);
         const response = await this.internalFetch(url.toString(), {
             method: "POST",
-            body: JSON.stringify({trade_ids: [tradeId]}),
+            body: JSON.stringify({ trade_ids: [tradeId] }),
         });
 
         if (response.status !== 200) {
