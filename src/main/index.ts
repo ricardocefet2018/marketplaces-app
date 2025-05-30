@@ -1,4 +1,5 @@
-import {ipcMain, Notification, WebContents} from "electron";
+import {BrowserWindow, ipcMain, Notification, WebContents} from "electron";
+import path from "path";
 import {LoginResponses} from "../shared/enums";
 import {TradeManagerController} from "./controllers/tradeManager.controller";
 import {handleError} from "../shared/helpers";
@@ -6,6 +7,8 @@ import {FetchError} from "node-fetch";
 import {ISettings} from "../shared/types";
 import {AppController} from "./controllers/app.controller";
 import AppError from "./models/AppError";
+
+let listItemWindow: BrowserWindow | null = null;
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
     const appController = await AppController.factory();
@@ -319,6 +322,42 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
                 msg: "Unexpected Error. Most likely your DB is corrupted.",
             };
         }
+    });
+
+    ipcMain.handle("open-list-item-window", async () => {
+        if (listItemWindow && !listItemWindow.isDestroyed()) {
+            if (listItemWindow.isMinimized()) {
+                listItemWindow.restore();
+            }
+            listItemWindow.focus();
+            return;
+        }
+
+        listItemWindow = new BrowserWindow({
+            title: "List Items",
+            simpleFullscreen: true,
+            autoHideMenuBar: true,
+            webPreferences: {
+                preload: path.join(__dirname, "../preload.js"),
+                nodeIntegration: false,
+                contextIsolation: true
+            },
+        });
+
+        if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+            await listItemWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/list-items`);
+        } else {
+            await listItemWindow.loadFile(
+                path.join(__dirname, `../../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+                {hash: "/list-items"}
+            );
+        }
+
+        listItemWindow.on('closed', () => {
+            listItemWindow = null;
+        });
+
+        listItemWindow.show();
     });
 
     mainWindowWebContents.send("apiReady");

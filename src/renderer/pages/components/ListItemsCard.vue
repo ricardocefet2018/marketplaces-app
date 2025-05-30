@@ -80,7 +80,11 @@ function startPolling() {
 }
 
 function handleOpenModal() {
-  window.open("/list-item");
+  if (window.api && window.api.openListItemWindow) {
+    window.api.openListItemWindow();
+  } else {
+    window.open('/#/list-items');
+  }
 }
 </script>
 

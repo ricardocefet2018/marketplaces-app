@@ -5,6 +5,7 @@ import {getInventoryInfoData} from "../main/interfaces/trade-manage.interfaces";
 
 export const api = {
     // General
+    openListItemWindow: () => ipcRenderer.invoke("open-list-item-window"),
     test: (msg: string): Promise<string> => ipcRenderer.invoke("test", msg),
 
     // Login
