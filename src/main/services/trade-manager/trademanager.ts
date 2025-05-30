@@ -25,10 +25,10 @@ import CSFloatClient from "../csfloat/csfloatClient";
 import {CSFloatSocket} from "../csfloat/csfloatSocket";
 import {INotifyData} from "../csfloat/interfaces/csfloat.interface";
 import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
-import {ListItems} from "../../entities/listItems.entity";
-import {WalletBalance} from "../../entities/walletBalance.entity";
 import InventoryPriceClient from "../inventory-price/inventoryPriceClient";
 import {getInventoryInfoData} from "../../interfaces/trade-manage.interfaces";
+import {ListItems} from "../../entities/listItems.entity";
+import {WalletBalance} from "../../entities/walletBalance.entity";
 
 interface TradeManagerEvents {
     waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -62,11 +62,11 @@ export declare interface TradeManager {
 }
 
 export class TradeManager extends EventEmitter {
-    private _steamClient: SteamUser;
+    private readonly _steamClient: SteamUser;
     private _steamTradeOfferManager: TradeOfferManager;
     private _steamCookies: string[] = [];
     private _user: User;
-    private logsPath: string;
+    private readonly logsPath: string;
     private _wpClient?: WaxpeerClient;
     private _wpWebsocket?: WaxpeerWebsocket;
     private _spClient?: ShadowpayClient;
@@ -983,7 +983,7 @@ export class TradeManager extends EventEmitter {
         );
         const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
         const assets = json_tradeoffer.me.assets;
-        const itemsToSend = assets.map((asset) =>
+        return assets.map((asset) =>
             unifiedInv.find(
                 (econItem) =>
                     econItem.assetid == asset.assetid &&
@@ -991,7 +991,7 @@ export class TradeManager extends EventEmitter {
                     econItem.contextid.toString() == asset.contextid
             )
         );
-        return itemsToSend;
+
 
         function getAppidContextidByJsonTradeOffer(
             json_tradeoffer: JsonTradeoffer
@@ -999,13 +999,13 @@ export class TradeManager extends EventEmitter {
             const app_contextFromAssets = json_tradeoffer.me.assets.map(
                 (a) => a.appid.toString() + "_" + a.contextid
             );
-            const app_context = app_contextFromAssets
+            return app_contextFromAssets
                 .filter((value, index, self) => self.indexOf(value) == index)
                 .map((v) => ({
                     appid: Number(v.split("_")[0]),
                     contextid: Number(v.split("_")[1]),
                 }));
-            return app_context;
+
         }
     }
 
