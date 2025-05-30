@@ -4,7 +4,11 @@
         </template> -->
     <template #title>
       <div class="flex">
-        <Avatar label="A" class="mr-2 flex-none" size="large" />
+        <Avatar
+          class="mr-2 flex-none"
+          size="large"
+          :image="props.steamacc.avatar"
+        />
         <div class="flex-1">
           <p style="font-size: 0.85rem" class="m-0">
             {{ props.steamacc.username }}
