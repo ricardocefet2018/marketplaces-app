@@ -1,12 +1,12 @@
-import { JsonTradeoffer } from "../../models/types";
-import { EventEmitter } from "node:events";
+import {JsonTradeoffer} from "../../models/types";
+import {EventEmitter} from "node:events";
 import CSFloatClient from "./csfloatClient";
-import { ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
-import { EStatusTradeCSFLOAT, ETradeOfferStateCSFloat, } from "./enums/cs-float.enum";
-import { sleepAsync } from "@doctormckay/stdlib/promises";
-import { minutesToMS } from "../../../shared/helpers";
-import { IGetTradeOffersResponse, IHistoryPingBody, } from "./interfaces/fetch.interface";
-import { AppId } from "./enums/steam.enum";
+import {ICSFloatSocketEvents, ITradeFloat, IUpdateErrors, OfferStatus} from "./interfaces/csfloat.interface";
+import {EStatusTradeCSFLOAT, ETradeOfferStateCSFloat,} from "./enums/cs-float.enum";
+import {sleepAsync} from "@doctormckay/stdlib/promises";
+import {minutesToMS} from "../../../shared/helpers";
+import {IGetTradeOffersResponse, IHistoryPingBody,} from "./interfaces/fetch.interface";
+import {AppId} from "./enums/steam.enum";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export declare interface CSFloatSocket {
@@ -187,7 +187,7 @@ export class CSFloatSocket extends EventEmitter {
         }
 
         try {
-            await this.pingSentTradeOffers();
+            await this.pingSentTradeOffers(tradeOffers);
         } catch (error) {
             console.error("failed to ping sent trade offer state", error);
             errors.trade_offer_error = (error as any).toString();
@@ -317,9 +317,9 @@ export class CSFloatSocket extends EventEmitter {
         await this._csFloatClient.tradeHistoryStatus(historyForCSFloat);
     }
 
-    private async pingSentTradeOffers(
+    private async pingSentTradeOffers(tradeOffers: IGetTradeOffersResponse
     ): Promise<void> {
-        const tradeOffersSents = (await this.getTradesOffers()).sent
+        const tradeOffersSents = tradeOffers.sent
         const tradesInPending = await this._csFloatClient.getTrades(
             EStatusTradeCSFLOAT.PENDING
         );
@@ -335,14 +335,12 @@ export class CSFloatSocket extends EventEmitter {
 
         if (offersForCSFloat.length > 0) {
             const offersForCSFloatMapped = offersForCSFloat.map((offer) => {
-
                 return {
                     offer_id: offer.id,
                     state: offer.state,
                     given_asset_ids: offer?.itemsToGive.map(item => item.assetid) || [],
                     received_asset_ids: offer?.itemsToReceive?.map(item => item.assetid) || [],
                     time_created: offer.created ? Number(offer.created) : Number(new Date()),
-                    time_updated: offer.updated ? Number(offer.updated) : Number(new Date()),
                     other_steam_id64: offer.partner.getSteamID64(),
                 } as OfferStatus
             })
@@ -515,6 +513,8 @@ export class CSFloatSocket extends EventEmitter {
                 marketplace: "CSFloat",
                 message: "",
             });
+
+            await sleepAsync(10000);
         }
     }
 
