@@ -187,7 +187,7 @@ export class CSFloatSocket extends EventEmitter {
         }
 
         try {
-            await this.pingSentTradeOffers();
+            await this.pingSentTradeOffers(tradeOffers);
         } catch (error) {
             console.error("failed to ping sent trade offer state", error);
             errors.trade_offer_error = (error as any).toString();
@@ -317,9 +317,9 @@ export class CSFloatSocket extends EventEmitter {
         await this._csFloatClient.tradeHistoryStatus(historyForCSFloat);
     }
 
-    private async pingSentTradeOffers(
+    private async pingSentTradeOffers(tradeOffers: IGetTradeOffersResponse
     ): Promise<void> {
-        const tradeOffersSents = (await this.getTradesOffers()).sent
+        const tradeOffersSents = tradeOffers.sent
         const tradesInPending = await this._csFloatClient.getTrades(
             EStatusTradeCSFLOAT.PENDING
         );
