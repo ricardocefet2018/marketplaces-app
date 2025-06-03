@@ -25,6 +25,7 @@ import CSFloatClient from "../csfloat/csfloatClient";
 import {CSFloatSocket} from "../csfloat/csfloatSocket";
 import {INotifyData} from "../csfloat/interfaces/csfloat.interface";
 import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
+import {InventoryManager} from "../inventory/inventoryManager";
 
 interface TradeManagerEvents {
     waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -71,6 +72,10 @@ export class TradeManager extends EventEmitter {
     private _csfloatClient?: CSFloatClient;
     private _csfloatSocket?: CSFloatSocket;
     private _appController: AppController;
+    private _inventoryManager: InventoryManager;
+    private blockedUsersCache: string[] = [];
+    private lastBlockedUsersUpdate = 0;
+    private readonly CACHE_DURATION = 900000;
 
     private constructor(options: TradeManagerOptions) {
         super();
@@ -133,6 +138,7 @@ export class TradeManager extends EventEmitter {
             tm._steamClient.once("loggedOn", async () => {
                 const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                 tm.infoLogger(`Acc ${sid64} loged on`);
+                tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
                 resolve();
             });
 
@@ -174,6 +180,7 @@ export class TradeManager extends EventEmitter {
                 tm._steamClient.once("loggedOn", () => {
                     const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                     tm.infoLogger(`Acc ${sid64} loged on`);
+                    tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
                     resolve();
                 });
 
@@ -737,6 +744,13 @@ export class TradeManager extends EventEmitter {
     }
 
     public getBlockerdOrIgnoredUsers(): string[] {
+        const now = Date.now();
+
+        if (now - this.lastBlockedUsersUpdate < this.CACHE_DURATION) {
+            return this.blockedUsersCache;
+        }
+
+        this.lastBlockedUsersUpdate = now;
         const friendList = Object.entries(this._steamClient.myFriends);
         const blockOrIgnoredUsersList: string[] = [];
 
@@ -750,6 +764,7 @@ export class TradeManager extends EventEmitter {
             }
         }
 
+        this.blockedUsersCache = blockOrIgnoredUsersList;
         return blockOrIgnoredUsersList;
     }
 
@@ -932,21 +947,12 @@ export class TradeManager extends EventEmitter {
      * Get inventory contents based on appid and contextid
      * @returns Array containing all intenvory items
      */
-    private getInventoryContents(
+    private async getInventoryContents(
         appid: number,
         contextid: number
     ): Promise<CEconItem[]> {
-        return new Promise<CEconItem[]>((res, rej) => {
-            this._steamTradeOfferManager.getInventoryContents(
-                appid,
-                contextid,
-                true,
-                (err, inv) => {
-                    if (err) rej(err);
-                    res(inv);
-                }
-            );
-        });
+        await this._inventoryManager.updateInventory(appid, contextid.toString());
+        return this._inventoryManager.getInventory(appid, contextid.toString());
     }
 
     private registerWaxpeerSocketHandlers() {

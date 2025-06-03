@@ -4,16 +4,17 @@ import {
   CreateDateColumn,
   Entity,
   OneToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   RelationOptions,
   UpdateDateColumn,
 } from "typeorm";
-
-import { Shadowpay } from "../entities/shadowpay.entity";
-import { MarketCSGO } from "../entities/marketcsgo.entity";
-import { CSFloat } from "../entities/csfloat.entity";
+import { Shadowpay } from "./shadowpay.entity";
+import { MarketCSGO } from "./marketcsgo.entity";
+import { CSFloat } from "./csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
+import { Inventory } from "./inventory.entity";
 
 const baseRelationOptions: RelationOptions = {
   cascade: true,
@@ -69,6 +70,9 @@ export class User extends BaseEntity {
   )
   userSettings: UserSettings;
 
+  @OneToMany(() => Inventory, (inventory) => inventory.user, { eager: true })
+  inventory: Inventory[];
+
   public constructor(username?: string, proxy?: string) {
     super();
     this.username = username;
@@ -103,6 +107,10 @@ export class User extends BaseEntity {
     }
     if (!user.csfloat) {
       user.csfloat = new CSFloat();
+      updated = true;
+    }
+    if (!user.inventory) {
+      user.inventory = [];
       updated = true;
     }
     if (updated) await user.save();
