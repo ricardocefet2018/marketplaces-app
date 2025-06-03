@@ -115,7 +115,7 @@ export class InventoryManager extends EventEmitter {
                 pos: index,
                 name: item.name || '',
                 market_name: item.market_hash_name || item.name || '',
-                image_url: `https://community.cloudflare.steamstatic.com/economy/image/${item.descriptions?.[0]?.icon_url || ''}`,
+                image_url: `https://community.cloudflare.steamstatic.com/economy/image/${(item as any)?.['icon_url'] || ''}`,
                 tradable: item.tradable === true,
                 item_data: item,
                 user: this.user
@@ -149,7 +149,7 @@ export class InventoryManager extends EventEmitter {
             where: {
                 appid,
                 contextid,
-                user: this.user
+                user: { id: this.user.id }
             },
             order: {
                 pos: "ASC"
@@ -159,5 +159,4 @@ export class InventoryManager extends EventEmitter {
         return items.map(item => item.item_data);
     }
 }
-
 
