@@ -606,29 +606,41 @@ export class TradeManager extends EventEmitter {
 
     public async startCSFloatClient(): Promise<void> {
         if (this._csfloatClient || this._csfloatSocket) return;
+
+        this.infoLogger("Iniciando CSFloat client...");
         this.emit("csfloatStateChanged", true, this._user.username);
         this._user.csfloat.state = true;
         await this._user.save();
 
+        try {
+            this._csfloatClient = await CSFloatClient.getInstance(
+                this._user.csfloat.apiKey,
+                this._user.proxy
+            );
 
-        this._csfloatClient = await CSFloatClient.getInstance(
-            this._user.csfloat.apiKey,
-            this._user.proxy
-        );
-        this._csfloatSocket = new CSFloatSocket(
-            this._csfloatClient,
-            this._steamClient.steamID.getSteamID64()
-        );
+            this._csfloatSocket = new CSFloatSocket(
+                this._csfloatClient,
+                this._steamClient.steamID.getSteamID64()
+            );
+            this.registerCSFloatSocketHandlers();
 
-        this.registerCSFloatSocketHandlers();
-        const success = await new Promise((resolve) => {
-            this._csfloatSocket.once("stateChange", (online) => {
-                resolve(online);
+            const success = await new Promise((resolve) => {
+                this._csfloatSocket.once("stateChange", (online) => {
+                    this.infoLogger(`CSFloat stateChange: ${online}`);
+                    resolve(online);
+                });
             });
-        });
-        if (!success) {
-            this.stopCSFloatClient();
-            throw new AppError("Try again later!");
+
+            if (!success) {
+                this.infoLogger("CSFloat falhou ao conectar, parando cliente...");
+                await this.stopCSFloatClient();
+                throw new AppError("Try again later!");
+            }
+
+        } catch (error) {
+            this.handleError(error);
+            await this.stopCSFloatClient();
+            throw error;
         }
     }
 
