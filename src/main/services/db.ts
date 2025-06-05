@@ -9,6 +9,7 @@ import {
   User,
   UserSettings,
   Waxpeer,
+  Inventory,
 } from "../entities/index.intities";
 import { ListItems } from "../entities/listItems.entity";
 import { WalletBalance } from "../entities/walletBalance.entity";
@@ -22,6 +23,7 @@ const entities = [
   User,
   UserSettings,
   Waxpeer,
+  Inventory,
   ListItems,
   WalletBalance,
   ItemsPrices

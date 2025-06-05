@@ -99,15 +99,14 @@ export class CSFloatSocket extends EventEmitter {
     private async registerLoops(): Promise<void> {
         while (this.connected) {
             try {
-                this.emit("stateChange", true);
-
                 const tradesOffers = await this.getTradesOffers();
                 const tradesInQueue = await this._csFloatClient.getTrades(
                     EStatusTradeCSFLOAT.QUEUED
                 );
 
-                await this.autoAcceptTrades(tradesInQueue, tradesOffers);
+                this.emit("stateChange", true);
 
+                await this.autoAcceptTrades(tradesInQueue, tradesOffers);
 
                 const tradesInPending = await this._csFloatClient.getTrades(
                     EStatusTradeCSFLOAT.PENDING
@@ -135,22 +134,28 @@ export class CSFloatSocket extends EventEmitter {
     ): Promise<void> {
         let errors: IUpdateErrors;
 
-        if (tradesInPending.length > 0) {
-            const ignoredOrBlokedUsers = await this.getBlockedUsers()
+        try {
+            if (tradesInPending.length > 0) {
+                const ignoredOrBlokedUsers = await this.getBlockedUsers();
+                errors = await this.pingUpdates(
+                    tradesInPending,
+                    ignoredOrBlokedUsers,
+                    tradeOffers
+                );
+            }
 
-            errors = await this.pingUpdates(
-                tradesInPending,
-                ignoredOrBlokedUsers,
-                tradeOffers
+            const newStatus = await this._csFloatClient.pingExtensionStatus(
+                errors,
+                this.steamIDBase64
             );
+
+            if (this.statusExtension !== newStatus) {
+                this.statusExtension = newStatus;
+                this.emit("stateChange", this.statusExtension);
+            }
+        } catch (error) {
+            this.emit("error", error);
         }
-
-        this.statusExtension = await this._csFloatClient.pingExtensionStatus(
-            errors,
-            this.steamIDBase64
-        );
-        this.emit("stateChange", this.statusExtension);
-
     }
 
     private async verificationsLoop(

@@ -25,6 +25,7 @@ import CSFloatClient from "../csfloat/csfloatClient";
 import {CSFloatSocket} from "../csfloat/csfloatSocket";
 import {INotifyData} from "../csfloat/interfaces/csfloat.interface";
 import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
+import {InventoryManager} from "../inventory/inventoryManager";
 import InventoryPriceClient from "../inventory-price/inventoryPriceClient";
 import {getInventoryInfoData} from "../../interfaces/trade-manage.interfaces";
 import {ListItems} from "../../entities/listItems.entity";
@@ -76,6 +77,10 @@ export class TradeManager extends EventEmitter {
     private _csfloatSocket?: CSFloatSocket;
     private _inventoryPriceClient?: InventoryPriceClient;
     private _appController: AppController;
+    private _inventoryManager: InventoryManager;
+    private blockedUsersCache: string[] = [];
+    private lastBlockedUsersUpdate = 0;
+    private readonly CACHE_DURATION = 900000;
 
     private constructor(options: TradeManagerOptions) {
         super();
@@ -139,6 +144,7 @@ export class TradeManager extends EventEmitter {
             tm._steamClient.once("loggedOn", async () => {
                 const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                 tm.infoLogger(`Acc ${sid64} loged on`);
+                tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
                 resolve();
             });
 
@@ -180,6 +186,7 @@ export class TradeManager extends EventEmitter {
                 tm._steamClient.once("loggedOn", () => {
                     const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                     tm.infoLogger(`Acc ${sid64} loged on`);
+                    tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
                     resolve();
                 });
 
@@ -675,29 +682,39 @@ export class TradeManager extends EventEmitter {
 
     public async startCSFloatClient(): Promise<void> {
         if (this._csfloatClient || this._csfloatSocket) return;
+
+        this.infoLogger("Iniciando CSFloat client...");
         this.emit("csfloatStateChanged", true, this._user.username);
         this._user.csfloat.state = true;
         await this._user.save();
 
+        try {
+            this._csfloatClient = await CSFloatClient.getInstance(
+                this._user.csfloat.apiKey,
+                this._user.proxy
+            );
 
-        this._csfloatClient = await CSFloatClient.getInstance(
-            this._user.csfloat.apiKey,
-            this._user.proxy
-        );
-        this._csfloatSocket = new CSFloatSocket(
-            this._csfloatClient,
-            this._steamClient.steamID.getSteamID64()
-        );
+            this._csfloatSocket = new CSFloatSocket(
+                this._csfloatClient,
+                this._steamClient.steamID.getSteamID64()
+            );
+            this.registerCSFloatSocketHandlers();
 
-        this.registerCSFloatSocketHandlers();
-        const success = await new Promise((resolve) => {
-            this._csfloatSocket.once("stateChange", (online) => {
-                resolve(online);
+            const success = await new Promise((resolve) => {
+                this._csfloatSocket.once("stateChange", (online) => {
+                    this.infoLogger(`CSFloat stateChange: ${online}`);
+                    resolve(online);
+                });
             });
-        });
-        if (!success) {
-            this.stopCSFloatClient();
-            throw new AppError("Try again later!");
+
+            if (!success) {
+                await this.stopCSFloatClient();
+            }
+
+        } catch (error) {
+            this.handleError(error);
+            await this.stopCSFloatClient();
+            throw error;
         }
     }
 
@@ -813,6 +830,13 @@ export class TradeManager extends EventEmitter {
     }
 
     public getBlockerdOrIgnoredUsers(): string[] {
+        const now = Date.now();
+
+        if (now - this.lastBlockedUsersUpdate < this.CACHE_DURATION) {
+            return this.blockedUsersCache;
+        }
+
+        this.lastBlockedUsersUpdate = now;
         const friendList = Object.entries(this._steamClient.myFriends);
         const blockOrIgnoredUsersList: string[] = [];
 
@@ -826,6 +850,7 @@ export class TradeManager extends EventEmitter {
             }
         }
 
+        this.blockedUsersCache = blockOrIgnoredUsersList;
         return blockOrIgnoredUsersList;
     }
 
@@ -1010,22 +1035,13 @@ export class TradeManager extends EventEmitter {
      * Get inventory contents based on appid and contextid
      * @returns Array containing all intenvory items
      */
-    private getInventoryContents(
+    private async getInventoryContents(
         appid: number,
         contextid: number,
         tradableOnly = true
     ): Promise<CEconItem[]> {
-        return new Promise<CEconItem[]>((res, rej) => {
-            this._steamTradeOfferManager.getInventoryContents(
-                appid,
-                contextid,
-                tradableOnly,
-                (err, inv) => {
-                    if (err) rej(err);
-                    res(inv);
-                }
-            );
-        });
+        await this._inventoryManager.updateInventory(appid, contextid.toString());
+        return this._inventoryManager.getInventory(appid, contextid.toString());
     }
 
     private registerWaxpeerSocketHandlers() {
