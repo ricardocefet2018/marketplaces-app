@@ -28,7 +28,6 @@ import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
 import InventoryPriceClient from "../inventory-price/inventoryPriceClient";
 import {getInventoryInfoData} from "../../interfaces/trade-manage.interfaces";
 import {ListItems} from "../../entities/listItems.entity";
-import {WalletBalance} from "../../entities/walletBalance.entity";
 
 interface TradeManagerEvents {
     waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -549,28 +548,26 @@ export class TradeManager extends EventEmitter {
                 const tradableItems = items.filter(item => item.tradable);
                 const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
 
-                listItems.itemsExchangeable = tradableItems.length;
-                listItems.lastUpdatedAt = new Date();
-                await listItems.save();
+                await ListItems.save({
+                    ...listItems,
+                    itemsExchangeable: tradableItems.length,
+                    lastUpdatedAt: new Date(),
+                });
 
                 return {
-                    tradableItems: listItems.itemsExchangeable,
+                    tradableItems: tradableItems.length,
                     csFloatInventoryValue: inventoryBalanceFloat,
                     buffInventoryValue: inventoryBalanceBuff
                 };
             }
 
-            const walletBalance = await WalletBalance.findOne({
-                where: {user: {id: this._user.id}},
-            });
-
             return {
-                tradableItems: listItems.itemsExchangeable,
-                csFloatInventoryValue: walletBalance.csFloatInventoryValue,
-                buffInventoryValue: walletBalance.buffInventoryValue
+                tradableItems: 0,
+                csFloatInventoryValue: 0, // Você pode implementar o cálculo aqui se necessário
+                buffInventoryValue: 0
             };
-        } catch (error) {
-            throw new Error(`Error in inventoryInfo: ${error.message}`);
+        } catch (err) {
+            throw new Error(err);
         }
     }
 
@@ -1138,3 +1135,5 @@ export class TradeManager extends EventEmitter {
         return;
     }
 }
+
+
