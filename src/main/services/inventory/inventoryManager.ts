@@ -63,11 +63,13 @@ export class InventoryManager extends EventEmitter {
 
         try {
             const items = await this.fetchInventoryFromSteam(appid, parseInt(contextid));
-            await this.saveInventoryToDb(items);
+            if (!items || items.length === 0)  return;
+
+            await this.saveInventoryToDb(items, appid, contextid);
             this.lastUpdate[cacheKey] = now;
             this.emit("inventoryUpdated", appid, contextid);
         } catch (error) {
-            if (error.message.includes("Too Many Requests")) {
+            if (error.message && error.message.includes("Too Many Requests")) {
                 await sleepAsync(5000);
             }
             throw error;
@@ -91,12 +93,12 @@ export class InventoryManager extends EventEmitter {
         });
     }
 
-    private async saveInventoryToDb(items: CEconItem[]): Promise<void> {
+    private async saveInventoryToDb(items: CEconItem[], appid: number, contextid: string): Promise<void> {
         const currentItems = await this.inventoryRepository.find({
             where: {
                 user: { id: this.user.id },
-                appid: 730,
-                contextid: "2"
+                appid: appid,
+                contextid: contextid
             }
         });
         const currentAssetIds = new Set(currentItems.map(item => item.assetid));
@@ -135,11 +137,11 @@ export class InventoryManager extends EventEmitter {
                 await this.inventoryRepository.delete({
                     assetid: In(Array.from(currentAssetIds)),
                     user: { id: this.user.id },
-                    appid: 730,
-                    contextid: "2"
+                    appid: appid,
+                    contextid: contextid
                 });
             } catch (error) {
-                console.error('Erro ao remover itens antigos:', error);
+                console.error(`Erro ao remover itens antigos:`, error);
             }
         }
     }
@@ -159,4 +161,3 @@ export class InventoryManager extends EventEmitter {
         return items.map(item => item.item_data);
     }
 }
-

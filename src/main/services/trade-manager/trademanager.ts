@@ -632,9 +632,7 @@ export class TradeManager extends EventEmitter {
             });
 
             if (!success) {
-                this.infoLogger("CSFloat falhou ao conectar, parando cliente...");
                 await this.stopCSFloatClient();
-                throw new AppError("Try again later!");
             }
 
         } catch (error) {
