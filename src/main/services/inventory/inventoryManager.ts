@@ -10,22 +10,20 @@ import CEconItem from "steamcommunity/classes/CEconItem.js";
 export class InventoryManager extends EventEmitter {
     private static instance: InventoryManager;
     private inventoryRepository: Repository<Inventory>;
-    private updateInterval = 500000;
-    private isUpdating = false;
-    private isRunning = false;
+
     private lastUpdate: { [key: string]: number } = {};
     private readonly user: User;
     private steamTradeOfferManager: TradeOfferManager;
+
+    private lastInventoryRequestTime: { [key: string]: number } = {};
+    private isUpdatingInventory: { [key: string]: boolean } = {};
+    private inventoryUpdateInterval = 5000;
 
     private constructor(user: User, steamTradeOfferManager: TradeOfferManager) {
         super();
         this.inventoryRepository = AppDataSource.getRepository(Inventory);
         this.user = user;
         this.steamTradeOfferManager = steamTradeOfferManager;
-        this.isRunning = true;
-        this.startUpdateLoop().catch(error => {
-            console.error('Error in loop:', error);
-        });
     }
 
     public static getInstance(user: User, steamTradeOfferManager: TradeOfferManager): InventoryManager {
@@ -35,31 +33,9 @@ export class InventoryManager extends EventEmitter {
         return this.instance;
     }
 
-    private async startUpdateLoop() {
-        this.isRunning = true;
-
-        while (this.isRunning) {
-            try {
-                if (this.user && !this.isUpdating) {
-                    this.isUpdating = true;
-                    await this.updateInventory(730, "2");
-                    this.isUpdating = false;
-                }
-            } catch (error) {
-                console.error("Erro ao atualizar inventário:", error);
-                this.isUpdating = false;
-            }
-            await sleepAsync(this.updateInterval);
-        }
-    }
-
     async updateInventory(appid: number, contextid: string): Promise<void> {
         const now = Date.now();
         const cacheKey = `${appid}_${contextid}`;
-
-        if (this.lastUpdate[cacheKey] && now - this.lastUpdate[cacheKey] < this.updateInterval) {
-            return;
-        }
 
         try {
             const items = await this.fetchInventoryFromSteam(appid, parseInt(contextid));
@@ -147,6 +123,33 @@ export class InventoryManager extends EventEmitter {
     }
 
     public async getInventory(appid: number, contextid: string): Promise<CEconItem[]> {
+        const now = Date.now();
+        const cacheKey = `${appid}_${contextid}`;
+
+        if (this.isUpdatingInventory[cacheKey]) {
+            return this.getInventoryFromDb(appid, contextid);
+        }
+
+        if (this.lastInventoryRequestTime[cacheKey] &&
+            (now - this.lastInventoryRequestTime[cacheKey] < this.inventoryUpdateInterval)) {
+            return this.getInventoryFromDb(appid, contextid);
+        }
+
+        try {
+            this.isUpdatingInventory[cacheKey] = true;
+            this.lastInventoryRequestTime[cacheKey] = now;
+
+            await this.updateInventory(appid, contextid);
+
+            return this.getInventoryFromDb(appid, contextid);
+        } catch (error) {
+            return this.getInventoryFromDb(appid, contextid);
+        } finally {
+            this.isUpdatingInventory[cacheKey] = false;
+        }
+    }
+
+    private async getInventoryFromDb(appid: number, contextid: string): Promise<CEconItem[]> {
         const items = await this.inventoryRepository.find({
             where: {
                 appid,
