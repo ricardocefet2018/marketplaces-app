@@ -1,87 +1,87 @@
-import { ipcRenderer } from "electron";
-import {
-  LoginData,
-  SteamAcc,
-  IUserSettings,
-  ISettings,
-  ApiResponse,
-} from "../shared/types";
-import { LoginResponses } from "../shared/enums";
+import {ipcRenderer} from "electron";
+import {ApiResponse, ISettings, IUserSettings, LoginData, SteamAcc,} from "../shared/types";
+import {LoginResponses} from "../shared/enums";
+import {getInventoryInfoData} from "../main/interfaces/trade-manage.interfaces";
 
 export const api = {
-  // General
-  test: (msg: string): Promise<string> => ipcRenderer.invoke("test", msg),
+    // General
+    openListItemWindow: () => ipcRenderer.invoke("open-list-item-window"),
+    test: (msg: string): Promise<string> => ipcRenderer.invoke("test", msg),
 
-  // Login
-  login: (loginOptions: LoginData): Promise<LoginResponses> =>
-    ipcRenderer.invoke("login", loginOptions),
-  logout: (username: string): Promise<void> =>
-    ipcRenderer.invoke("logout", username),
+    // Login
+    login: (loginOptions: LoginData): Promise<LoginResponses> =>
+        ipcRenderer.invoke("login", loginOptions),
+    logout: (username: string): Promise<void> =>
+        ipcRenderer.invoke("logout", username),
 
-  // Accounts
-  getAccounts: (): Promise<SteamAcc[]> => ipcRenderer.invoke("getAccounts"),
-  getAccountByUsername: (username: string): Promise<SteamAcc> =>
-    ipcRenderer.invoke("getAccountByUsername", username),
-  hasAccounts: (): Promise<boolean> => ipcRenderer.invoke("hasAccounts"),
+    // Accounts
+    getAccounts: (): Promise<SteamAcc[]> => ipcRenderer.invoke("getAccounts"),
+    getAccountByUsername: (username: string): Promise<SteamAcc> =>
+        ipcRenderer.invoke("getAccountByUsername", username),
+    hasAccounts: (): Promise<boolean> => ipcRenderer.invoke("hasAccounts"),
 
-  // Update API Keys
-  updateWaxpeerApiKey: (
-    username: string,
-    waxpeerApiKey: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
-  updateShadowpayApiKey: (
-    username: string,
-    shadowpayApiKey: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
-  updateMarketcsgoApiKey: (
-    username: string,
-    marketcsgoApiKey: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("updateMarketcsgoApiKey", username, marketcsgoApiKey),
-  updateCSFloatApiKey: (
-    username: string,
-    csfloatApiKey: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("updateCSFloatApiKey", username, csfloatApiKey),
 
-  // Change States
-  changeWaxpeerState: (
-    newState: boolean,
-    username: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("changeWaxpeerState", newState, username),
-  changeShadowpayState: (
-    newState: boolean,
-    username: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("changeShadowpayState", newState, username),
-  changeMarketcsgoState: (
-    newState: boolean,
-    username: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("changeMarketcsgoState", newState, username),
-  changeCSFloatState: (
-    newState: boolean,
-    username: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("changeCSFloatState", newState, username),
+    getInventoryInfo: (username: string): Promise<getInventoryInfoData> =>
+        ipcRenderer.invoke("getInventoryInfo", username),
 
-  // Settings
-  updateUserSettings: (
-    newSettings: IUserSettings,
-    username: string
-  ): Promise<ApiResponse> =>
-    ipcRenderer.invoke("updateUserSettings", newSettings, username),
-  getAppSettings: (): Promise<ISettings | null> =>
-    ipcRenderer.invoke("getAppSettings"),
-  setAppSettings: (settings: ISettings): Promise<ApiResponse> =>
-    ipcRenderer.invoke("setAppSettings", settings),
+    // Update API Keys
+    updateWaxpeerApiKey: (
+        username: string,
+        waxpeerApiKey: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("updateWaxpeerApiKey", username, waxpeerApiKey),
+    updateShadowpayApiKey: (
+        username: string,
+        shadowpayApiKey: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("updateShadowpayApiKey", username, shadowpayApiKey),
+    updateMarketcsgoApiKey: (
+        username: string,
+        marketcsgoApiKey: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("updateMarketcsgoApiKey", username, marketcsgoApiKey),
+    updateCSFloatApiKey: (
+        username: string,
+        csfloatApiKey: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("updateCSFloatApiKey", username, csfloatApiKey),
 
-  // Utilities
-  openLogsFolder: (username?: string): Promise<void> =>
-    ipcRenderer.invoke("openLogsFolder", username),
-  openExternalLink: (link: string): Promise<void> =>
-    ipcRenderer.invoke("openExternalLink", link),
+    // Change States
+    changeWaxpeerState: (
+        newState: boolean,
+        username: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("changeWaxpeerState", newState, username),
+    changeShadowpayState: (
+        newState: boolean,
+        username: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("changeShadowpayState", newState, username),
+    changeMarketcsgoState: (
+        newState: boolean,
+        username: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("changeMarketcsgoState", newState, username),
+    changeCSFloatState: (
+        newState: boolean,
+        username: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("changeCSFloatState", newState, username),
+
+    // Settings
+    updateUserSettings: (
+        newSettings: IUserSettings,
+        username: string
+    ): Promise<ApiResponse> =>
+        ipcRenderer.invoke("updateUserSettings", newSettings, username),
+    getAppSettings: (): Promise<ISettings | null> =>
+        ipcRenderer.invoke("getAppSettings"),
+    setAppSettings: (settings: ISettings): Promise<ApiResponse> =>
+        ipcRenderer.invoke("setAppSettings", settings),
+
+    // Utilities
+    openLogsFolder: (username?: string): Promise<void> =>
+        ipcRenderer.invoke("openLogsFolder", username),
+    openExternalLink: (link: string): Promise<void> =>
+        ipcRenderer.invoke("openExternalLink", link),
 };

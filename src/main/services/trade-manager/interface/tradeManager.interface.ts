@@ -1,5 +1,6 @@
 import { JsonTradeoffer } from "src/main/models/types";
 import { LoginData, Marketplace } from "../../../../shared/types";
+import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export interface TradeManagerOptions {
   storagePathBase: string;
@@ -14,4 +15,14 @@ export interface ICreateTradeData {
   id: string | number;
   marketplace: Marketplace;
   message: string;
+}
+
+export interface CEconItemModified extends CEconItem {
+  market_actions: contentMarketActions[];
+}
+
+
+interface contentMarketActions {
+  link: string;
+  name: string;
 }
