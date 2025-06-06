@@ -27,7 +27,6 @@ export class TradeManagerController {
 
     public async getInventoryInfo(username: string): Promise<getInventoryInfoData> {
         const tradeManager = this.getTradeManager(username);
-        console.log("===============>", await tradeManager.inventoryInfo())
         return tradeManager.inventoryInfo();
     }
 

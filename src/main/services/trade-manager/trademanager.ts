@@ -557,7 +557,7 @@ export class TradeManager extends EventEmitter {
             }
 
             if (listItems.lastUpdatedAt.getTime() + minutesToMS(10) < Date.now()) {
-                const items = await this.getInventoryContents(730, 2, false);
+                const items = await this.getInventoryContents(730, 2);
                 const tradableItems = items.filter(item => item.tradable);
                 const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
 
@@ -572,13 +572,16 @@ export class TradeManager extends EventEmitter {
                     csFloatInventoryValue: inventoryBalanceFloat,
                     buffInventoryValue: inventoryBalanceBuff
                 };
-            }
+            } else {
+                const items = await this.getInventoryContents(730, 2, true);
+                const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
 
-            return {
-                tradableItems: 0,
-                csFloatInventoryValue: 0, // Você pode implementar o cálculo aqui se necessário
-                buffInventoryValue: 0
-            };
+                return {
+                    tradableItems: listItems.itemsExchangeable,
+                    csFloatInventoryValue: inventoryBalanceFloat,
+                    buffInventoryValue: inventoryBalanceBuff
+                };
+            }
         } catch (err) {
             throw new Error(err);
         }
@@ -1044,9 +1047,9 @@ export class TradeManager extends EventEmitter {
     private async getInventoryContents(
         appid: number,
         contextid: number,
-        tradableOnly = true
+        toDB = false
     ): Promise<CEconItem[]> {
-        return this._inventoryManager.getInventory(appid, contextid.toString());
+        return this._inventoryManager.getInventory(appid, contextid.toString(), toDB);
     }
 
     private registerWaxpeerSocketHandlers() {
