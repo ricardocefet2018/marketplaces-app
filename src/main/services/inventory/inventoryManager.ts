@@ -104,7 +104,7 @@ export class InventoryManager extends EventEmitter {
             try {
                 await this.inventoryRepository.save(inventoryItem);
             } catch (error) {
-                console.error('Erro ao salvar item:', error);
+                console.error('Error saving item:', error);
             }
         }
 
@@ -117,7 +117,7 @@ export class InventoryManager extends EventEmitter {
                     contextid: contextid
                 });
             } catch (error) {
-                console.error(`Erro ao remover itens antigos:`, error);
+                console.error(`Error removing old items:`, error);
             }
         }
     }
@@ -127,11 +127,13 @@ export class InventoryManager extends EventEmitter {
         const cacheKey = `${appid}_${contextid}`;
 
         if (this.isUpdatingInventory[cacheKey]) {
+            console.log(`Duplicate request for inventory ${cacheKey} - using database data`);
             return this.getInventoryFromDb(appid, contextid);
         }
 
         if (this.lastInventoryRequestTime[cacheKey] &&
             (now - this.lastInventoryRequestTime[cacheKey] < this.inventoryUpdateInterval)) {
+            console.log(`Request made recently for inventory ${cacheKey} - using database data`);
             return this.getInventoryFromDb(appid, contextid);
         }
 
@@ -143,6 +145,7 @@ export class InventoryManager extends EventEmitter {
 
             return this.getInventoryFromDb(appid, contextid);
         } catch (error) {
+            console.error(`Error updating inventory ${cacheKey}:`, error);
             return this.getInventoryFromDb(appid, contextid);
         } finally {
             this.isUpdatingInventory[cacheKey] = false;

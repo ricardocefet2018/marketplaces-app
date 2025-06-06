@@ -226,7 +226,6 @@ export class TradeManagerController {
     } catch (err) {
       if (!newState) await tradeManager.startCSFloatClient();
       else await tradeManager.stopCSFloatClient();
-
       throw err;
     }
   }
