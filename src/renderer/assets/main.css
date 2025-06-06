@@ -1,5 +1,6 @@
-:root{
-  font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+:root {
+  font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji,
+    Segoe UI Emoji, Segoe UI Symbol;
   font-size: 0.85rem;
   font-variant: normal tabular-nums;
 }
@@ -22,4 +23,9 @@
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #71717a;
+}
+
+/* Avatar icon*/
+.p-avatar img {
+  border-radius: inherit;
 }
