@@ -205,9 +205,15 @@ export class TradeManager extends EventEmitter {
         return tm;
     }
 
-    public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
-        if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
+    public inTradeOffer(offerId: string): void {
+        if (this._user.waxpeer.sentTrades.includes(offerId)) return;
+        if (this._user.shadowpay.sentTrades.includes(offerId)) return;
+        if (this._user.marketcsgo.sentTrades.includes(offerId)) return;
+        if (this._user.csfloat.sentTrades.includes(offerId)) return;
+    }
 
+    public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
+       this.inTradeOffer(data.wax_id);
         this._appController.notify({
             title: `New Waxpeer sale!`,
             body: `Creating trade...`,
@@ -259,7 +265,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForShadowpay(data: SendTradePayload) {
-        if (this._user.shadowpay.sentTrades.includes(data.id.toString())) return;
+        this.inTradeOffer(data.id.toString());
 
         this._appController.notify({
             title: `New Shadowpay sale!`,
@@ -309,7 +315,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForMarketcsgo(data: MarketcsgoTradeOfferPayload) {
-        if (this._user.marketcsgo.sentTrades.includes(data.hash)) return;
+        this.inTradeOffer(data.hash);
 
         this._appController.notify({
             title: `New MarketCSGO sale!`,
@@ -376,7 +382,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
-        if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString())) return;
+        this.inTradeOffer(createTradeData.id.toString());
 
         this._appController.notify({
             title: `New CSFloat sale!`,
@@ -1040,7 +1046,6 @@ export class TradeManager extends EventEmitter {
         contextid: number,
         tradableOnly = true
     ): Promise<CEconItem[]> {
-        await this._inventoryManager.updateInventory(appid, contextid.toString());
         return this._inventoryManager.getInventory(appid, contextid.toString());
     }
 
