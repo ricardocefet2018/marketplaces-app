@@ -306,3 +306,4 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   mainWindowWebContents.send("apiReady");
 }
+

@@ -167,3 +167,4 @@ export class InventoryManager extends EventEmitter {
         return items.map(item => item.item_data);
     }
 }
+

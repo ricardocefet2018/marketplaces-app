@@ -11,7 +11,6 @@ import { IMEResponse, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfac
 
 export default class CSFloatClient {
     private static API_URL = "https://csfloat.com/api/v1";
-    //when update version extension, change here!
     private static EXTENSION_VERSION = "5.5.0";
     private readonly api_key: string;
     private readonly proxy: string;
