@@ -542,6 +542,7 @@ export class TradeManager extends EventEmitter {
                 const items = await this.getInventoryContents(730, 2, false);
                 const tradableItems = items.filter(item => item.tradable);
                 const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
+                const inventory = await this._inventoryManager.getInventory(730, 2, true);
 
                 await ListItems.create({
                     user: this._user,
@@ -552,7 +553,8 @@ export class TradeManager extends EventEmitter {
                 return {
                     tradableItems: tradableItems.length,
                     csFloatInventoryValue: inventoryBalanceFloat,
-                    buffInventoryValue: inventoryBalanceBuff
+                    buffInventoryValue: inventoryBalanceBuff,
+                    inventory: inventory,
                 };
             }
 
@@ -560,6 +562,7 @@ export class TradeManager extends EventEmitter {
                 const items = await this.getInventoryContents(730, 2);
                 const tradableItems = items.filter(item => item.tradable);
                 const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
+                const inventory = await this._inventoryManager.getInventory(730, 2, true);
 
                 await ListItems.save({
                     ...listItems,
@@ -570,16 +573,19 @@ export class TradeManager extends EventEmitter {
                 return {
                     tradableItems: tradableItems.length,
                     csFloatInventoryValue: inventoryBalanceFloat,
-                    buffInventoryValue: inventoryBalanceBuff
+                    buffInventoryValue: inventoryBalanceBuff,
+                    inventory: inventory,
                 };
             } else {
                 const items = await this.getInventoryContents(730, 2, true);
                 const {inventoryBalanceFloat, inventoryBalanceBuff} = await this.inventoryPrice(items);
+                const inventory = await this._inventoryManager.getInventory(730, 2, true);
 
                 return {
                     tradableItems: listItems.itemsExchangeable,
                     csFloatInventoryValue: inventoryBalanceFloat,
-                    buffInventoryValue: inventoryBalanceBuff
+                    buffInventoryValue: inventoryBalanceBuff,
+                    inventory: inventory,
                 };
             }
         } catch (err) {

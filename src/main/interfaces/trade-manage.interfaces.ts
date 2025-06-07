@@ -1,6 +1,7 @@
 export interface getInventoryInfoData {
     tradableItems: number,
     csFloatInventoryValue: number,
-    buffInventoryValue: number
+    buffInventoryValue: number,
+    inventory: any,
 }
 

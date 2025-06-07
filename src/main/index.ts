@@ -330,6 +330,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
                 listItemWindow.restore();
             }
             listItemWindow.focus();
+            listItemWindow.webContents.openDevTools();
             return;
         }
 
@@ -338,7 +339,9 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
             simpleFullscreen: true,
             autoHideMenuBar: true,
             webPreferences: {
-                preload: path.join(__dirname, "../preload.js"),
+                preload: MAIN_WINDOW_VITE_DEV_SERVER_URL
+                    ? path.join(__dirname, "../../../marketplaces-app/.vite/build/preload.js")
+                    : path.join(__dirname, "../preload.js"),
                 nodeIntegration: false,
                 contextIsolation: true
             },
@@ -346,6 +349,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
         if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
             await listItemWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/list-items`);
+            listItemWindow.webContents.openDevTools();
         } else {
             await listItemWindow.loadFile(
                 path.join(__dirname, `../../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
@@ -362,4 +366,3 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
     mainWindowWebContents.send("apiReady");
 }
-

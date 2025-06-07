@@ -1,8 +1,9 @@
-import { app, BrowserWindow, Menu, Tray } from "electron";
-import { DB } from "./main/services/db";
+import {app, BrowserWindow, Menu, Tray} from "electron";
+import {DB} from "./main/services/db";
 import path from "path";
-import { registerHandlers } from "./main/index";
-import { handleError } from "./shared/helpers";
+import {registerHandlers} from "./main";
+import {handleError} from "./shared/helpers";
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 async function main() {
   if (require("electron-squirrel-startup")) {
@@ -24,7 +25,7 @@ async function main() {
     hideWindow(mainWindow);
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      // mainWindow.webContents.openDevTools();
+      mainWindow.webContents.openDevTools();
       await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       await mainWindow.loadFile(
