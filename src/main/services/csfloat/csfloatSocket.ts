@@ -7,7 +7,6 @@ import {sleepAsync} from "@doctormckay/stdlib/promises";
 import {minutesToMS} from "../../../shared/helpers";
 import {IGetTradeOffersResponse, IHistoryPingBody,} from "./interfaces/fetch.interface";
 import {AppId} from "./enums/steam.enum";
-import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export declare interface CSFloatSocket {
     emit<U extends keyof ICSFloatSocketEvents>(
@@ -49,6 +48,18 @@ export class CSFloatSocket extends EventEmitter {
             });
         });
     }
+
+    async inInventory(appid: number, contextid: number, assetid?: string): Promise<boolean> {
+        await this.rateLimit();
+        return new Promise((resolve, reject) => {
+            this.emit("inInventory", appid, contextid, assetid, (result, error) => {
+                if (error) reject(error);
+                resolve(result);
+            });
+        });
+    }
+
+
 
     public disconnect() {
         this.connected = false;
@@ -103,6 +114,10 @@ export class CSFloatSocket extends EventEmitter {
                 const tradesInQueue = await this._csFloatClient.getTrades(
                     EStatusTradeCSFLOAT.QUEUED
                 );
+
+                if(!tradesInQueue || tradesInQueue.length === 0) {
+                    this.emit("clearNotAccepted");
+                }
 
                 this.emit("stateChange", true);
 
@@ -455,14 +470,13 @@ export class CSFloatSocket extends EventEmitter {
         if (tradesInQueue.length < 1) return;
 
         const tradeOffersSent = tradeOffers.sent;
-        const itemsTradables = await this.getInventory()
-
-        if (itemsTradables.length === 0) return;
 
         for (const tradeInQueue of tradesInQueue) {
-            const hasMatchingItem = itemsTradables.some(
-                (item: CEconItem) => item.assetid === tradeInQueue.contract.item.asset_id
-            );
+            // const hasMatchingItem = itemsTradables.some(
+            //     (item: CEconItem) => item.assetid === tradeInQueue.contract.item.asset_id
+            // );
+
+            const hasMatchingItem = await this.inInventory(720,2, tradeInQueue.contract.item.asset_id)
 
             if (!hasMatchingItem) continue;
             let alreadyHasOffer = false

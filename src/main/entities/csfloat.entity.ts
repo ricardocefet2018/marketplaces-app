@@ -14,4 +14,10 @@ export class CSFloat extends BaseMarket {
 
   @Column("boolean", { default: false })
   canSell = false;
+
+  @Column({
+    type: "simple-array",
+    default: "",
+  })
+  notAccept: string[];
 }

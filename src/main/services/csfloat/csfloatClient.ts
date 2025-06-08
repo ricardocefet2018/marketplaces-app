@@ -8,6 +8,7 @@ import {
     PaginationRequest,
 } from "./interfaces/fetch.interface";
 import { IMEResponse, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
+import { Item } from "./interfaces/csfloat.interface";
 
 export default class CSFloatClient {
     private static API_URL = "https://csfloat.com/api/v1";
@@ -190,6 +191,16 @@ export default class CSFloatClient {
         }
         const json: IMEResponse = await response.json()
         this.user_balance = json.user.balance.toString()
+    }
+
+    public async getInventoryFromCSFloat(): Promise<Item[]> {
+        const url = new URL(`${CSFloatClient.API_URL}/me/inventory`);
+        const response = await this.internalFetch(url.toString())
+        if (!response.ok) {
+            const txt = await response.text();
+            throw new Error(txt);
+        }
+        return response.json();
     }
 
     private internalFetch(

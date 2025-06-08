@@ -1061,8 +1061,28 @@ export class TradeManager extends EventEmitter {
                 callback([], err);
             }
         });
+        this._csfloatSocket.on("inInventory", async (appid, contextid, assetid, callback) => {
+            try {
+                const result = await this._inventoryManager.inInventory(appid, contextid, assetid);
+                callback(result);
+            } catch (err) {
+                callback(false, err);
+            }
+        });
 
-        await this._csfloatSocket.connect();
+        this._csfloatSocket.on("clearNotAccepted", async () => {
+            try {
+                if (this._user.csfloat && this._user.csfloat.notAccept) {
+                    this._user.csfloat.notAccept = [];
+                    await this._user.save();
+                    this.infoLogger(`List notAccept of CSFloat cleaned for user ${this._user.username}`);
+                }
+            } catch (err) {
+                this.handleError(err);
+            }
+        });
+
+       await this._csfloatSocket.connect();
     }
 
     private async registerPendingTradeToFile(
