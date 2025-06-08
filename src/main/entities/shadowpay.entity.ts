@@ -1,4 +1,4 @@
-import { Entity, JoinColumn, OneToOne } from "typeorm";
+import { Entity, JoinColumn, OneToOne, Column } from "typeorm";
 import { BaseMarket } from "../models/base-market";
 import { User } from "./user.entity";
 
@@ -12,5 +12,6 @@ export class Shadowpay extends BaseMarket {
   @JoinColumn()
   user: User;
 
-  canSell: boolean = false;
+  @Column("boolean", { default: false })
+  canSell = false;
 }

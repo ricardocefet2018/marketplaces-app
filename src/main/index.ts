@@ -119,6 +119,30 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
     }
   });
 
+  myHandler("updateCSFloatApiKey", async (e, username, csfloatApiKey) => {
+    try {
+      const success = await tradeManagerController.updateCSFloatApiKey(
+        username,
+        csfloatApiKey
+      );
+      if (!success)
+        return {
+          success,
+          msg: `Error updating CSFloat api key. Most likely your DB is corrupted.`,
+        };
+
+      return {
+        success,
+      };
+    } catch (err) {
+      handleError(err);
+      return {
+        success: false,
+        msg: "Unexpected Error. Please relogin.",
+      };
+    }
+  })
+
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
       await tradeManagerController.changeWaxpeerState(newState, username);
@@ -174,6 +198,27 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
       else if (err instanceof Error && err.message.startsWith("{"))
         body += " " + err.message;
       else if (err instanceof AppError) body += " " + err.message;
+      else body += " Most likely your DB is corrupted.";
+      handleError(err);
+      return {
+        success: false,
+        msg: body,
+      };
+    }
+  });
+
+  myHandler("changeCSFloatState", async (e, newState, username) => {
+    try {
+      await tradeManagerController.changeCSFloatState(newState, username);
+      return {
+        success: true,
+      };
+    } catch (err) {
+      let body = "Check out the logs.";
+      if (err instanceof FetchError)
+        body += " Most likely you or server is offline.";
+      else if (err instanceof Error && err.message.startsWith("{"))
+        body += " " + err.message;
       else body += " Most likely your DB is corrupted.";
       handleError(err);
       return {
@@ -261,3 +306,4 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   mainWindowWebContents.send("apiReady");
 }
+

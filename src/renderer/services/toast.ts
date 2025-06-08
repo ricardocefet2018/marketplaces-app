@@ -1,4 +1,3 @@
-// myToast.ts
 import { useToast } from "primevue/usetoast";
 
 export function useMyToast() {
@@ -20,6 +19,25 @@ export function useMyToast() {
         detail: msg,
         life: 6000,
       });
+    },
+    warn: (msg: string) => {
+      pvToast.add({
+        severity: "warn",
+        summary: "Warn",
+        detail: msg,
+        life: 3000,
+      });
+    },
+    info: (msg: string) => {
+      pvToast.add({
+        severity: "info",
+        summary: "Info",
+        detail: msg,
+        life: 3000,
+      });
+    },
+    clear: () => {
+      pvToast.removeAllGroups();
     },
   };
   return myToast;
