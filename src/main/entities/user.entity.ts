@@ -15,6 +15,8 @@ import { CSFloat } from "./csfloat.entity";
 import { UserSettings } from "./userSettings";
 import { Waxpeer } from "./waxpeer.entity";
 import { Inventory } from "./inventory.entity";
+import { ListItems } from "./listItems.entity";
+import { WalletBalance } from "./walletBalance.entity";
 
 const baseRelationOptions: RelationOptions = {
   cascade: true,
@@ -72,6 +74,20 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Inventory, (inventory) => inventory.user, { eager: true })
   inventory: Inventory[];
+
+  @OneToOne(
+    () => ListItems,
+    (listItems) => listItems.user,
+    baseRelationOptions
+  )
+  listItems: ListItems;
+
+  @OneToOne(
+    () => WalletBalance,
+    (walletBalance) => walletBalance.user,
+    baseRelationOptions
+  )
+  walletBalance: WalletBalance;
 
   public constructor(username?: string, proxy?: string) {
     super();

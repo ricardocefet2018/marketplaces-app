@@ -1,9 +1,9 @@
-import { EventEmitter } from "events";
-import { Repository, In } from "typeorm";
-import { AppDataSource } from "../db";
-import { Inventory } from "../../entities/inventory.entity";
-import { User } from "../../entities/user.entity";
-import { sleepAsync } from "@doctormckay/stdlib/promises";
+import {EventEmitter} from "events";
+import {In, Repository} from "typeorm";
+import {AppDataSource} from "../db";
+import {Inventory} from "../../entities/inventory.entity";
+import {User} from "../../entities/user.entity";
+import {sleepAsync} from "@doctormckay/stdlib/promises";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 import CSFloatClient from "../csfloat/csfloatClient";
@@ -166,9 +166,12 @@ export class InventoryManager extends EventEmitter {
     }
 
 
-    public async getInventory(appid: number, contextid: string): Promise<CEconItem[]> {
+    public async getInventory(appid: number, contextid: string, toDB = false): Promise<CEconItem[]> {
         const now = Date.now();
         const cacheKey = `${appid}_${contextid}`;
+
+        if (toDB) return this.getInventoryFromDb(appid, contextid);
+
 
         if (this.isUpdatingInventory[cacheKey]) {
             console.log(`Duplicate request for inventory ${cacheKey} - using database data`);
