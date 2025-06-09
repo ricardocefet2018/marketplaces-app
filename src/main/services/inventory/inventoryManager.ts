@@ -6,6 +6,7 @@ import {User} from "../../entities/user.entity";
 import {sleepAsync} from "@doctormckay/stdlib/promises";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
+import CSFloatClient from "../csfloat/csfloatClient";
 
 export class InventoryManager extends EventEmitter {
     private static instance: InventoryManager;
@@ -121,6 +122,49 @@ export class InventoryManager extends EventEmitter {
             }
         }
     }
+
+    public async inInventory(appid: number, contextid: number, assetid?: string): Promise<boolean> {
+
+        if (!assetid) {
+            return false;
+        }
+
+        if (this.user.csfloat?.notAccept?.includes(assetid)) {
+            return false;
+        }
+
+        try {
+            const csfloatClient = await CSFloatClient.getInstance(this.user.csfloat?.apiKey);
+            if (csfloatClient) {
+                const floatItems = await csfloatClient.getInventoryFromCSFloat();
+                const foundInFloat = floatItems.some(item => item.asset_id === assetid);
+
+                if (foundInFloat) {
+                    return true;
+                }
+            }
+
+            const steamItems = await this.fetchInventoryFromSteam(appid, contextid);
+            const foundInSteam = steamItems.some(item => item.assetid === assetid);
+
+            if (!foundInSteam && this.user.csfloat && !this.user.csfloat.notAccept.includes(assetid)) {
+                this.user.csfloat.notAccept.push(assetid);
+                await this.user.save();
+            }
+
+            return foundInSteam;
+        } catch (error) {
+            console.error("Error checking inventory:", error);
+
+            if (this.user.csfloat && !this.user.csfloat.notAccept.includes(assetid)) {
+                this.user.csfloat.notAccept.push(assetid);
+                await this.user.save();
+            }
+
+            return false;
+        }
+    }
+
 
     public async getInventory(appid: number, contextid: string, toDB = false): Promise<CEconItem[]> {
         const now = Date.now();

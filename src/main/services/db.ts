@@ -33,7 +33,7 @@ export const AppDataSource = new DataSource({
   type: "sqlite",
   database: getDBPath(),
   synchronize: true,
-  logging: process.env.NODE_ENV === "development",
+  logging: false,
   entities,
   subscribers: [],
 });

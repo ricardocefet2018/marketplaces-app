@@ -23,6 +23,13 @@ export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
     getInventory: (
         callback: (items: CEconItem[], error?: unknown) => void
     ) => void;
+    inInventory: (
+        appid: number,
+        contextid: number,
+        assetid: string,
+        callback: (inInventory: boolean, error?: unknown) => void
+    ) => void;
+    clearNotAccepted : () => void;
 }
 
 export interface TradeOfferStatusRequest {
@@ -157,7 +164,7 @@ interface Reference {
     last_updated: string | Date;
 }
 
-interface Item {
+export interface Item {
     asset_id: string;
     def_index: number;
     paint_index: number;
@@ -182,6 +189,15 @@ interface Item {
     wear_name: string;
     description: string;
     collection: string;
+    reference: {
+        base_price: number;
+        float_factor: number;
+        predicted_price: number;
+        quantity: number;
+        last_updated: string; // pode ser Date se você for converter depois
+    };
     serialized_inspect: string;
     gs_sig: string;
 }
+
+
