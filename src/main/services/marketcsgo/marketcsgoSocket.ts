@@ -11,6 +11,7 @@ interface MarketcsgoSocketEvents extends TradeWebsocketEvents {
     cancelTrade: (tradeOfferId: string) => void;
     acceptWithdraw: (tradeOfferId: string) => void;
     stateChange: (online: boolean) => void;
+    clearDontSentTrades: () => void;
     error: (error: any) => void;
 }
 
@@ -74,6 +75,8 @@ export class MarketcsgoSocket extends EventEmitter {
         while (this.connected) {
             try {
                 const tradesToSend = await this.marketcsgoClient.getAllTradesToSend();
+                if (tradesToSend.length === 0) this.emit("clearDontSentTrades");
+                
                 for (const tradeToSend of tradesToSend) {
                     this.emit("sendTrade", tradeToSend);
                 }

@@ -816,6 +816,15 @@ export class TradeManager extends EventEmitter {
         }
     }
 
+    private clearDontSentTrades() {
+        this._user.marketcsgo.dontSentTrades = [];
+        this._user.save().then(() => {
+            this.infoLogger(`Cleared dont sent trades MarketCSGO for ${this._user.username}`);
+        }).catch((err) => {
+            this.handleError(err);
+        });
+    }
+
     /**
      * Get inventory contents based on appid and contextid
      * @returns Array containing all intenvory items
@@ -884,6 +893,9 @@ export class TradeManager extends EventEmitter {
         });
         this._mcsgoSocket.on("sendTrade", (data) => {
             this.createTradeForMarketcsgo(data);
+        });
+        this._mcsgoSocket.on("clearDontSentTrades", () => {
+            this.clearDontSentTrades();
         });
         this._mcsgoSocket.on("error", this.handleError);
     }
