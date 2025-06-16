@@ -782,16 +782,10 @@ export class TradeManager extends EventEmitter {
     private async getItemsToSend(
         json_tradeoffer: JsonTradeoffer
     ): Promise<CEconItem[]> {
-        const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
-        const inventories = await Promise.all(
-            apps_contexts.map((app_context) =>
-                this.getInventoryContents(app_context.appid, app_context.contextid)
-            )
-        );
-        const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
+        const csgoInventorie = await this.getInventoryContents(720, 2)
         const assets = json_tradeoffer.me.assets;
         const itemsToSend = assets.map((asset) =>
-            unifiedInv.find(
+            csgoInventorie.find(
                 (econItem) =>
                     econItem.assetid == asset.assetid &&
                     econItem.appid == asset.appid &&
@@ -799,21 +793,6 @@ export class TradeManager extends EventEmitter {
             )
         );
         return itemsToSend;
-
-        function getAppidContextidByJsonTradeOffer(
-            json_tradeoffer: JsonTradeoffer
-        ) {
-            const app_contextFromAssets = json_tradeoffer.me.assets.map(
-                (a) => a.appid.toString() + "_" + a.contextid
-            );
-            const app_context = app_contextFromAssets
-                .filter((value, index, self) => self.indexOf(value) == index)
-                .map((v) => ({
-                    appid: Number(v.split("_")[0]),
-                    contextid: Number(v.split("_")[1]),
-                }));
-            return app_context;
-        }
     }
 
     private clearDontSentTrades() {
