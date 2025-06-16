@@ -199,15 +199,10 @@ export class TradeManager extends EventEmitter {
         return tm;
     }
 
-    public inTradeOffer(offerId: string): void {
-        if (this._user.waxpeer.sentTrades.includes(offerId)) return;
-        if (this._user.shadowpay.sentTrades.includes(offerId)) return;
-        if (this._user.marketcsgo.sentTrades.includes(offerId)) return;
-        if (this._user.csfloat.sentTrades.includes(offerId)) return;
-    }
 
     public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
-       this.inTradeOffer(data.wax_id);
+        if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
+
         this._appController.notify({
             title: `New Waxpeer sale!`,
             body: `Creating trade...`,
@@ -259,7 +254,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForShadowpay(data: SendTradePayload) {
-        this.inTradeOffer(data.id.toString());
+        if (this._user.shadowpay.sentTrades.includes(data.id.toString())) return;
 
         this._appController.notify({
             title: `New Shadowpay sale!`,
@@ -309,7 +304,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForMarketcsgo(data: MarketcsgoTradeOfferPayload) {
-        this.inTradeOffer(data.hash);
+        if (this._user.marketcsgo.sentTrades.includes(data.hash)) return;
 
         this._appController.notify({
             title: `New MarketCSGO sale!`,
@@ -376,8 +371,7 @@ export class TradeManager extends EventEmitter {
     }
 
     public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
-        this.inTradeOffer(createTradeData.id.toString());
-
+        if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString())) return;
         this._appController.notify({
             title: `New CSFloat sale!`,
             body: `Creating trade...`,
@@ -1082,7 +1076,7 @@ export class TradeManager extends EventEmitter {
             }
         });
 
-       await this._csfloatSocket.connect();
+        await this._csfloatSocket.connect();
     }
 
     private async registerPendingTradeToFile(
