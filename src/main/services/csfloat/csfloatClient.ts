@@ -1,13 +1,13 @@
-import { HttpsProxyAgent } from "https-proxy-agent";
-import fetch, { RequestInit, Response } from "node-fetch";
-import { EStatusTradeCSFLOAT } from "./enums/cs-float.enum";
+import {HttpsProxyAgent} from "https-proxy-agent";
+import fetch, {RequestInit, Response} from "node-fetch";
+import {EStatusTradeCSFLOAT} from "./enums/cs-float.enum";
 import {
     IAnnotateOfferBody,
     IHistoryPingBody,
     IPingCancelTradeBody,
     PaginationRequest,
 } from "./interfaces/fetch.interface";
-import { IMEResponse, ITradeFloat, IUpdateErrors, OfferStatus } from "./interfaces/csfloat.interface";
+import {IMEResponse, ITradeFloat, IUpdateErrors, OfferStatus} from "./interfaces/csfloat.interface";
 import { Item } from "./interfaces/csfloat.interface";
 
 export default class CSFloatClient {
