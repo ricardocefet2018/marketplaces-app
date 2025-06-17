@@ -138,7 +138,7 @@ export class TradeManager extends EventEmitter {
             tm._steamClient.once("loggedOn", async () => {
                 const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                 tm.infoLogger(`Acc ${sid64} loged on`);
-                tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
+                tm._inventoryManager = InventoryManager.getInstance();
                 resolve();
             });
 
@@ -180,7 +180,7 @@ export class TradeManager extends EventEmitter {
                 tm._steamClient.once("loggedOn", () => {
                     const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                     tm.infoLogger(`Acc ${sid64} loged on`);
-                    tm._inventoryManager = InventoryManager.getInstance(tm._user, tm._steamTradeOfferManager);
+                    tm._inventoryManager = InventoryManager.getInstance();
                     resolve();
                 });
 
@@ -380,6 +380,11 @@ export class TradeManager extends EventEmitter {
         const tradeOfferId = await this.createTrade(createTradeData);
 
         if (!tradeOfferId) return;
+
+        this._appController.notify({
+            title: `CSFloat Trade Created!`,
+            body: `Trade #${tradeOfferId} was created successfully.`,
+        });
 
         this._user.csfloat.sentTrades.push(createTradeData.id.toString());
         await this._user.save();

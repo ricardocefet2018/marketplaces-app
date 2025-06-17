@@ -60,7 +60,6 @@ export class CSFloatSocket extends EventEmitter {
     }
 
 
-
     public disconnect() {
         this.connected = false;
         this.emit("stateChange", false);
@@ -115,7 +114,7 @@ export class CSFloatSocket extends EventEmitter {
                     EStatusTradeCSFLOAT.QUEUED
                 );
 
-                if(!tradesInQueue || tradesInQueue.length === 0) {
+                if (!tradesInQueue || tradesInQueue.length === 0) {
                     this.emit("clearNotAccepted");
                 }
 
@@ -317,12 +316,12 @@ export class CSFloatSocket extends EventEmitter {
                     received_assets: (tradeOffer.itemsToReceive || [])
                         .filter((item_to_receive) => item_to_receive.appid === AppId.CSGO)
                         .map((item_to_receive) => {
-                            return { asset_id: item_to_receive.assetid, };
+                            return {asset_id: item_to_receive.assetid,};
                         }),
                     given_assets: (tradeOffer.itemsToGive || [])
                         .filter((item_to_give) => item_to_give.appid === AppId.CSGO)
                         .map((item_to_give) => {
-                            return { asset_id: item_to_give.assetid };
+                            return {asset_id: item_to_give.assetid};
                         }),
                 };
             });
@@ -412,6 +411,7 @@ export class CSFloatSocket extends EventEmitter {
                 });
             } catch (error) {
                 console.error(`failed to annotate offer ${offer.id} post-hoc`, error);
+                this.emit("error", error)
             }
         }
     }
@@ -459,6 +459,7 @@ export class CSFloatSocket extends EventEmitter {
                     `failed to send cancel ping for trade ${trade.id}`,
                     error
                 );
+                this.emit("error", error)
             }
         }
     }
@@ -472,23 +473,20 @@ export class CSFloatSocket extends EventEmitter {
         const tradeOffersSent = tradeOffers.sent;
 
         for (const tradeInQueue of tradesInQueue) {
-            // const hasMatchingItem = itemsTradables.some(
-            //     (item: CEconItem) => item.assetid === tradeInQueue.contract.item.asset_id
-            // );
-
-            const hasMatchingItem = await this.inInventory(720,2, tradeInQueue.contract.item.asset_id)
+            const hasMatchingItem = await this.inInventory(720, 2, tradeInQueue.contract.item.asset_id)
 
             if (!hasMatchingItem) continue;
             let alreadyHasOffer = false
-            let state: ETradeOfferStateCSFloat;
 
             for (const tradeOffer of tradeOffersSent) {
-                state = tradeOffer.state
+                const state = tradeOffer.state
                 for (const item of tradeOffer.itemsToGive) {
                     if (item.assetid === tradeInQueue.contract.item.asset_id && state != ETradeOfferStateCSFloat.Declined && state != ETradeOfferStateCSFloat.Canceled) {
                         alreadyHasOffer = true
+                        break;
                     }
                 }
+                if (alreadyHasOffer) break;
             }
 
             if (!alreadyHasOffer) {
