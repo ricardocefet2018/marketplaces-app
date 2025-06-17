@@ -31,6 +31,13 @@ export class InventoryManager extends EventEmitter {
         return this.instance;
     }
 
+    public static createInstance(user: User, steamTradeOfferManager: TradeOfferManager): InventoryManager {
+        if (!this.instance) {
+            this.instance = new InventoryManager(user, steamTradeOfferManager);
+        }
+        return this.instance;
+    }
+
     async updateInventory(appid: number, contextid: string): Promise<void> {
         const now = Date.now();
         const cacheKey = `${appid}_${contextid}`;

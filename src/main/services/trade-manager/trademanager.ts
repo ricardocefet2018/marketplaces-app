@@ -1,31 +1,31 @@
 import path from "path";
-import {EventEmitter} from "events";
-import TradeOfferManager, {EOfferFilter} from "steam-tradeoffer-manager";
-import SteamUser, {EFriendRelationship} from "steam-user";
-import {JsonTradeoffer, TradeWebsocketCreateTradeData,} from "../../models/types";
+import { EventEmitter } from "events";
+import TradeOfferManager, { EOfferFilter } from "steam-tradeoffer-manager";
+import SteamUser, { EFriendRelationship } from "steam-user";
+import { JsonTradeoffer, TradeWebsocketCreateTradeData, } from "../../models/types";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
-import {handleError, infoLogger, minutesToMS, pushElementToJsonFile,} from "../../../shared/helpers";
+import { handleError, infoLogger, minutesToMS, pushElementToJsonFile, } from "../../../shared/helpers";
 import TradeOffer from "steam-tradeoffer-manager/lib/classes/TradeOffer.js";
-import {sleepAsync} from "@doctormckay/stdlib/promises.js";
-import {IUserSettings, LoginData, Marketplace, SteamAcc,} from "../../../shared/types";
-import {User} from "../../entities/user.entity";
+import { sleepAsync } from "@doctormckay/stdlib/promises.js";
+import { IUserSettings, LoginData, Marketplace, SteamAcc, } from "../../../shared/types";
+import { User } from "../../entities/user.entity";
 import WaxpeerClient from "../waxpeer/waxpeerClient";
-import {WaxpeerWebsocket} from "../waxpeer/waxpeerWebsocket";
-import {app} from "electron";
+import { WaxpeerWebsocket } from "../waxpeer/waxpeerWebsocket";
+import { app } from "electron";
 import ShadowpayClient from "../shadowpay/shadowpayClient";
-import {ShadowpayWebsocket} from "../shadowpay/shadowpayWebsocket";
+import { ShadowpayWebsocket } from "../shadowpay/shadowpayWebsocket";
 import MarketcsgoClient from "../marketcsgo/marketcsgoClient";
 import AppError from "../../models/AppError";
-import {SendTradePayload} from "../shadowpay/interface/shadowpay.interface";
-import {MarketcsgoTradeOfferPayload} from "../marketcsgo/interface/marketcsgo.interface";
-import {ICreateTradeData, TradeManagerOptions,} from "./interface/tradeManager.interface";
-import {MarketcsgoSocket} from "../marketcsgo/marketcsgoSocket";
-import {AppController} from "../../controllers/app.controller";
+import { SendTradePayload } from "../shadowpay/interface/shadowpay.interface";
+import { MarketcsgoTradeOfferPayload } from "../marketcsgo/interface/marketcsgo.interface";
+import { ICreateTradeData, TradeManagerOptions, } from "./interface/tradeManager.interface";
+import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
+import { AppController } from "../../controllers/app.controller";
 import CSFloatClient from "../csfloat/csfloatClient";
-import {CSFloatSocket} from "../csfloat/csfloatSocket";
-import {INotifyData} from "../csfloat/interfaces/csfloat.interface";
-import {IGetTradeOffersResponse} from "../csfloat/interfaces/fetch.interface";
-import {InventoryManager} from "../inventory/inventoryManager";
+import { CSFloatSocket } from "../csfloat/csfloatSocket";
+import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
+import { IGetTradeOffersResponse } from "../csfloat/interfaces/fetch.interface";
+import { InventoryManager } from "../inventory/inventoryManager";
 
 interface TradeManagerEvents {
     waxpeerStateChanged: (state: boolean, username: string) => void;
@@ -138,6 +138,7 @@ export class TradeManager extends EventEmitter {
             tm._steamClient.once("loggedOn", async () => {
                 const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                 tm.infoLogger(`Acc ${sid64} loged on`);
+                InventoryManager.createInstance(tm._user, tm._steamTradeOfferManager);
                 tm._inventoryManager = InventoryManager.getInstance();
                 resolve();
             });
@@ -180,6 +181,7 @@ export class TradeManager extends EventEmitter {
                 tm._steamClient.once("loggedOn", () => {
                     const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                     tm.infoLogger(`Acc ${sid64} loged on`);
+                    InventoryManager.createInstance(tm._user, tm._steamTradeOfferManager);
                     tm._inventoryManager = InventoryManager.getInstance();
                     resolve();
                 });
@@ -410,7 +412,7 @@ export class TradeManager extends EventEmitter {
         do {
             try {
                 const offer = await this.getTradeOffer(offerId);
-                const {ETradeOfferState} = TradeOfferManager;
+                const { ETradeOfferState } = TradeOfferManager;
 
                 if (
                     offer.state != ETradeOfferState.Active &&
