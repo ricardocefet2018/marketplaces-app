@@ -138,8 +138,7 @@ export class TradeManager extends EventEmitter {
             tm._steamClient.once("loggedOn", async () => {
                 const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                 tm.infoLogger(`Acc ${sid64} loged on`);
-                InventoryManager.createInstance(tm._user, tm._steamTradeOfferManager);
-                tm._inventoryManager = InventoryManager.getInstance();
+                tm._inventoryManager = new InventoryManager(tm._user, tm._steamTradeOfferManager);
                 resolve();
             });
 
@@ -181,8 +180,7 @@ export class TradeManager extends EventEmitter {
                 tm._steamClient.once("loggedOn", () => {
                     const sid64 = tm._steamClient.steamID.getSteamID64(); // steamID is not null since it's loggedOn
                     tm.infoLogger(`Acc ${sid64} loged on`);
-                    InventoryManager.createInstance(tm._user, tm._steamTradeOfferManager);
-                    tm._inventoryManager = InventoryManager.getInstance();
+                    tm._inventoryManager = new InventoryManager(tm._user, tm._steamTradeOfferManager);
                     resolve();
                 });
 
@@ -390,7 +388,19 @@ export class TradeManager extends EventEmitter {
 
         this._user.csfloat.sentTrades.push(createTradeData.id.toString());
         await this._user.save();
-        await this.registerPendingTradeToFile(tradeOfferId);
+        if (this._user.userSettings.pendingTradesFilePath != "") {
+            await this.registerPendingTradeToFile(tradeOfferId);
+            this._appController.notify({
+                title: `CSFloat trade created.`,
+                body: `Trade #${tradeOfferId} was registered on pending trades file.`,
+            });
+        } else {
+            this._appController.notify({
+                title: `CSFloat trade created.`,
+                body: `Please confirm trade #${tradeOfferId} on your device.`,
+            });
+        }
+
     }
 
     public sendOffer(offer: TradeOffer): Promise<"pending" | "sent"> {

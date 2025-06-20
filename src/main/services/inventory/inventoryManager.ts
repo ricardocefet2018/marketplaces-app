@@ -1,14 +1,13 @@
-import {EventEmitter} from "events";
-import {In, Repository} from "typeorm";
-import {AppDataSource} from "../db";
-import {Inventory} from "../../entities/inventory.entity";
-import {User} from "../../entities/user.entity";
-import {sleepAsync} from "@doctormckay/stdlib/promises";
+import { EventEmitter } from "events";
+import { In, Repository } from "typeorm";
+import { AppDataSource } from "../db";
+import { Inventory } from "../../entities/inventory.entity";
+import { User } from "../../entities/user.entity";
+import { sleepAsync } from "@doctormckay/stdlib/promises";
 import TradeOfferManager from "steam-tradeoffer-manager";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
 
 export class InventoryManager extends EventEmitter {
-    private static instance: InventoryManager;
     private inventoryRepository: Repository<Inventory>;
 
     private lastUpdate: { [key: string]: number } = {};
@@ -19,23 +18,11 @@ export class InventoryManager extends EventEmitter {
     private isUpdatingInventory: { [key: string]: boolean } = {};
     private inventoryUpdateInterval = 5000;
 
-    private constructor(user: User, steamTradeOfferManager: TradeOfferManager) {
+    public constructor(user: User, steamTradeOfferManager: TradeOfferManager) {
         super();
         this.inventoryRepository = AppDataSource.getRepository(Inventory);
         this.user = user;
         this.steamTradeOfferManager = steamTradeOfferManager;
-    }
-
-    public static getInstance(): InventoryManager {
-        if (!this.instance) throw new Error("Factory method not called before!");
-        return this.instance;
-    }
-
-    public static createInstance(user: User, steamTradeOfferManager: TradeOfferManager): InventoryManager {
-        if (!this.instance) {
-            this.instance = new InventoryManager(user, steamTradeOfferManager);
-        }
-        return this.instance;
     }
 
     async updateInventory(appid: number, contextid: string): Promise<void> {
@@ -139,7 +126,7 @@ export class InventoryManager extends EventEmitter {
     private async saveInventoryToDb(items: CEconItem[], appid: number, contextid: string): Promise<void> {
         const currentItems = await this.inventoryRepository.find({
             where: {
-                user: {id: this.user.id},
+                user: { id: this.user.id },
                 appid: appid,
                 contextid: contextid
             }
@@ -179,7 +166,7 @@ export class InventoryManager extends EventEmitter {
             try {
                 await this.inventoryRepository.delete({
                     assetid: In(Array.from(currentAssetIds)),
-                    user: {id: this.user.id},
+                    user: { id: this.user.id },
                     appid: appid,
                     contextid: contextid
                 });
@@ -194,7 +181,7 @@ export class InventoryManager extends EventEmitter {
             where: {
                 appid,
                 contextid,
-                user: {id: this.user.id}
+                user: { id: this.user.id }
             },
             order: {
                 pos: "ASC"
