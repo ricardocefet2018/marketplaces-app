@@ -41,10 +41,15 @@ export const events = {
       callback(state, username)
     ),
 
-  csgofloatStateChanged: (
+  csfloatStateChanged: (callback: (state: boolean, username: string) => void) =>
+    ipcRenderer.on("csfloatStateChanged", (_e, state, username) =>
+      callback(state, username)
+    ),
+
+  csfloatCanSellStateChanged: (
     callback: (state: boolean, username: string) => void
   ) =>
-    ipcRenderer.on("csgofloatStateChanged", (_e, state, username) =>
+    ipcRenderer.on("csfloatCanSellStateChanged", (_e, state, username) =>
       callback(state, username)
     ),
 

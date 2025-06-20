@@ -1,6 +1,5 @@
-import { Entity, JoinColumn, OneToOne } from "typeorm";
+import { Entity, JoinColumn, OneToOne, Column } from "typeorm";
 import { User } from "./user.entity";
-
 import { BaseMarket } from "../models/base-market";
 
 @Entity()
@@ -13,5 +12,6 @@ export class MarketCSGO extends BaseMarket {
   @JoinColumn()
   user: User;
 
-  canSell: boolean = false;
+  @Column("boolean", { default: false })
+  canSell = false;
 }
