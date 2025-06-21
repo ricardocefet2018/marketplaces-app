@@ -334,13 +334,13 @@ export class TradeManager extends EventEmitter {
         const id = data.wax_id;
         const marketplace: Marketplace = "Waxpeer";
         const message = data.tradeoffermessage;
-        const tradeOfferId = await this.createTrade({
+        const tradeOfferId = await this.createTrade(
             tradeURL,
             json_tradeoffer,
             id,
             marketplace,
             message,
-        });
+        );
 
         if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
 
@@ -386,13 +386,13 @@ export class TradeManager extends EventEmitter {
         const json_tradeoffer = data.json_tradeoffer;
         const id = data.id;
         const marketplace: Marketplace = "Shadowpay";
-        const tradeOfferId = await this.createTrade({
+        const tradeOfferId = await this.createTrade(
             tradeURL,
             json_tradeoffer,
             id,
             marketplace,
-            message: "",
-        });
+            ""
+        );
         if (!tradeOfferId) return;
 
         try {
@@ -455,13 +455,13 @@ export class TradeManager extends EventEmitter {
                 ready: false,
             },
         };
-        const tradeOfferId = await this.createTrade({
-            tradeURL: tradeUrl,
+        const tradeOfferId = await this.createTrade(
+            tradeUrl,
             json_tradeoffer,
             id,
             marketplace,
             message,
-        });
+        );
         if (!tradeOfferId) return;
 
         try {
@@ -912,24 +912,6 @@ export class TradeManager extends EventEmitter {
         }
     }
 
-  /**
-   * @return Promise that resolve if it's all OK
-   * @throw (DB error) Fatal error.
-   */
-  public async stopWaxpeerClient() {
-    if (this._wpWebsocket) {
-      this._wpWebsocket.disconnectWss();
-    }
-    this._wpClient = undefined;
-    this._wpWebsocket = undefined;
-    this._user.waxpeer.state = false;
-    this._user.waxpeer.canSell = false;
-    this.emit("waxpeerStateChanged", false, this._user.username);
-    this.emit("waxpeerCanSellStateChanged", false, this._user.username);
-    // TODO a DB error should close the app?
-    await this._user.save();
-    return;
-  }
     /**
      * @return Promise that resolve if it's all OK
      * @throw (DB error) Fatal error.
@@ -968,25 +950,6 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
     return;
   }
-    /**
-     * @return Promise that resolve if it's all OK
-     * @throw (DB error) Fatal error.
-     */
-    public async stopShadowpayClient() {
-        if (this._spWebsocket) {
-            this._spWebsocket.disconnect();
-            this._spWebsocket.removeAllListeners();
-        }
-        this._spClient = undefined;
-        this._spWebsocket = undefined;
-        this._user.shadowpay.state = false;
-        this._user.shadowpay.canSell = false;
-        this.emit("shadowpayStateChanged", false, this._user.username);
-        this.emit("shadowpayCanSellStateChanged", false, this._user.username);
-        // TODO a DB error should close the app?
-        await this._user.save();
-        return;
-    }
 
     public async stopMarketcsgoClient() {
         if (this._mcsgoSocket) {
