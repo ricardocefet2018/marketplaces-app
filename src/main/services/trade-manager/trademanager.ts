@@ -194,11 +194,132 @@ export class TradeManager extends EventEmitter {
                 });
             });
         } catch (err) {
+            tm.infoLogger("Steam client: Error during relogin: " + err.message);
+
             tm.handleError(err); // We deal with the any error here since it's related to accounts that was already logged before
         }
         return tm;
     }
 
+  private setListeners() {
+    this._steamClient.on("refreshToken", async (token) => {
+      try {
+        this._user.refreshToken = token;
+        await this._user.save();
+        this.infoLogger(`Acc ${this._user.username} was registered to DB`);
+        this.infoLogger(`updated refreshToken`);
+      } catch (err) {
+        this.handleError(err);
+      }
+    });
+
+    this._steamClient.on("webSession", (sessionID, cookies) => {
+      this.infoLogger("Steam client: Web session started.");
+
+      this._steamCookies = cookies;
+      this._steamTradeOfferManager.setCookies(cookies);
+      const accessToken = this.getSteamLoginSecure();
+      // doesn't throw errors, no need to wait it
+      this.updateAccessTokenWaxpeer(accessToken);
+      this.updateAccessTokenShadowpay(accessToken);
+      this.updateAccessTokenMarketcsgo(accessToken);
+      // TODO add csfloat here
+    });
+
+    this._steamTradeOfferManager.on("newOffer", (offer) => {
+      try {
+        const isGift =
+          offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
+
+        if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
+          this._appController.notify({
+            title: `New offer for ${this._user.username}`,
+            body: ``,
+          });
+
+        if (isGift && this._user.userSettings.acceptGifts)
+          this.acceptTradeOffer(offer.id);
+      } catch (err) {
+        this.handleError(err);
+      }
+    });
+
+    this._steamClient.on("error", (err) => {
+      this.infoLogger("Steam client: Error: " + err.message);
+      this.handleError(err);
+      this.scheduleReconnect();
+    });
+  }
+
+  private isReconnecting = false;
+
+  private scheduleReconnect() {
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
+    this.infoLogger("Steam client: Scheduling reconnect in 1 minute...");
+
+    setTimeout(() => {
+      this.reconnect().finally(() => {
+        this.isReconnecting = false;
+      });
+    }, 60000);
+  }
+
+  private async reconnect() {
+    try {
+      this.infoLogger("Steam client: Reconnecting to Steam...");
+      this._steamClient.logOff();
+
+      const refreshToken = this._user.refreshToken;
+      if (!refreshToken) {
+        throw new Error("No refresh token available for reconnection.");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        this._steamClient.logOn({
+          refreshToken: refreshToken,
+        });
+
+        this._steamClient.once("loggedOn", () => {
+          this.infoLogger("Steam client: Reconnected successfully.");
+          resolve();
+        });
+
+        this._steamClient.once("error", (err) => {
+          this.infoLogger("Steam client: Error during reconnection: " + err.message);
+          this.handleError(err);
+          reject(err);
+        });
+      });
+    } catch (err) {
+      this.infoLogger("Steam client: Error during reconnection: " + err.message);
+      this.handleError(err);
+      this.scheduleReconnect();
+    }
+  }
+
+  private async updateAccessTokenWaxpeer(accessToken: string) {
+    if (!this._wpWebsocket || !this._wpClient) return; // not running
+    await this._wpClient.setSteamToken(accessToken);
+    this._wpWebsocket.disconnectWss();
+    const twsOptions = this._wpClient.getTWSInitObject();
+    this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
+    this.registerWaxpeerSocketHandlers();
+  }
+
+  private async updateAccessTokenShadowpay(accessToken: string) {
+    if (!this._spWebsocket || !this._spClient) return; // not running
+    await this._spClient.setSteamToken(accessToken);
+    this._spWebsocket.disconnect();
+    this._spWebsocket = new ShadowpayWebsocket(this._spClient);
+    this.registerShadowpaySocketHandlers();
+  }
+
+  private async updateAccessTokenMarketcsgo(accessToken: string) {
+    if (!this._mcsgoClient || !this._mcsgoSocket) return;
+    this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
+  }
 
     public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
         if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
@@ -213,13 +334,13 @@ export class TradeManager extends EventEmitter {
         const id = data.wax_id;
         const marketplace: Marketplace = "Waxpeer";
         const message = data.tradeoffermessage;
-        const tradeOfferId = await this.createTrade({
+        const tradeOfferId = await this.createTrade(
             tradeURL,
             json_tradeoffer,
             id,
             marketplace,
             message,
-        });
+        );
 
         if (!tradeOfferId) return; // wasn't possible send the offer, reason was registered to acc/logErrors.
 
@@ -265,13 +386,13 @@ export class TradeManager extends EventEmitter {
         const json_tradeoffer = data.json_tradeoffer;
         const id = data.id;
         const marketplace: Marketplace = "Shadowpay";
-        const tradeOfferId = await this.createTrade({
+        const tradeOfferId = await this.createTrade(
             tradeURL,
             json_tradeoffer,
             id,
             marketplace,
-            message: "",
-        });
+            ""
+        );
         if (!tradeOfferId) return;
 
         try {
@@ -334,13 +455,13 @@ export class TradeManager extends EventEmitter {
                 ready: false,
             },
         };
-        const tradeOfferId = await this.createTrade({
-            tradeURL: tradeUrl,
+        const tradeOfferId = await this.createTrade(
+            tradeUrl,
             json_tradeoffer,
             id,
             marketplace,
             message,
-        });
+        );
         if (!tradeOfferId) return;
 
         try {
@@ -370,38 +491,78 @@ export class TradeManager extends EventEmitter {
         }
     }
 
-    public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
-        if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString())) return;
-        this._appController.notify({
-            title: `New CSFloat sale!`,
-            body: `Creating trade...`,
-        });
+  public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
+    if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString())) return;
+    this._appController.notify({
+      title: `New CSFloat sale!`,
+      body: `Creating trade...`,
+    });
 
-        const tradeOfferId = await this.createTrade(createTradeData);
+    const tradeOfferId = await this.createTrade(createTradeData);
 
-        if (!tradeOfferId) return;
+    if (!tradeOfferId) return;
 
-        this._appController.notify({
-            title: `CSFloat Trade Created!`,
-            body: `Trade #${tradeOfferId} was created successfully.`,
-        });
+    this._appController.notify({
+      title: `CSFloat Trade Created!`,
+      body: `Trade #${tradeOfferId} was created successfully.`,
+    });
 
-        this._user.csfloat.sentTrades.push(createTradeData.id.toString());
-        await this._user.save();
-        if (this._user.userSettings.pendingTradesFilePath != "") {
-            await this.registerPendingTradeToFile(tradeOfferId);
-            this._appController.notify({
-                title: `CSFloat trade created.`,
-                body: `Trade #${tradeOfferId} was registered on pending trades file.`,
-            });
-        } else {
-            this._appController.notify({
-                title: `CSFloat trade created.`,
-                body: `Please confirm trade #${tradeOfferId} on your device.`,
-            });
-        }
-
+    this._user.csfloat.sentTrades.push(createTradeData.id.toString());
+    await this._user.save();
+    if (this._user.userSettings.pendingTradesFilePath != "") {
+      await this.registerPendingTradeToFile(tradeOfferId);
+      this._appController.notify({
+        title: `CSFloat trade created.`,
+        body: `Trade #${tradeOfferId} was registered on pending trades file.`,
+      });
+    } else {
+      this._appController.notify({
+        title: `CSFloat trade created.`,
+        body: `Please confirm trade #${tradeOfferId} on your device.`,
+      });
     }
+
+  }
+
+  private async createTrade(
+    tradeURL: string,
+    json_tradeoffer: JsonTradeoffer,
+    id: string | number,
+    marketplace: Marketplace,
+    message = ""
+  ) {
+    const offer = this._steamTradeOfferManager.createOffer(tradeURL);
+    try {
+      const itemsToSend = await this.getItemsToSend(json_tradeoffer);
+      if (!itemsToSend || itemsToSend?.length === 0) {
+        this.infoLogger(`No items to send for ${marketplace} sale #${id}`);
+        return;
+      }
+
+      if (!itemsToSend.every((v) => typeof v != "undefined")) {
+        this.infoLogger(
+          `One or more items of ${marketplace} sale #${id} wasn't in inventory`
+        );
+        return; // Don't want to create trade if we don't have all items that we need
+      }
+
+      const alreadyInTrade = await this.isItemsInTrade(itemsToSend);
+      if (alreadyInTrade) {
+        this.infoLogger(
+          `One or more items of ${marketplace} sale #${id} was already in trade`
+        );
+        return; // Don't want to create trade one (or more item) is already in trade
+      }
+      offer.addMyItems(itemsToSend);
+      offer.setMessage(message);
+      const offerStatus = await this.sendOffer(offer);
+      this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
+      return offer.id;
+    } catch (err) {
+      this.handleError(err);
+      return;
+    }
+  }
 
     public sendOffer(offer: TradeOffer): Promise<"pending" | "sent"> {
         return new Promise<"pending" | "sent">((res, rej) => {
@@ -460,6 +621,30 @@ export class TradeManager extends EventEmitter {
         }
     }
 
+  private async getTradeOffer(offerId: string): Promise<TradeOffer> {
+    return new Promise((resolve, reject) => {
+      this._steamTradeOfferManager.getOffer(offerId, (err, offer) => {
+        if (err) reject(err);
+
+        resolve(offer);
+      });
+    });
+  }
+
+  private async isItemsInTrade(items: CEconItem[]) {
+    return new Promise<boolean>((res, rej) => {
+      // TODO update pkg @types/steam-tradeoffer-manager and update this name
+      this._steamTradeOfferManager.getOffersContainingItems(
+        items,
+        (err, sent, received) => {
+          if (err) rej(err);
+          if (sent.length > 0 || received.length > 0) res(true);
+          res(false);
+        }
+      );
+    });
+  }
+
     /**
      * Doesn't throw errors
      */
@@ -513,11 +698,79 @@ export class TradeManager extends EventEmitter {
         }
     }
 
-    public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
-        this._user.waxpeer.apiKey = newWaxpeerApiKey;
-        await this._user.save();
-        return;
+  private async getItemsToSend(
+    json_tradeoffer: JsonTradeoffer
+  ): Promise<CEconItem[]> {
+    const assets = json_tradeoffer?.me?.assets;
+    if (!assets) {
+      this.handleError(new Error("No assets found in trade offer"));
+      return [];
     }
+
+    const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
+    const inventories = await Promise.all(
+      apps_contexts.map((app_context) =>
+        this.getInventoryContents(app_context.appid, app_context.contextid)
+      )
+    );
+
+    const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
+
+    const itemsToSend = assets.map((asset) =>
+      unifiedInv.find(
+        (econItem) =>
+          econItem.assetid == asset.assetid &&
+          econItem.appid == asset.appid &&
+          econItem.contextid.toString() == asset.contextid
+      )
+    );
+    return itemsToSend;
+
+    function getAppidContextidByJsonTradeOffer(
+      json_tradeoffer: JsonTradeoffer
+    ) {
+      const app_contextFromAssets = json_tradeoffer.me.assets.map(
+        (a) => a.appid.toString() + "_" + a.contextid
+      );
+      const app_context = app_contextFromAssets
+        .filter((value, index, self) => self.indexOf(value) == index)
+        .map((v) => ({
+          appid: Number(v.split("_")[0]),
+          contextid: Number(v.split("_")[1]),
+        }));
+      return app_context;
+    }
+  }
+
+  /**
+   * Get inventory contents based on appid and contextid
+   * @returns Array containing all intenvory items
+   */
+  private getInventoryContents(
+    appid: number,
+    contextid: number
+  ): Promise<CEconItem[]> {
+    return new Promise<CEconItem[]>((res, rej) => {
+      this._steamTradeOfferManager.getInventoryContents(
+        appid,
+        contextid,
+        true,
+        (err, inv) => {
+          if (err || !inv) {
+            rej(err || new Error("Inventário não encontrado"));
+            return;
+          }
+          res(inv);
+        }
+      );
+    });
+  }
+
+  public async updateWaxpeerApiKey(newWaxpeerApiKey: string) {
+    this._user.waxpeer.apiKey = newWaxpeerApiKey;
+    await this._user.save();
+    return;
+  }
 
     public async updateShadowpayApiKey(newShadowpayApiKey: string) {
         this._user.shadowpay.apiKey = newShadowpayApiKey;
@@ -679,25 +932,24 @@ export class TradeManager extends EventEmitter {
         return;
     }
 
-    /**
-     * @return Promise that resolve if it's all OK
-     * @throw (DB error) Fatal error.
-     */
-    public async stopShadowpayClient() {
-        if (this._spWebsocket) {
-            this._spWebsocket.disconnect();
-            this._spWebsocket.removeAllListeners();
-        }
-        this._spClient = undefined;
-        this._spWebsocket = undefined;
-        this._user.shadowpay.state = false;
-        this._user.shadowpay.canSell = false;
-        this.emit("shadowpayStateChanged", false, this._user.username);
-        this.emit("shadowpayCanSellStateChanged", false, this._user.username);
-        // TODO a DB error should close the app?
-        await this._user.save();
-        return;
+  /**
+   * @return Promise that resolve if it's all OK
+   * @throw (DB error) Fatal error.
+   */
+  public async stopShadowpayClient() {
+    if (this._spWebsocket) {
+      this._spWebsocket.disconnect();
     }
+    this._spClient = undefined;
+    this._spWebsocket = undefined;
+    this._user.shadowpay.state = false;
+    this._user.shadowpay.canSell = false;
+    this.emit("shadowpayStateChanged", false, this._user.username);
+    this.emit("shadowpayCanSellStateChanged", false, this._user.username);
+    // TODO a DB error should close the app?
+    await this._user.save();
+    return;
+  }
 
     public async stopMarketcsgoClient() {
         if (this._mcsgoSocket) {
@@ -815,170 +1067,6 @@ export class TradeManager extends EventEmitter {
                 }
             );
         });
-    }
-
-    private setListeners() {
-        this._steamClient.on("refreshToken", async (token) => {
-            try {
-                this._user.refreshToken = token;
-                await this._user.save();
-                this.infoLogger(`Acc ${this._user.username} was registered to DB`);
-                this.infoLogger(`updated refreshToken`);
-            } catch (err) {
-                this.handleError(err);
-            }
-        });
-
-        this._steamClient.on("webSession", (sessionID, cookies) => {
-            this._steamCookies = cookies;
-            this._steamTradeOfferManager.setCookies(cookies);
-            const accessToken = this.getSteamLoginSecure();
-            // doesn't throw errors, no need to wait it
-            this.updateAccessTokenWaxpeer(accessToken);
-            this.updateAccessTokenShadowpay(accessToken);
-            this.updateAccessTokenMarketcsgo(accessToken);
-            //float dont need access token
-        });
-
-        this._steamTradeOfferManager.on("newOffer", (offer) => {
-            const isGift =
-                offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
-
-            if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
-                this._appController.notify({
-                    title: `New offer for ${this._user.username}`,
-                    body: ``,
-                });
-
-            if (isGift && this._user.userSettings.acceptGifts)
-                this.acceptTradeOffer(offer.id);
-        });
-    }
-
-    private async updateAccessTokenWaxpeer(accessToken: string) {
-        if (!this._wpWebsocket || !this._wpClient) return; // not running
-        await this._wpClient.setSteamToken(accessToken);
-        this._wpWebsocket.disconnectWss();
-        const twsOptions = this._wpClient.getTWSInitObject();
-        this._wpWebsocket = new WaxpeerWebsocket(twsOptions);
-    }
-
-    private async updateAccessTokenShadowpay(accessToken: string) {
-        if (!this._spWebsocket || !this._spClient) return; // not running
-        await this._spClient.setSteamToken(accessToken);
-        this._spWebsocket.disconnect();
-        this._spWebsocket = new ShadowpayWebsocket(this._spClient);
-    }
-
-    private async updateAccessTokenMarketcsgo(accessToken: string) {
-        if (!this._mcsgoClient || !this._mcsgoSocket) return;
-        this._mcsgoClient.setSteamToken(accessToken); // mcsgo ping with acessToken every 3 minutes, no need to send it instantly
-    }
-
-    private async createTrade(
-        createTradeData: ICreateTradeData
-    ): Promise<string> {
-        const offer = this._steamTradeOfferManager.createOffer(
-            createTradeData.tradeURL
-        );
-        try {
-            const itemsToSend = await this.getItemsToSend(
-                createTradeData.json_tradeoffer
-            );
-            if (!itemsToSend.every((v) => typeof v != "undefined")) {
-                this.infoLogger(
-                    `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} wasn't in inventory`
-                );
-                return; // Don't want to create trade if we don't have all items that we need
-            }
-
-            const alreadyInTrade = await this.isItemsInTrade(itemsToSend);
-            if (alreadyInTrade) {
-                this.infoLogger(
-                    `One or more items of ${createTradeData.marketplace} sale #${createTradeData.id} was already in trade`
-                );
-                return; // Don't want to create trade one (or more item) is already in trade
-            }
-            offer.addMyItems(itemsToSend);
-            offer.setMessage(createTradeData.message);
-            const offerStatus = await this.sendOffer(offer);
-            this.infoLogger(`Steam offer #${offer.id} is ${offerStatus}`);
-            return offer.id;
-        } catch (err) {
-            this.handleError(err);
-            return;
-        }
-    }
-
-    private async getTradeOffer(offerId: string): Promise<TradeOffer> {
-        return new Promise((resolve, reject) => {
-            this._steamTradeOfferManager.getOffer(offerId, (err, offer) => {
-                if (err) reject(err);
-
-                resolve(offer);
-            });
-        });
-    }
-
-    private async isItemsInTrade(items: CEconItem[]) {
-        return new Promise<boolean>((res, rej) => {
-            // TODO update pkg @types/steam-tradeoffer-manager and update this name
-            this._steamTradeOfferManager.getOffersContainingItems(
-                items,
-                (err, sent, received) => {
-                    if (err) rej(err);
-                    if (sent.length > 0 || received.length > 0) res(true);
-                    res(false);
-                }
-            );
-        });
-    }
-
-    private async getItemsToSend(
-        json_tradeoffer: JsonTradeoffer
-    ): Promise<CEconItem[]> {
-        const apps_contexts = getAppidContextidByJsonTradeOffer(json_tradeoffer);
-        const inventories = await Promise.all(
-            apps_contexts.map((app_context) =>
-                this.getInventoryContents(app_context.appid, app_context.contextid)
-            )
-        );
-        const unifiedInv = inventories.reduce((a, b) => [...a, ...b]);
-        const assets = json_tradeoffer.me.assets;
-        return assets.map((asset) =>
-            unifiedInv.find(
-                (econItem) =>
-                    econItem.assetid == asset.assetid &&
-                    econItem.appid == asset.appid &&
-                    econItem.contextid.toString() == asset.contextid
-            )
-        );
-
-
-        function getAppidContextidByJsonTradeOffer(
-            json_tradeoffer: JsonTradeoffer
-        ) {
-            const app_contextFromAssets = json_tradeoffer.me.assets.map(
-                (a) => a.appid.toString() + "_" + a.contextid
-            );
-            return app_contextFromAssets
-                .filter((value, index, self) => self.indexOf(value) == index)
-                .map((v) => ({
-                    appid: Number(v.split("_")[0]),
-                    contextid: Number(v.split("_")[1]),
-                }));
-        }
-    }
-
-    /**
-     * Get inventory contents based on appid and contextid
-     * @returns Array containing all intenvory items
-     */
-    private async getInventoryContents(
-        appid: number,
-        contextid: number
-    ): Promise<CEconItem[]> {
-        return this._inventoryManager.getInventory(appid, contextid.toString());
     }
 
     private registerWaxpeerSocketHandlers() {
