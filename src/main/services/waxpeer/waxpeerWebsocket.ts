@@ -147,9 +147,7 @@ export class WaxpeerWebsocket extends EventEmitter {
 
   private handleError(e: Error): void {
     infoLogger("Waxpeer WebSocket: error: " + e.message);
-    this.emit("stateChange", false);
     this.emit("error", e);
-    this.scheduleReconnect();
   }
 
   private handleClose(code: number, reason: Buffer): void {
