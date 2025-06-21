@@ -9,6 +9,7 @@ import {
   User,
   UserSettings,
   Waxpeer,
+  Inventory,
 } from "../entities/index.intities";
 
 const entities = [
@@ -19,13 +20,14 @@ const entities = [
   User,
   UserSettings,
   Waxpeer,
+  Inventory,
 ];
 
 export const AppDataSource = new DataSource({
   type: "sqlite",
   database: getDBPath(),
   synchronize: true,
-  logging: process.env.NODE_ENV === "development",
+  logging: false,
   entities,
   subscribers: [],
 });
