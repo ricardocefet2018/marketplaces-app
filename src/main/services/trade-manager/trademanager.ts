@@ -498,7 +498,13 @@ export class TradeManager extends EventEmitter {
       body: `Creating trade...`,
     });
 
-    const tradeOfferId = await this.createTrade(createTradeData);
+    const tradeOfferId = await this.createTrade(
+        createTradeData.tradeURL,
+        createTradeData.json_tradeoffer,
+        createTradeData.id,
+        createTradeData.marketplace,
+        createTradeData.message
+    );
 
     if (!tradeOfferId) return;
 
@@ -651,6 +657,10 @@ export class TradeManager extends EventEmitter {
     public async acceptTradeOffer(offerId: string) {
         try {
             const offer = await this.getTradeOffer(offerId);
+            if (!offer?.itemsToReceive) {
+                throw new Error("No matching offer found");
+            }
+
             await acceptOffer(offer);
             this._appController.notify({
                 title: `Accepted gift for ${this._user.username}.`,
