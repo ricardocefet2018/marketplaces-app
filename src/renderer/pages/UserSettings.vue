@@ -11,10 +11,10 @@
             {{ steamAcc.username }}'s settings
           </span>
           <Button
+            v-tooltip.left="steamAcc.username + '\'s logs'"
             icon="pi pi-file-edit"
             class=""
             @click="openLogsFolder"
-            v-tooltip.left="steamAcc.username + '\'s logs'"
           />
         </div>
         <Divider />
@@ -26,14 +26,18 @@
         >
           <form
             id="form"
-            @change="validateForm"
             :disabled="submitingForm"
-            v-on:submit="submitForm"
+            @change="validateForm"
+            @submit="submitForm"
           >
             <div class="field">
               <label for="pendingTradesFile">
                 Save pending trades to file
                 <Badge
+                  v-tooltip="
+                    `Created trades will be pending of confirmation. 
+                    There are tools that auto confirm created trades saved on a file. Click at \'?\' to see more.`
+                  "
                   value="?"
                   severity="secondary"
                   size="small"
@@ -42,25 +46,21 @@
                       'https://github.com/ricardocefet2018/SteamDesktopAuthenticator'
                     )
                   "
-                  v-tooltip="
-                    `Created trades will be pending of confirmation. 
-                    There are tools that auto confirm created trades saved on a file. Click at \'?\' to see more.`
-                  "
-                ></Badge>
+                />
               </label>
               <InputText
-                class="w-full"
                 id="pendingTradesFile"
                 v-model="form.pendingTradesFilePath"
+                class="w-full"
                 placeholder="C:\Users\JohnDoe\Documents\pendingTradesFile.json"
               />
               <small
-                style="color: var(--p-red-500)"
                 v-if="errors.pendingTradesFilePath"
+                style="color: var(--p-red-500)"
               >
                 {{ errors.pendingTradesFilePath[0].message }}
               </small>
-              <br />
+              <br>
               <small>
                 This option will create a file if it does not exists.
               </small>
@@ -72,13 +72,13 @@
               >
                 Auto accept gifts
                 <Badge
-                  value="?"
-                  severity="secondary"
-                  size="small"
                   v-tooltip="
                     'Automatically accept any offer empty on your side.'
                   "
-                ></Badge>
+                  value="?"
+                  severity="secondary"
+                  size="small"
+                />
               </label>
               <div>
                 <ToggleSwitch v-model="form.acceptGifts" />
@@ -89,27 +89,28 @@
               <label for="waxpeerApiKey">
                 Waxpeer API key
                 <Badge
+                  v-tooltip="`Where to get it?\nAt Waxpeer API section.`"
                   value="?"
                   severity="secondary"
                   size="small"
                   @click="openExternalLink('https://waxpeer.com/profile/user')"
-                  v-tooltip="`Where to get it?\nAt Waxpeer API section.`"
-                ></Badge>
+                />
               </label>
               <Password
                 id="waxpeerApiKey"
+                v-model="form.waxpeerApiKey"
                 class="flex-1"
                 :invalid="!!errors.waxpeerApiKey"
-                v-model="form.waxpeerApiKey"
                 :disabled="steamAcc.waxpeer.state"
                 :feedback="false"
                 toggle-mask
               />
               <small
-                style="color: var(--p-red-500)"
                 v-if="errors.waxpeerApiKey"
-                >{{ errors.waxpeerApiKey[0].message }}</small
+                style="color: var(--p-red-500)"
               >
+                {{ errors.waxpeerApiKey[0].message }}
+              </small>
               <small v-if="steamAcc.waxpeer.state">
                 Stop Waxpeer before change the API key.
               </small>
@@ -118,29 +119,30 @@
               <label for="shadowpayApiKey">
                 Shadowpay API key
                 <Badge
+                  v-tooltip="
+                    `Where to get it?\nClick on 'edit' button then copy the 'Api token'.`
+                  "
                   value="?"
                   severity="secondary"
                   size="small"
                   @click="openExternalLink('https://shadowpay.com/profile')"
-                  v-tooltip="
-                    `Where to get it?\nClick on 'edit' button then copy the 'Api token'.`
-                  "
-                ></Badge>
+                />
               </label>
               <Password
                 id="shadowpayApiKey"
+                v-model="form.shadowpayApiKey"
                 class="flex-1"
                 :invalid="!!errors.shadowpayApiKey"
-                v-model="form.shadowpayApiKey"
                 :disabled="steamAcc.shadowpay.state"
                 :feedback="false"
                 toggle-mask
               />
               <small
-                style="color: var(--p-red-500)"
                 v-if="errors.shadowpayApiKey"
-                >{{ errors.shadowpayApiKey[0].message }}</small
+                style="color: var(--p-red-500)"
               >
+                {{ errors.shadowpayApiKey[0].message }}
+              </small>
               <small v-if="steamAcc.shadowpay.state">
                 Stop Shadowpay before change the API key.
               </small>
@@ -149,6 +151,7 @@
               <label for="marketcsgoApiKey">
                 MarketCSGO API key
                 <Badge
+                  v-tooltip="`Where to get it?`"
                   value="?"
                   severity="secondary"
                   size="small"
@@ -157,23 +160,23 @@
                       'https://market.csgo.com/en/api/content/start#apigen'
                     )
                   "
-                  v-tooltip="`Where to get it?`"
-                ></Badge>
+                />
               </label>
               <Password
                 id="marketcsgoApiKey"
+                v-model="form.marketcsgoApiKey"
                 class="flex-1"
                 :invalid="!!errors.marketcsgoApiKey"
-                v-model="form.marketcsgoApiKey"
                 :disabled="steamAcc.marketcsgo.state"
                 :feedback="false"
                 toggle-mask
               />
               <small
-                style="color: var(--p-red-500)"
                 v-if="errors.marketcsgoApiKey"
-                >{{ errors.marketcsgoApiKey[0].message }}</small
+                style="color: var(--p-red-500)"
               >
+                {{ errors.marketcsgoApiKey[0].message }}
+              </small>
               <small v-if="steamAcc.marketcsgo.state">
                 Stop MarketCSGO before change the API key.
               </small>
@@ -182,27 +185,28 @@
               <label for="csfloatApiKey">
                 CSFloat API key
                 <Badge
+                  v-tooltip="`Where to get it?\nAt 'Developers' section.`"
                   value="?"
                   severity="secondary"
                   size="small"
                   @click="openExternalLink('https://csfloat.com/profile')"
-                  v-tooltip="`Where to get it?\nAt 'Developers' section.`"
-                ></Badge>
+                />
               </label>
               <Password
                 id="csfloatApiKey"
+                v-model="form.csfloatApiKey"
                 class="flex-1"
                 :invalid="!!errors.csfloatApiKey"
-                v-model="form.csfloatApiKey"
                 :disabled="steamAcc.csfloat.state"
                 :feedback="false"
                 toggle-mask
               />
               <small
-                style="color: var(--p-red-500)"
                 v-if="errors.csfloatApiKey"
-                >{{ errors.csfloatApiKey[0].message }}</small
+                style="color: var(--p-red-500)"
               >
+                {{ errors.csfloatApiKey[0].message }}
+              </small>
               <small v-if="steamAcc.csfloat.state">
                 Stop CSFloat before change the API key.
               </small>
@@ -228,8 +232,8 @@
           <Button
             label="Save"
             class="w-full"
-            @click="submitForm"
             :disabled="submitingForm"
+            @click="submitForm"
           />
         </div>
       </template>
@@ -253,7 +257,7 @@
   import InputText from "primevue/inputtext";
   import ToggleSwitch from "primevue/toggleswitch";
   import { useRoute, useRouter } from "vue-router";
-  import Loading from "./components/Loading.vue";
+  import Loading from "./components/LoadingComponent.vue";
   import { useMyToast } from "../services/toast";
   import Password from "primevue/password";
 

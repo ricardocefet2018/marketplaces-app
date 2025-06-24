@@ -44,7 +44,7 @@ async function main() {
 
   const createTray = async (mainWindow: BrowserWindow) => {
     const icon = app.getFileIcon(process.execPath);
-    let tray = new Tray(await icon);
+    const tray = new Tray(await icon);
     tray.setToolTip("Multi-Apps");
     tray.setContextMenu(
       Menu.buildFromTemplate([

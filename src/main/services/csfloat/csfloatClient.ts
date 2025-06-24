@@ -12,8 +12,8 @@ import {
   ITradeFloat,
   IUpdateErrors,
   OfferStatus,
+  Item,
 } from "./interfaces/csfloat.interface";
-import { Item } from "./interfaces/csfloat.interface";
 
 export default class CSFloatClient {
   private static API_URL = "https://csfloat.com/api/v1";

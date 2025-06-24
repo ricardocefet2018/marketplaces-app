@@ -15,11 +15,11 @@
       <i
         class="pi pi-github m-2 cursor-pointer"
         @click="openGithubPage"
-      ></i>
+      />
       <i
         class="pi pi-twitter m-2 cursor-pointer"
         @click="openTwitterPage"
-      ></i>
+      />
     </template>
   </Toolbar>
   <Toast position="bottom-center" />
@@ -29,7 +29,7 @@
   import { onMounted, Ref, ref } from "vue";
   import Toolbar from "primevue/toolbar";
   import { useRouter } from "vue-router";
-  import Loading from "./pages/components/Loading.vue";
+  import Loading from "./pages/components/LoadingComponent.vue";
   import Toast from "primevue/toast";
 
   const footerMsg = ref("Made with love by Ricardo Rocha");

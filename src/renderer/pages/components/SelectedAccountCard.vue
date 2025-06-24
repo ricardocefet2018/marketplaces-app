@@ -24,7 +24,7 @@
             <Badge
               value=""
               :severity="selectedAccountSteamStatus ? 'primary' : 'danger'"
-            ></Badge>
+            />
           </p>
         </div>
       </div>
@@ -37,14 +37,14 @@
           severity="danger"
           size="small"
           icon="pi pi-sign-out"
-          iconPos="right"
+          icon-pos="right"
           @click="emit('logout')"
-        ></Button>
+        />
         <Button
           icon="pi pi-cog"
           size="small"
           @click="emit('userSettings', steamacc)"
-        ></Button>
+        />
       </div>
     </template>
   </Card>

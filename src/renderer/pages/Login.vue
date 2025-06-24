@@ -91,21 +91,21 @@
       <template #content>
         <form
           id="form"
-          @input="validateForm"
           :disabled="submitingForm"
+          @input="validateForm"
         >
           <div class="field">
             <label for="steamUsername">Steam username</label>
             <InputText
               id="steamUsername"
-              class="w-full"
               v-model="form.steamUsername"
+              class="w-full"
               :invalid="errors.steamUsername && errors.steamUsername.length > 0"
               :disabled="submitingForm"
-            ></InputText>
+            />
             <small
-              class="error"
               v-if="errors.steamUsername && errors.steamUsername.length > 0"
+              class="error"
             >
               {{ errors.steamUsername[0].message }}
             </small>
@@ -114,15 +114,15 @@
             <label for="steamPassword">Steam password</label>
             <Password
               id="steamPassword"
-              :feedback="false"
               v-model="form.steamPassword"
-              toggleMask
+              :feedback="false"
+              toggle-mask
               :invalid="errors.steamPassword && errors.steamPassword.length > 0"
               :disabled="submitingForm"
-            ></Password>
+            />
             <small
-              class="error"
               v-if="errors.steamPassword && errors.steamPassword.length > 0"
+              class="error"
             >
               {{ errors.steamPassword[0].message }}
             </small>
@@ -131,16 +131,16 @@
             <label for="steamGuardCode">Steam guard code</label>
             <InputText
               id="steamGuardCode"
-              class="w-full"
               v-model="form.steamGuardCode"
+              class="w-full"
               :invalid="
                 errors.steamGuardCode && errors.steamGuardCode.length > 0
               "
               :disabled="submitingForm"
-            ></InputText>
+            />
             <small
-              class="error"
               v-if="errors.steamGuardCode && errors.steamGuardCode.length > 0"
+              class="error"
             >
               {{ errors.steamGuardCode[0].message }}
             </small>
@@ -149,10 +149,10 @@
             <label for="proxy">Proxy</label>
             <InputText
               id="proxy"
-              class="w-full"
               v-model="form.proxy"
+              class="w-full"
               :disabled="submitingForm"
-            ></InputText>
+            />
           </div>
         </form>
       </template>
@@ -169,8 +169,8 @@
           <Button
             label="Save"
             class="w-full"
-            @click="submitForm"
             :disabled="submitingForm"
+            @click="submitForm"
           />
         </div>
       </template>

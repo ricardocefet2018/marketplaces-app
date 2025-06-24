@@ -14,7 +14,7 @@
         <Button
           icon="pi pi-cog"
           @click="router.push({ name: 'appSettings' })"
-        ></Button>
+        />
       </template>
     </Toolbar>
     <div
@@ -26,6 +26,7 @@
         style="width: fit-content"
       >
         <SelectedAccountCard
+          v-if="!!steamacc"
           :steamacc
           class="mb-2"
           @logout="logout"
@@ -35,17 +36,16 @@
               params: { username: steamacc.username },
             })
           "
-          v-if="!!steamacc"
-        ></SelectedAccountCard>
+        />
         <Listbox
           :model-value="steamacc"
           :options="steamaccList"
-          optionLabel="username"
+          option-label="username"
           class="w-full"
           list-style="max-height: 29rem"
           filter
-          @update:model-value="onUpdateListbox"
           :invalid="steamacc === null"
+          @update:model-value="onUpdateListbox"
         >
           <template #option="slotProps">
             <div class="flex items-center">
@@ -53,7 +53,7 @@
                 <Badge
                   value=""
                   :severity="slotProps.option.status ? 'primary' : 'danger'"
-                ></Badge>
+                />
                 {{ slotProps.option.username }}
               </div>
             </div>
@@ -66,44 +66,44 @@
           icon-pos="right"
           class="w-full mt-2 mb-2"
           @click="router.push({ name: 'login' })"
-        ></Button>
+        />
       </fieldset>
       <fieldset
         class="overflow-auto border-noround m-0 p-2 border-none col"
         style="height: calc(100vh - 75.19px - 67.56px); max-width: 100%"
       >
         <MarketplaceCard
+          v-if="!!steamacc"
+          v-model="steamacc.waxpeer"
           class="mb-2"
           marketplace="Waxpeer"
-          @state-changed="changeWaxpeerState"
-          v-model="steamacc.waxpeer"
           :disabled="waxpeerDisabled"
-          v-if="!!steamacc"
-        ></MarketplaceCard>
+          @state-changed="changeWaxpeerState"
+        />
         <MarketplaceCard
+          v-if="!!steamacc"
+          v-model="steamacc.shadowpay"
           class="mb-2"
           marketplace="Shadowpay"
-          @state-changed="changeShadowpayState"
-          v-model="steamacc.shadowpay"
           :disabled="shadowpayDisabled"
-          v-if="!!steamacc"
-        ></MarketplaceCard>
+          @state-changed="changeShadowpayState"
+        />
         <MarketplaceCard
+          v-if="!!steamacc"
+          v-model="steamacc.marketcsgo"
           class="mb-2"
           marketplace="MarketCSGO"
-          @state-changed="changeMarketCSGOState"
-          v-model="steamacc.marketcsgo"
           :disabled="marketcsgoDisabled"
-          v-if="!!steamacc"
-        ></MarketplaceCard>
+          @state-changed="changeMarketCSGOState"
+        />
         <MarketplaceCard
+          v-if="!!steamacc"
+          v-model="steamacc.csfloat"
           class="mb-2"
           marketplace="CSFloat"
-          @state-changed="changeCSFloatState"
-          v-model="steamacc.csfloat"
           :disabled="csgofloatDisabled"
-          v-if="!!steamacc"
-        ></MarketplaceCard>
+          @state-changed="changeCSFloatState"
+        />
       </fieldset>
     </div>
   </div>

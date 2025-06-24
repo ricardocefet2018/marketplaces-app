@@ -56,12 +56,15 @@
     "electron": "^32.2.7",
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-vue": "^10.2.0",
+    "lint-staged": "^16.1.2",
     "nodemon": "^3.1.9",
     "prettier": "^3.6.0",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.3",
     "vite-svg-loader": "^5.1.0",
+    "vue-eslint-parser": "^10.1.4",
     "wdio-electron-service": "^7.3.1",
     "wdio-wait-for": "^3.0.11"
   },
@@ -98,6 +101,13 @@
     "vueIndentScriptAndStyle": true,
     "singleAttributePerLine": true,
     "endOfLine": "lf",
-    "trailingComma": "es5"
+    "trailingComma": "es5",
+    "bracketSameLine": false
+  },
+  "lint-staged": {
+    "*.{ts,js,json,vue}": [
+      "eslint --fix .ts,.tsx,js,vue .",
+      "prettier --write"
+    ]
   }
 }

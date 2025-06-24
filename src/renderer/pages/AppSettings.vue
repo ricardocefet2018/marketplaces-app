@@ -2,8 +2,8 @@
   <div aria-page="appSettings">
     <Loading v-if="!!loading" />
     <div
-      class="m-8"
       v-if="!loading"
+      class="m-8"
     >
       <Card class="h-auto">
         <template #title>
@@ -12,10 +12,10 @@
               App settings
             </span>
             <Button
+              v-tooltip.left="'App logs'"
               icon="pi pi-file-edit"
               class=""
               @click="openLogsFolder"
-              v-tooltip.left="'App logs'"
             />
           </div>
           <Divider />
@@ -23,9 +23,9 @@
         <template #content>
           <form
             id="form"
-            @change="validateForm"
             :disabled="submitingForm"
-            v-on:submit="submitForm"
+            @change="validateForm"
+            @submit="submitForm"
           >
             <div class="field flex justify-content-between">
               <label
@@ -34,11 +34,11 @@
               >
                 Notifications
                 <Badge
+                  v-tooltip="'Turn on/off ALL notifications.'"
                   value="?"
                   severity="secondary"
                   size="small"
-                  v-tooltip="'Turn on/off ALL notifications.'"
-                ></Badge>
+                />
               </label>
               <div>
                 <ToggleSwitch v-model="form.notification" />
@@ -70,8 +70,8 @@
             <Button
               label="Save"
               class="w-full"
-              @click="submitForm"
               :disabled="submitingForm"
+              @click="submitForm"
             />
           </div>
         </template>
@@ -91,6 +91,7 @@
   import ToggleSwitch from "primevue/toggleswitch";
   import { useRouter } from "vue-router";
   import { useMyToast } from "../services/toast";
+  import Loading from "./components/LoadingComponent.vue";
 
   const router = useRouter();
   const toast = useMyToast();

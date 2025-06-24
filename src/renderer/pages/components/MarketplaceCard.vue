@@ -15,17 +15,17 @@
           <Badge
             value=""
             :severity="model.canSell ? 'primary' : 'danger'"
-          ></Badge>
+          />
 
           <div class="flex-1 flex align-items-center">
             {{ marketplace }}
           </div>
 
           <ToggleSwitch
-            class="flex"
             v-model="model.state"
-            @change="emit('stateChanged', model.state)"
+            class="flex"
             :disabled="!model.apiKey || props.disabled"
+            @change="emit('stateChanged', model.state)"
           />
         </div>
       </template>
