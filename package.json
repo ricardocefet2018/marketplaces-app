@@ -13,7 +13,8 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "npm run package & npm run wdio",
     "wdio": "wdio run ./wdio.conf.ts",
-    "typeorm": "typeorm-ts-node-commonjs"
+    "typeorm": "typeorm-ts-node-commonjs",
+    "prepare": "husky"
   },
   "build": {
     "files": [
@@ -57,6 +58,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-vue": "^10.2.0",
+    "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "nodemon": "^3.1.9",
     "prettier": "^3.6.0",
@@ -106,7 +108,7 @@
   },
   "lint-staged": {
     "*.{ts,js,json,vue}": [
-      "eslint --fix .ts,.tsx,js,vue .",
+      "eslint --fix",
       "prettier --write"
     ]
   }
