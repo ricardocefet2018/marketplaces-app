@@ -2,7 +2,11 @@
   <div aria-page="main">
     <Toolbar class="border-noround pr-3 pl-3">
       <template #start>
-        <Avatar label="M" class="mr-2" size="large" />
+        <Avatar
+          label="M"
+          class="mr-2"
+          size="large"
+        />
         <h3>MultiMarketApp v0.0.1</h3>
       </template>
 
@@ -106,186 +110,188 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from "primevue/avatar";
-import Button from "primevue/button";
-import Toolbar from "primevue/toolbar";
-import Listbox from "primevue/listbox";
-import { onMounted, Ref, ref } from "vue";
-import SelectedAccountCard from "./components/SelectedAccountCard.vue";
-import Badge from "primevue/badge";
-import MarketplaceCard from "./components/MarketplaceCard.vue";
-import { SteamAcc } from "../../shared/types";
-import { useRoute, useRouter } from "vue-router";
-import { useMyToast } from "../services/toast";
+  import Avatar from "primevue/avatar";
+  import Button from "primevue/button";
+  import Toolbar from "primevue/toolbar";
+  import Listbox from "primevue/listbox";
+  import { onMounted, Ref, ref } from "vue";
+  import SelectedAccountCard from "./components/SelectedAccountCard.vue";
+  import Badge from "primevue/badge";
+  import MarketplaceCard from "./components/MarketplaceCard.vue";
+  import { SteamAcc } from "../../shared/types";
+  import { useRoute, useRouter } from "vue-router";
+  import { useMyToast } from "../services/toast";
 
-const router = useRouter();
-const route = useRoute();
-const toast = useMyToast();
+  const router = useRouter();
+  const route = useRoute();
+  const toast = useMyToast();
 
-const steamaccMap = ref<Map<string, SteamAcc>>();
-const steamaccList = ref<SteamAcc[]>();
-const steamacc: Ref<SteamAcc> = ref();
-const waxpeerDisabled: Ref<boolean> = ref(false);
-const shadowpayDisabled: Ref<boolean> = ref(false);
-const marketcsgoDisabled: Ref<boolean> = ref(false);
-const csgofloatDisabled: Ref<boolean> = ref(false);
+  const steamaccMap = ref<Map<string, SteamAcc>>();
+  const steamaccList = ref<SteamAcc[]>();
+  const steamacc: Ref<SteamAcc> = ref();
+  const waxpeerDisabled: Ref<boolean> = ref(false);
+  const shadowpayDisabled: Ref<boolean> = ref(false);
+  const marketcsgoDisabled: Ref<boolean> = ref(false);
+  const csgofloatDisabled: Ref<boolean> = ref(false);
 
-function onUpdateListbox(e: SteamAcc | null) {
-  if (!e) return;
-  steamacc.value = e;
-}
+  function onUpdateListbox(e: SteamAcc | null) {
+    if (!e) return;
+    steamacc.value = e;
+  }
 
-onMounted(async () => {
-  const hasAccounts = await window.api.hasAccounts();
-  if (!hasAccounts) router.push({ name: "login" });
+  onMounted(async () => {
+    const hasAccounts = await window.api.hasAccounts();
+    if (!hasAccounts) router.push({ name: "login" });
 
-  await updateSteamAccList();
-  if (route.params.username)
-    steamacc.value = steamaccMap.value.get(route.params.username as string);
-  else steamacc.value = steamaccList.value[0];
+    await updateSteamAccList();
+    if (route.params.username)
+      steamacc.value = steamaccMap.value.get(route.params.username as string);
+    else steamacc.value = steamaccList.value[0];
 
-  window.events.waxpeerStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.waxpeer.state = state;
+    window.events.waxpeerStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.waxpeer.state = state;
 
-    updateSteamAccList();
+      updateSteamAccList();
+    });
+    window.events.waxpeerCanSellStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.waxpeer.canSell = state;
+
+      updateSteamAccList();
+    });
+
+    window.events.shadowpayStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.shadowpay.state = state;
+
+      updateSteamAccList();
+    });
+    window.events.shadowpayCanSellStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.shadowpay.canSell = state;
+
+      updateSteamAccList();
+    });
+
+    window.events.marketcsgoStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.marketcsgo.state = state;
+
+      updateSteamAccList();
+    });
+    window.events.marketcsgoCanSellStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.marketcsgo.canSell = state;
+
+      updateSteamAccList();
+    });
+
+    window.events.csfloatStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.csfloat.state = state;
+
+      updateSteamAccList();
+    });
+
+    window.events.csfloatCanSellStateChanged((state, username) => {
+      if (steamacc.value.username == username)
+        steamacc.value.csfloat.canSell = state;
+
+      updateSteamAccList();
+    });
   });
-  window.events.waxpeerCanSellStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.waxpeer.canSell = state;
 
-    updateSteamAccList();
-  });
-
-  window.events.shadowpayStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.shadowpay.state = state;
-
-    updateSteamAccList();
-  });
-  window.events.shadowpayCanSellStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.shadowpay.canSell = state;
-
-    updateSteamAccList();
-  });
-
-  window.events.marketcsgoStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.marketcsgo.state = state;
-
-    updateSteamAccList();
-  });
-  window.events.marketcsgoCanSellStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.marketcsgo.canSell = state;
-
-    updateSteamAccList();
-  });
-
-  window.events.csfloatStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.csfloat.state = state;
-
-    updateSteamAccList();
-  });
-
-  window.events.csfloatCanSellStateChanged((state, username) => {
-    if (steamacc.value.username == username)
-      steamacc.value.csfloat.canSell = state;
-
-    updateSteamAccList();
-  });
-});
-
-async function changeWaxpeerState(newState: boolean) {
-  waxpeerDisabled.value = true;
-  const result = await window.api.changeWaxpeerState(
-    newState,
-    steamacc.value.username
-  );
-  if (!result.success && result.msg) toast.error(result.msg);
-  if (result.success)
-    toast.success(
-      `Waxpeer has successfully turned ${newState ? "on" : "off"}.`
-    );
-  waxpeerDisabled.value = false;
-}
-
-async function changeShadowpayState(newState: boolean) {
-  shadowpayDisabled.value = true;
-  const result = await window.api.changeShadowpayState(
-    newState,
-    steamacc.value.username
-  );
-  if (!result.success && result.msg) toast.error(result.msg);
-  if (result.success)
-    toast.success(
-      `Shadowpay has successfully turned ${newState ? "on" : "off"}.`
-    );
-  shadowpayDisabled.value = false;
-}
-
-async function changeMarketCSGOState(newState: boolean) {
-  marketcsgoDisabled.value = true;
-  const result = await window.api.changeMarketcsgoState(
-    newState,
-    steamacc.value.username
-  );
-  if (!result.success && result.msg) toast.error(result.msg);
-  if (result.success)
-    toast.success(
-      `Marketcsgo has successfully turned ${newState ? "on" : "off"}.`
-    );
-  marketcsgoDisabled.value = false;
-  return;
-}
-
-async function changeCSFloatState(newState: boolean): Promise<void> {
-  toast.clear();
-  toast.info(`${newState ? "Starting" : "Stopping"} extension Float...`);
-  csgofloatDisabled.value = true;
-
-  try {
-    const responseStateFloat = await window.api.changeCSFloatState(
+  async function changeWaxpeerState(newState: boolean) {
+    waxpeerDisabled.value = true;
+    const result = await window.api.changeWaxpeerState(
       newState,
       steamacc.value.username
     );
-    if (responseStateFloat.success) {
-      toast.success(`Float has successfully turned ${newState ? "on" : "off"}`);
-    }
-  } catch (error) {
-    toast.error(`Error - (changeCSFloatState): ${error}`);
-  } finally {
-    csgofloatDisabled.value = false;
+    if (!result.success && result.msg) toast.error(result.msg);
+    if (result.success)
+      toast.success(
+        `Waxpeer has successfully turned ${newState ? "on" : "off"}.`
+      );
+    waxpeerDisabled.value = false;
   }
-  return;
-}
 
-async function updateSteamAccList() {
-  steamaccList.value = await window.api.getAccounts();
-  steamaccMap.value = new Map(
-    steamaccList.value.map((acc) => [acc.username, acc])
-  );
-}
+  async function changeShadowpayState(newState: boolean) {
+    shadowpayDisabled.value = true;
+    const result = await window.api.changeShadowpayState(
+      newState,
+      steamacc.value.username
+    );
+    if (!result.success && result.msg) toast.error(result.msg);
+    if (result.success)
+      toast.success(
+        `Shadowpay has successfully turned ${newState ? "on" : "off"}.`
+      );
+    shadowpayDisabled.value = false;
+  }
 
-async function logout() {
-  await window.api.logout(steamacc.value.username);
-  await updateSteamAccList();
-  if (steamaccMap.value.size == 0) router.push({ name: "login" });
-}
+  async function changeMarketCSGOState(newState: boolean) {
+    marketcsgoDisabled.value = true;
+    const result = await window.api.changeMarketcsgoState(
+      newState,
+      steamacc.value.username
+    );
+    if (!result.success && result.msg) toast.error(result.msg);
+    if (result.success)
+      toast.success(
+        `Marketcsgo has successfully turned ${newState ? "on" : "off"}.`
+      );
+    marketcsgoDisabled.value = false;
+    return;
+  }
+
+  async function changeCSFloatState(newState: boolean): Promise<void> {
+    toast.clear();
+    toast.info(`${newState ? "Starting" : "Stopping"} extension Float...`);
+    csgofloatDisabled.value = true;
+
+    try {
+      const responseStateFloat = await window.api.changeCSFloatState(
+        newState,
+        steamacc.value.username
+      );
+      if (responseStateFloat.success) {
+        toast.success(
+          `Float has successfully turned ${newState ? "on" : "off"}`
+        );
+      }
+    } catch (error) {
+      toast.error(`Error - (changeCSFloatState): ${error}`);
+    } finally {
+      csgofloatDisabled.value = false;
+    }
+    return;
+  }
+
+  async function updateSteamAccList() {
+    steamaccList.value = await window.api.getAccounts();
+    steamaccMap.value = new Map(
+      steamaccList.value.map((acc) => [acc.username, acc])
+    );
+  }
+
+  async function logout() {
+    await window.api.logout(steamacc.value.username);
+    await updateSteamAccList();
+    if (steamaccMap.value.size == 0) router.push({ name: "login" });
+  }
 </script>
 
 <style scoped>
-fieldset {
-  border-color: var(--p-content-border-color);
-}
+  fieldset {
+    border-color: var(--p-content-border-color);
+  }
 
-span.online {
-  color: var(--p-primary-color);
-}
+  span.online {
+    color: var(--p-primary-color);
+  }
 
-span.offline {
-  color: var(--p-button-danger-background);
-}
+  span.offline {
+    color: var(--p-button-danger-background);
+  }
 </style>

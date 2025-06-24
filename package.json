@@ -57,6 +57,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
     "nodemon": "^3.1.9",
+    "prettier": "^3.6.0",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.3",
@@ -88,5 +89,15 @@
     "vue": "^3.5.3",
     "vue-router": "^4.5.0",
     "ws": "^8.18.0"
+  },
+  "prettier": {
+    "arrowParens": "always",
+    "tabWidth": 2,
+    "semi": true,
+    "useTabs": false,
+    "vueIndentScriptAndStyle": true,
+    "singleAttributePerLine": true,
+    "endOfLine": "lf",
+    "trailingComma": "es5"
   }
 }

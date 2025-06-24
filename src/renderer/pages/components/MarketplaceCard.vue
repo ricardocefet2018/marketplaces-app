@@ -1,9 +1,14 @@
 <template>
   <div>
-    <Card class="w-full" :dt="cardDT">
+    <Card
+      class="w-full"
+      :dt="cardDT"
+    >
       <template #title>
         <div class="flex align-items-center gap-2">
-          <div class="flex align-items-center justify-content-center h-full w-auto">
+          <div
+            class="flex align-items-center justify-content-center h-full w-auto"
+          >
             <SvgIcon :name="`${marketplace.toLowerCase()}-logo`" />
           </div>
 
@@ -12,9 +17,7 @@
             :severity="model.canSell ? 'primary' : 'danger'"
           ></Badge>
 
-          <div
-            class="flex-1 flex align-items-center"
-          >
+          <div class="flex-1 flex align-items-center">
             {{ marketplace }}
           </div>
 
@@ -31,29 +34,29 @@
 </template>
 
 <script setup lang="ts">
-import Card from "primevue/card";
-import ToggleSwitch from "primevue/toggleswitch";
-import Badge from "primevue/badge";
-import { Marketplace, MarketplaceSettings } from "../../../shared/types";
-import { ref } from "vue";
-import SvgIcon from "./SvgIcon.vue";
+  import Card from "primevue/card";
+  import ToggleSwitch from "primevue/toggleswitch";
+  import Badge from "primevue/badge";
+  import { Marketplace, MarketplaceSettings } from "../../../shared/types";
+  import { ref } from "vue";
+  import SvgIcon from "./SvgIcon.vue";
 
-const emit = defineEmits<{
-  stateChanged: [state: boolean];
-}>();
+  const emit = defineEmits<{
+    stateChanged: [state: boolean];
+  }>();
 
-const props = defineProps<{
-  marketplace: Marketplace;
-  disabled: boolean;
-}>();
+  const props = defineProps<{
+    marketplace: Marketplace;
+    disabled: boolean;
+  }>();
 
-const model = defineModel<MarketplaceSettings>();
+  const model = defineModel<MarketplaceSettings>();
 
-const cardDT = ref({
-  body: {
-    gap: 0,
-  },
-});
+  const cardDT = ref({
+    body: {
+      gap: 0,
+    },
+  });
 </script>
 
 <style scoped></style>

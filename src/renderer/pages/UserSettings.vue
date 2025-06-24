@@ -1,5 +1,8 @@
 <template>
-  <div class="m-8" aria-page="userSettings">
+  <div
+    class="m-8"
+    aria-page="userSettings"
+  >
     <Loading v-if="!!loading" />
     <Card v-if="!loading">
       <template #title>
@@ -17,7 +20,10 @@
         <Divider />
       </template>
       <template #content>
-        <div style="max-height: 55vh" class="overflow-auto pr-3">
+        <div
+          style="max-height: 55vh"
+          class="overflow-auto pr-3"
+        >
           <form
             id="form"
             @change="validateForm"
@@ -60,7 +66,10 @@
               </small>
             </div>
             <div class="field flex justify-content-between">
-              <label for="acceptGifts" style="width: 40%">
+              <label
+                for="acceptGifts"
+                style="width: 40%"
+              >
                 Auto accept gifts
                 <Badge
                   value="?"
@@ -229,141 +238,144 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, Ref, ref } from "vue";
-import {
-  FormErrors,
-  IUserMarketplacesSettings,
-  IUserSettings,
-  SteamAcc,
-} from "../../shared/types";
-import { Validator } from "../models/validator";
-import Card from "primevue/card";
-import Button from "primevue/button";
-import Divider from "primevue/divider";
-import Badge from "primevue/badge";
-import InputText from "primevue/inputtext";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useRoute, useRouter } from "vue-router";
-import Loading from "./components/Loading.vue";
-import { useMyToast } from "../services/toast";
-import Password from "primevue/password";
+  import { onMounted, Ref, ref } from "vue";
+  import {
+    FormErrors,
+    IUserMarketplacesSettings,
+    IUserSettings,
+    SteamAcc,
+  } from "../../shared/types";
+  import { Validator } from "../models/validator";
+  import Card from "primevue/card";
+  import Button from "primevue/button";
+  import Divider from "primevue/divider";
+  import Badge from "primevue/badge";
+  import InputText from "primevue/inputtext";
+  import ToggleSwitch from "primevue/toggleswitch";
+  import { useRoute, useRouter } from "vue-router";
+  import Loading from "./components/Loading.vue";
+  import { useMyToast } from "../services/toast";
+  import Password from "primevue/password";
 
-const route = useRoute();
-const router = useRouter();
-const toast = useMyToast();
-const loading = ref(true);
-const accUsername = route.params.username as string;
+  const route = useRoute();
+  const router = useRouter();
+  const toast = useMyToast();
+  const loading = ref(true);
+  const accUsername = route.params.username as string;
 
-const steamAcc = ref<SteamAcc>();
+  const steamAcc = ref<SteamAcc>();
 
-const form = ref<IUserMarketplacesSettings>();
+  const form = ref<IUserMarketplacesSettings>();
 
-const errors: Ref<FormErrors<IUserMarketplacesSettings>> = ref({});
+  const errors: Ref<FormErrors<IUserMarketplacesSettings>> = ref({});
 
-const validator = Validator.factory<IUserMarketplacesSettings>({
-  acceptGifts: {
-    type: "boolean",
-    required: true,
-    message: "Accept gifts is required!",
-  },
-  pendingTradesFilePath: {
-    type: "string",
-    required: false,
-    pattern: /^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]+\.json$/,
-    message: "Need to be an .json absolute path",
-  },
-  waxpeerApiKey: {
-    type: "string",
-    required: false,
-    len: 64,
-    message: "Invalid Waxpeer apiKey",
-  },
-  shadowpayApiKey: {
-    type: "string",
-    required: false,
-    len: 32,
-    message: "Invalid Shadowpay apiKey",
-  },
-  marketcsgoApiKey: {
-    type: "string",
-    required: false,
-    len: 31,
-    message: "Invalid MarketCSGO apiKey",
-  },
-  csfloatApiKey: {
-    type: "string",
-    required: false,
-    len: 32,
-    message: "Invalid CSFloat apiKey",
-  },
-});
-
-const submitingForm = ref<boolean>();
-
-onMounted(async () => {
-  const acc = await window.api.getAccountByUsername(accUsername);
-  steamAcc.value = acc;
-  form.value = {
-    acceptGifts: acc.userSettings.acceptGifts,
-    pendingTradesFilePath: acc.userSettings.pendingTradesFilePath,
-    waxpeerApiKey: acc.waxpeer.apiKey,
-    shadowpayApiKey: acc.shadowpay.apiKey,
-    marketcsgoApiKey: acc.marketcsgo.apiKey,
-    csfloatApiKey: acc.csfloat.apiKey,
-  };
-  loading.value = false;
-});
-
-async function validateForm() {
-  try {
-    await validator.validate(form.value);
-    errors.value = {};
-    return true;
-  } catch (err) {
-    console.log(err.fields);
-    errors.value = err.fields;
-    return false;
-  }
-}
-
-async function submitForm(e: SubmitEvent) {
-  e.preventDefault();
-  const validated = await validateForm();
-  if (!validated) return;
-  const username = steamAcc.value.username;
-  const userSettings: IUserSettings = {
-    acceptGifts: form.value.acceptGifts,
-    pendingTradesFilePath: form.value.pendingTradesFilePath,
-  };
-
-  const updateResponses = await Promise.all([
-    window.api.updateUserSettings(userSettings, username),
-    window.api.updateWaxpeerApiKey(username, form.value.waxpeerApiKey),
-    window.api.updateShadowpayApiKey(username, form.value.shadowpayApiKey),
-    window.api.updateMarketcsgoApiKey(username, form.value.marketcsgoApiKey),
-    window.api.updateCSFloatApiKey(username, form.value.csfloatApiKey),
-  ]);
-  updateResponses.forEach((res) => {
-    if (!res.success && res.msg) {
-      toast.error(res.msg);
-    }
+  const validator = Validator.factory<IUserMarketplacesSettings>({
+    acceptGifts: {
+      type: "boolean",
+      required: true,
+      message: "Accept gifts is required!",
+    },
+    pendingTradesFilePath: {
+      type: "string",
+      required: false,
+      pattern: /^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]+\.json$/,
+      message: "Need to be an .json absolute path",
+    },
+    waxpeerApiKey: {
+      type: "string",
+      required: false,
+      len: 64,
+      message: "Invalid Waxpeer apiKey",
+    },
+    shadowpayApiKey: {
+      type: "string",
+      required: false,
+      len: 32,
+      message: "Invalid Shadowpay apiKey",
+    },
+    marketcsgoApiKey: {
+      type: "string",
+      required: false,
+      len: 31,
+      message: "Invalid MarketCSGO apiKey",
+    },
+    csfloatApiKey: {
+      type: "string",
+      required: false,
+      len: 32,
+      message: "Invalid CSFloat apiKey",
+    },
   });
-  const success = updateResponses
-    .map((res) => res.success)
-    .reduce((a, b) => a && b);
-  if (!success) return;
 
-  toast.success(`${accUsername}'s settings saved successfully`);
-  router.push({ name: "main", params: { username: steamAcc.value.username } });
-}
+  const submitingForm = ref<boolean>();
 
-async function openLogsFolder() {
-  await window.api.openLogsFolder(steamAcc.value.username);
-}
+  onMounted(async () => {
+    const acc = await window.api.getAccountByUsername(accUsername);
+    steamAcc.value = acc;
+    form.value = {
+      acceptGifts: acc.userSettings.acceptGifts,
+      pendingTradesFilePath: acc.userSettings.pendingTradesFilePath,
+      waxpeerApiKey: acc.waxpeer.apiKey,
+      shadowpayApiKey: acc.shadowpay.apiKey,
+      marketcsgoApiKey: acc.marketcsgo.apiKey,
+      csfloatApiKey: acc.csfloat.apiKey,
+    };
+    loading.value = false;
+  });
 
-async function openExternalLink(link: string) {
-  await window.api.openExternalLink(link);
-}
+  async function validateForm() {
+    try {
+      await validator.validate(form.value);
+      errors.value = {};
+      return true;
+    } catch (err) {
+      console.log(err.fields);
+      errors.value = err.fields;
+      return false;
+    }
+  }
+
+  async function submitForm(e: SubmitEvent) {
+    e.preventDefault();
+    const validated = await validateForm();
+    if (!validated) return;
+    const username = steamAcc.value.username;
+    const userSettings: IUserSettings = {
+      acceptGifts: form.value.acceptGifts,
+      pendingTradesFilePath: form.value.pendingTradesFilePath,
+    };
+
+    const updateResponses = await Promise.all([
+      window.api.updateUserSettings(userSettings, username),
+      window.api.updateWaxpeerApiKey(username, form.value.waxpeerApiKey),
+      window.api.updateShadowpayApiKey(username, form.value.shadowpayApiKey),
+      window.api.updateMarketcsgoApiKey(username, form.value.marketcsgoApiKey),
+      window.api.updateCSFloatApiKey(username, form.value.csfloatApiKey),
+    ]);
+    updateResponses.forEach((res) => {
+      if (!res.success && res.msg) {
+        toast.error(res.msg);
+      }
+    });
+    const success = updateResponses
+      .map((res) => res.success)
+      .reduce((a, b) => a && b);
+    if (!success) return;
+
+    toast.success(`${accUsername}'s settings saved successfully`);
+    router.push({
+      name: "main",
+      params: { username: steamAcc.value.username },
+    });
+  }
+
+  async function openLogsFolder() {
+    await window.api.openLogsFolder(steamAcc.value.username);
+  }
+
+  async function openExternalLink(link: string) {
+    await window.api.openExternalLink(link);
+  }
 </script>
 
 <style scoped></style>

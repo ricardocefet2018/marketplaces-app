@@ -8,23 +8,23 @@ import { Waxpeer } from "./waxpeer.entity";
 import { Inventory } from "./inventory.entity";
 
 export {
-    CSFloat,
-    MarketCSGO,
-    Settings,
-    Shadowpay,
-    User,
-    UserSettings,
-    Waxpeer,
-    Inventory
+  CSFloat,
+  MarketCSGO,
+  Settings,
+  Shadowpay,
+  User,
+  UserSettings,
+  Waxpeer,
+  Inventory,
 };
 
 export const entities = [
-    CSFloat,
-    MarketCSGO,
-    Settings,
-    Shadowpay,
-    User,
-    UserSettings,
-    Waxpeer,
-    Inventory
+  CSFloat,
+  MarketCSGO,
+  Settings,
+  Shadowpay,
+  User,
+  UserSettings,
+  Waxpeer,
+  Inventory,
 ];
