@@ -1,5 +1,5 @@
 import { app, BrowserWindow, Menu, Tray } from "electron";
-import { DB } from "./main/services/db";
+import { DB } from "./main/integrations/db";
 import path from "path";
 import { registerHandlers } from "./main/index";
 import { handleError } from "./shared/helpers";

@@ -1,6 +1,6 @@
 import { WebContents } from "electron";
 import { LoginData, SteamAcc, IUserSettings } from "../../shared/types";
-import { TradeManager } from "../services/trade-manager/trademanager";
+import { TradeManager } from "../integrations/trade-manager/trademanager";
 import { User } from "../entities/user.entity";
 
 export class TradeManagerService {
