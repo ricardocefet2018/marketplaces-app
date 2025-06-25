@@ -3,18 +3,18 @@ import { Settings } from "../entities/settings.entity";
 import { ISettings } from "../../shared/types";
 
 // Every OS function is supposed to be there
-export class AppController {
-  private static instance: AppController;
+export class AppService {
+  private static instance: AppService;
   private settings: ISettings;
 
-  public static async factory(): Promise<AppController> {
+  public static async factory(): Promise<AppService> {
     if (this.instance) return this.instance;
-    this.instance = new AppController();
+    this.instance = new AppService();
     await this.instance.getSettings();
     return this.instance;
   }
 
-  public static getInstance(): AppController {
+  public static getInstance(): AppService {
     if (!this.instance) throw new Error("Factory method not called before!");
     return this.instance;
   }

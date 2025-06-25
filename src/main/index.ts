@@ -4,11 +4,11 @@ import { TradeManagerController } from "./controllers/tradeManager.controller";
 import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
-import { AppController } from "./controllers/app.controller";
+import { AppService } from "./controllers/app.controller";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
-  const appController = await AppController.factory();
+  const appController = await AppService.factory();
   const tradeManagerController = await TradeManagerController.factory(
     mainWindowWebContents
   );
@@ -141,7 +141,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
         msg: "Unexpected Error. Please relogin.",
       };
     }
-  })
+  });
 
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
@@ -306,4 +306,3 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   mainWindowWebContents.send("apiReady");
 }
-
