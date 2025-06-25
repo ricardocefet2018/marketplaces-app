@@ -3,8 +3,8 @@ import { LoginData, SteamAcc, IUserSettings } from "../../shared/types";
 import { TradeManager } from "../services/trade-manager/trademanager";
 import { User } from "../entities/user.entity";
 
-export class TradeManagerController {
-  private static instance: TradeManagerController;
+export class TradeManagerService {
+  private static instance: TradeManagerService;
   private tradeManagers: Map<string, TradeManager> = new Map();
   private webContents: WebContents & { send: EventSender };
 
@@ -14,7 +14,7 @@ export class TradeManagerController {
 
   public static async factory(mainWindowWebContents: WebContents) {
     if (this.instance) return this.instance;
-    this.instance = new TradeManagerController(mainWindowWebContents);
+    this.instance = new TradeManagerService(mainWindowWebContents);
     await this.instance.tryToReloginSavedAccounts();
     return this.instance;
   }
