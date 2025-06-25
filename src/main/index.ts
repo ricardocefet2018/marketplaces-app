@@ -4,7 +4,7 @@ import { TradeManagerController } from "./controllers/tradeManager.controller";
 import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
-import { AppService } from "./controllers/app.controller";
+import { AppService } from "./controllers/app.service";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
