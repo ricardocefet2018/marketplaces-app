@@ -1,6 +1,6 @@
 import { ipcMain, Notification, WebContents } from "electron";
 import { LoginResponses } from "../shared/enums";
-import { TradeManagerController } from "./controllers/tradeManager.controller";
+import { TradeManagerController } from "./controllers/tradeManager.service";
 import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
