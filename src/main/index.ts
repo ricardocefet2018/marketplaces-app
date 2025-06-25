@@ -1,10 +1,10 @@
 import { ipcMain, Notification, WebContents } from "electron";
 import { LoginResponses } from "../shared/enums";
-import { TradeManagerService } from "./controllers/tradeManager.service";
+import { TradeManagerService } from "./services/tradeManager.service";
 import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
-import { AppService } from "./controllers/app.service";
+import { AppService } from "./services/app.service";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {

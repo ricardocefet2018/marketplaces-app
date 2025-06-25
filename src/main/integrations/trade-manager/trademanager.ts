@@ -36,7 +36,7 @@ import {
   TradeManagerOptions,
 } from "./interface/tradeManager.interface";
 import { MarketcsgoSocket } from "../marketcsgo/marketcsgoSocket";
-import { AppService } from "../../controllers/app.service";
+import { AppService } from "../../services/app.service";
 import CSFloatClient from "../csfloat/csfloatClient";
 import { CSFloatSocket } from "../csfloat/csfloatSocket";
 import { INotifyData } from "../csfloat/interfaces/csfloat.interface";
