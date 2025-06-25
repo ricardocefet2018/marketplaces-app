@@ -8,7 +8,7 @@ import { AppService } from "./controllers/app.service";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
-  const appController = await AppService.factory();
+  const appService = await AppService.factory();
   const tradeManagerService = await TradeManagerService.factory(
     mainWindowWebContents
   );
@@ -21,7 +21,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   myHandler("login", async (e, loginOptions) => {
     try {
       await tradeManagerService.login(loginOptions);
-      appController.notify({
+      appService.notify({
         title: "Logged on successfully",
         body: `Account ${loginOptions.username} logged on successfully!`,
       });
@@ -269,16 +269,16 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   });
 
   myHandler("openLogsFolder", async (e, username) => {
-    appController.openLogsPath(username);
+    appService.openLogsPath(username);
   });
 
   myHandler("openExternalLink", async (e, link) => {
-    appController.openExternalLink(link);
+    appService.openExternalLink(link);
   });
 
   myHandler("getAppSettings", async () => {
     try {
-      return await appController.getSettings();
+      return await appService.getSettings();
     } catch (err) {
       handleError(err);
       new Notification({
@@ -291,7 +291,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("setAppSettings", async (e, newSettings: ISettings) => {
     try {
-      await appController.saveSettings(newSettings);
+      await appService.saveSettings(newSettings);
       return {
         success: true,
       };

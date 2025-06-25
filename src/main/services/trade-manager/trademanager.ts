@@ -87,7 +87,7 @@ export class TradeManager extends EventEmitter {
   private _mcsgoSocket?: MarketcsgoSocket;
   private _csfloatClient?: CSFloatClient;
   private _csfloatSocket?: CSFloatSocket;
-  private _appController: AppService;
+  private _appService: AppService;
   private _inventoryManager: InventoryManager;
   private blockedUsersCache: string[] = [];
   private lastBlockedUsersUpdate = 0;
@@ -95,7 +95,7 @@ export class TradeManager extends EventEmitter {
 
   private constructor(options: TradeManagerOptions) {
     super();
-    this._appController = AppService.getInstance();
+    this._appService = AppService.getInstance();
     const steamUserOptions: { httpProxy?: string } = {};
     if (options.proxy) steamUserOptions["httpProxy"] = options.proxy;
     this._steamClient = new SteamUser(steamUserOptions);
@@ -224,7 +224,7 @@ export class TradeManager extends EventEmitter {
   public async createTradeForWaxpeer(data: TradeWebsocketCreateTradeData) {
     if (this._user.waxpeer.sentTrades.includes(data.wax_id)) return;
 
-    this._appController.notify({
+    this._appService.notify({
       title: `New Waxpeer sale!`,
       body: `Creating trade...`,
     });
@@ -258,12 +258,12 @@ export class TradeManager extends EventEmitter {
         await this._user.save();
         if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
-          this._appController.notify({
+          this._appService.notify({
             title: `Waxpeer trade created.`,
             body: `Trade #${tradeOfferId} was registered on pending trades file.`,
           });
         } else {
-          this._appController.notify({
+          this._appService.notify({
             title: `Waxpeer trade created.`,
             body: `Please confirm trade #${tradeOfferId} on your device.`,
           });
@@ -277,7 +277,7 @@ export class TradeManager extends EventEmitter {
   public async createTradeForShadowpay(data: SendTradePayload) {
     if (this._user.shadowpay.sentTrades.includes(data.id.toString())) return;
 
-    this._appController.notify({
+    this._appService.notify({
       title: `New Shadowpay sale!`,
       body: `Creating trade...`,
     });
@@ -308,12 +308,12 @@ export class TradeManager extends EventEmitter {
         await this._user.save();
         if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
-          this._appController.notify({
+          this._appService.notify({
             title: `Shadowpay trade created.`,
             body: `Trade #${tradeOfferId} was registered on pending trades file`,
           });
         } else {
-          this._appController.notify({
+          this._appService.notify({
             title: `Shadowpay trade created.`,
             body: `Please confirm trade #${tradeOfferId} on your device.`,
           });
@@ -327,7 +327,7 @@ export class TradeManager extends EventEmitter {
   public async createTradeForMarketcsgo(data: MarketcsgoTradeOfferPayload) {
     if (this._user.marketcsgo.sentTrades.includes(data.hash)) return;
 
-    this._appController.notify({
+    this._appService.notify({
       title: `New MarketCSGO sale!`,
       body: `Creating trade...`,
     });
@@ -375,12 +375,12 @@ export class TradeManager extends EventEmitter {
 
         if (this._user.userSettings.pendingTradesFilePath != "") {
           this.registerPendingTradeToFile(tradeOfferId);
-          this._appController.notify({
+          this._appService.notify({
             title: `MarketCSGO trade created.`,
             body: `Trade #${tradeOfferId} was registered on pending trades file`,
           });
         } else {
-          this._appController.notify({
+          this._appService.notify({
             title: `MarketCSGO trade created.`,
             body: `Please confirm trade #${tradeOfferId} on your device.`,
           });
@@ -394,7 +394,7 @@ export class TradeManager extends EventEmitter {
   public async createTradeForCSFloat(createTradeData: ICreateTradeData) {
     if (this._user.csfloat.sentTrades.includes(createTradeData.id.toString()))
       return;
-    this._appController.notify({
+    this._appService.notify({
       title: `New CSFloat sale!`,
       body: `Creating trade...`,
     });
@@ -403,7 +403,7 @@ export class TradeManager extends EventEmitter {
 
     if (!tradeOfferId) return;
 
-    this._appController.notify({
+    this._appService.notify({
       title: `CSFloat Trade Created!`,
       body: `Trade #${tradeOfferId} was created successfully.`,
     });
@@ -412,12 +412,12 @@ export class TradeManager extends EventEmitter {
     await this._user.save();
     if (this._user.userSettings.pendingTradesFilePath != "") {
       await this.registerPendingTradeToFile(tradeOfferId);
-      this._appController.notify({
+      this._appService.notify({
         title: `CSFloat trade created.`,
         body: `Trade #${tradeOfferId} was registered on pending trades file.`,
       });
     } else {
-      this._appController.notify({
+      this._appService.notify({
         title: `CSFloat trade created.`,
         body: `Please confirm trade #${tradeOfferId} on your device.`,
       });
@@ -452,7 +452,7 @@ export class TradeManager extends EventEmitter {
           return; // Offer was found but isn't cancellable
 
         await cancelOffer(offer);
-        this._appController.notify({
+        this._appService.notify({
           title: `${marketplace} sale cancelled.`,
           body: `Steam trade offer #${offerId} was cancelled.`,
         });
@@ -488,7 +488,7 @@ export class TradeManager extends EventEmitter {
     try {
       const offer = await this.getTradeOffer(offerId);
       await acceptOffer(offer);
-      this._appController.notify({
+      this._appService.notify({
         title: `Accepted gift for ${this._user.username}.`,
         body: `Trade offer #${offer.id} was accepted.`,
       });
@@ -784,7 +784,7 @@ export class TradeManager extends EventEmitter {
   }
 
   public notifyWindows(notifyData: INotifyData): void {
-    return this._appController.notify({
+    return this._appService.notify({
       title: notifyData.title,
       body: notifyData.body,
     });
@@ -865,7 +865,7 @@ export class TradeManager extends EventEmitter {
         offer.itemsToGive.length == 0 && offer.itemsToReceive.length > 0;
 
       if (!isGift || (isGift && !this._user.userSettings.acceptGifts))
-        this._appController.notify({
+        this._appService.notify({
           title: `New offer for ${this._user.username}`,
           body: ``,
         });
