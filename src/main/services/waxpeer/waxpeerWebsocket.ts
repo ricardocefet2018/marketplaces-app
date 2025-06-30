@@ -41,10 +41,10 @@ export class WaxpeerWebsocket extends EventEmitter {
     tries: number;
     int: any;
   } = {
-      ws: null,
-      tries: 0,
-      int: null,
-    };
+    ws: null,
+    tries: 0,
+    int: null,
+  };
   private allowReconnect = true;
   private readonly readyStatesMap = {
     CONNECTING: 0,

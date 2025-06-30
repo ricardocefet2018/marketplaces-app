@@ -141,7 +141,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
         msg: "Unexpected Error. Please relogin.",
       };
     }
-  })
+  });
 
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
@@ -306,4 +306,3 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   mainWindowWebContents.send("apiReady");
 }
-
