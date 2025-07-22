@@ -1,15 +1,15 @@
 import { ipcMain, Notification, WebContents } from "electron";
 import { LoginResponses } from "../shared/enums";
-import { TradeManagerController } from "./controllers/tradeManager.controller";
+import { TradeManagerService } from "./services/tradeManager.service";
 import { handleError } from "../shared/helpers";
 import { FetchError } from "node-fetch";
 import { ISettings } from "../shared/types";
-import { AppController } from "./controllers/app.controller";
+import { AppService } from "./services/app.service";
 import AppError from "./models/AppError";
 
 export async function registerHandlers(mainWindowWebContents: WebContents) {
-  const appController = await AppController.factory();
-  const tradeManagerController = await TradeManagerController.factory(
+  const appService = await AppService.factory();
+  const tradeManagerService = await TradeManagerService.factory(
     mainWindowWebContents
   );
   const myHandler: apiHandler = ipcMain.handle;
@@ -20,8 +20,8 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("login", async (e, loginOptions) => {
     try {
-      await tradeManagerController.login(loginOptions);
-      appController.notify({
+      await tradeManagerService.login(loginOptions);
+      appService.notify({
         title: "Logged on successfully",
         body: `Account ${loginOptions.username} logged on successfully!`,
       });
@@ -36,20 +36,20 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   });
 
   myHandler("getAccounts", async () => {
-    return tradeManagerController.getAccounts();
+    return tradeManagerService.getAccounts();
   });
 
   myHandler("hasAccounts", async () => {
-    return tradeManagerController.hasAccounts();
+    return tradeManagerService.hasAccounts();
   });
 
   myHandler("getAccountByUsername", async (e, username) => {
-    return tradeManagerController.getAccountByUsername(username);
+    return tradeManagerService.getAccountByUsername(username);
   });
 
   myHandler("updateWaxpeerApiKey", async (e, username, waxpeerApiKey) => {
     try {
-      const success = await tradeManagerController.updateWaxpeerApiKey(
+      const success = await tradeManagerService.updateWaxpeerApiKey(
         username,
         waxpeerApiKey
       );
@@ -73,7 +73,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateShadowpayApiKey", async (e, username, shadowpayApikey) => {
     try {
-      const success = await tradeManagerController.updateShadowpayApiKey(
+      const success = await tradeManagerService.updateShadowpayApiKey(
         username,
         shadowpayApikey
       );
@@ -97,7 +97,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateMarketcsgoApiKey", async (e, username, marketcsgoApiKey) => {
     try {
-      const success = await tradeManagerController.updateMarketcsgoApiKey(
+      const success = await tradeManagerService.updateMarketcsgoApiKey(
         username,
         marketcsgoApiKey
       );
@@ -121,7 +121,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateCSFloatApiKey", async (e, username, csfloatApiKey) => {
     try {
-      const success = await tradeManagerController.updateCSFloatApiKey(
+      const success = await tradeManagerService.updateCSFloatApiKey(
         username,
         csfloatApiKey
       );
@@ -145,7 +145,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("changeWaxpeerState", async (e, newState, username) => {
     try {
-      await tradeManagerController.changeWaxpeerState(newState, username);
+      await tradeManagerService.changeWaxpeerState(newState, username);
       return {
         success: true,
       };
@@ -166,7 +166,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("changeShadowpayState", async (e, newState, username) => {
     try {
-      await tradeManagerController.changeShadowpayState(newState, username);
+      await tradeManagerService.changeShadowpayState(newState, username);
       return {
         success: true,
       };
@@ -187,7 +187,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("changeMarketcsgoState", async (e, newState, username) => {
     try {
-      await tradeManagerController.changeMarketcsgoState(newState, username);
+      await tradeManagerService.changeMarketcsgoState(newState, username);
       return {
         success: true,
       };
@@ -209,7 +209,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("changeCSFloatState", async (e, newState, username) => {
     try {
-      await tradeManagerController.changeCSFloatState(newState, username);
+      await tradeManagerService.changeCSFloatState(newState, username);
       return {
         success: true,
       };
@@ -230,7 +230,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("logout", async (e, username) => {
     try {
-      await tradeManagerController.logout(username);
+      await tradeManagerService.logout(username);
       new Notification({
         title: "Logged out successfully!",
         body: `Account ${username} was removed!`,
@@ -246,7 +246,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("updateUserSettings", async (e, newSettings, username) => {
     try {
-      const success = await tradeManagerController.updateUserSettings(
+      const success = await tradeManagerService.updateUserSettings(
         newSettings,
         username
       );
@@ -269,16 +269,16 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
   });
 
   myHandler("openLogsFolder", async (e, username) => {
-    appController.openLogsPath(username);
+    appService.openLogsPath(username);
   });
 
   myHandler("openExternalLink", async (e, link) => {
-    appController.openExternalLink(link);
+    appService.openExternalLink(link);
   });
 
   myHandler("getAppSettings", async () => {
     try {
-      return await appController.getSettings();
+      return await appService.getSettings();
     } catch (err) {
       handleError(err);
       new Notification({
@@ -291,7 +291,7 @@ export async function registerHandlers(mainWindowWebContents: WebContents) {
 
   myHandler("setAppSettings", async (e, newSettings: ISettings) => {
     try {
-      await appController.saveSettings(newSettings);
+      await appService.saveSettings(newSettings);
       return {
         success: true,
       };

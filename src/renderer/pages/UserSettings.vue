@@ -60,7 +60,7 @@
               >
                 {{ errors.pendingTradesFilePath[0].message }}
               </small>
-              <br>
+              <br />
               <small>
                 This option will create a file if it does not exists.
               </small>

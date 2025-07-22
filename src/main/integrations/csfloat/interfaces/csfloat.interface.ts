@@ -7,7 +7,7 @@ import {
 } from "../enums/cs-float.enum";
 import { IGetTradeOffersResponse } from "./fetch.interface";
 import CEconItem from "steamcommunity/classes/CEconItem.js";
-import { ICreateTradeData } from "../../trade-manager/interface/tradeManager.interface";
+import { ICreateTradeData } from "../../steam/interface/tradeManager.interface";
 
 export interface ICSFloatSocketEvents extends TradeWebsocketEvents {
   sendTrade: (data: ICreateTradeData) => void;
