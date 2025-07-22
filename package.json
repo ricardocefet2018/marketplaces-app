@@ -13,7 +13,8 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "npm run package & npm run wdio",
     "wdio": "wdio run ./wdio.conf.ts",
-    "typeorm": "typeorm-ts-node-commonjs"
+    "typeorm": "typeorm-ts-node-commonjs",
+    "prepare": "husky"
   },
   "build": {
     "files": [
@@ -56,11 +57,16 @@
     "electron": "^32.2.7",
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-vue": "^10.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "nodemon": "^3.1.9",
+    "prettier": "^3.6.0",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.3",
     "vite-svg-loader": "^5.1.0",
+    "vue-eslint-parser": "^10.1.4",
     "wdio-electron-service": "^7.3.1",
     "wdio-wait-for": "^3.0.11"
   },
@@ -88,5 +94,22 @@
     "vue": "^3.5.3",
     "vue-router": "^4.5.0",
     "ws": "^8.18.0"
+  },
+  "prettier": {
+    "arrowParens": "always",
+    "tabWidth": 2,
+    "semi": true,
+    "useTabs": false,
+    "vueIndentScriptAndStyle": true,
+    "singleAttributePerLine": true,
+    "endOfLine": "lf",
+    "trailingComma": "es5",
+    "bracketSameLine": false
+  },
+  "lint-staged": {
+    "*.{ts,js,json,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

@@ -58,15 +58,12 @@ describe("Todos os fluxos", () => {
 
     it("should make required inputs invalid by submitting empty form", async () => {
       await saveButton.click();
-      const inputSteamUsernameClasses = await inputSteamUsername.getAttribute(
-        "class"
-      );
-      const inputSteamPasswordClasses = await inputSteamPassword.getAttribute(
-        "class"
-      );
-      const inputSteamGuardCodeClasses = await inputSteamGuardCode.getAttribute(
-        "class"
-      );
+      const inputSteamUsernameClasses =
+        await inputSteamUsername.getAttribute("class");
+      const inputSteamPasswordClasses =
+        await inputSteamPassword.getAttribute("class");
+      const inputSteamGuardCodeClasses =
+        await inputSteamGuardCode.getAttribute("class");
       expect(inputSteamUsernameClasses).toHaveText("invalid");
       expect(inputSteamPasswordClasses).toHaveText("invalid");
       expect(inputSteamGuardCodeClasses).toHaveText("invalid");
